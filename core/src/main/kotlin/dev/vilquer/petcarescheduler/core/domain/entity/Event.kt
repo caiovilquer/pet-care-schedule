@@ -7,7 +7,7 @@ data class Event(
     val id: EventId? = null,
     val type: EventType,
     val description: String?,
-    val dateTime: LocalDateTime,
+    val dateStart: LocalDateTime,
     val recurrence: Recurrence?,
     val status: Status = Status.PENDING,
     val pet: Pet
