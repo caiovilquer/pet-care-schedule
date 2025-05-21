@@ -10,7 +10,7 @@ data class Event(
     val dateStart: LocalDateTime,
     val recurrence: Recurrence?,
     val status: Status = Status.PENDING,
-    val pet: Pet
+    val petId: PetId
 ) {
     fun markDone() = copy(status = Status.DONE)
 }
