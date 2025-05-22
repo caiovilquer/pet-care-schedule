@@ -1,5 +1,6 @@
 package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity
 
+
 import jakarta.persistence.*
 
 @Entity
