@@ -7,8 +7,8 @@ import java.time.LocalDateTime
 @Embeddable
 data class RecurrenceEmb(
     @Enumerated(EnumType.STRING)
-    var frequency: Frequency?,
-    var intervalCount: Long?,
-    var repetitions: Int?,
-    var finalDate: LocalDateTime?
+    var frequency: Frequency,
+    var intervalCount: Long? = null,
+    var repetitions: Int? = null,
+    var finalDate: LocalDateTime? = null
 )
