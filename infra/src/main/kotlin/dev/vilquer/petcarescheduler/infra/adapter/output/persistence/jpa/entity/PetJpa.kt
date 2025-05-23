@@ -32,7 +32,7 @@ class PetJpa {
         orphanRemoval = true
     )
     @JoinColumn(name = "pet_id")
-    val events: MutableList<EventJpa> = mutableListOf()
+    var events: MutableList<EventJpa> = mutableListOf()
 
     override fun equals(other: Any?): Boolean =
         this === other || (other is PetJpa && this.id != null && this.id == other.id)

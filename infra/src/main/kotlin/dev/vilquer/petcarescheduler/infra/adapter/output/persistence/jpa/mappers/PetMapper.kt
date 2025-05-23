@@ -1,9 +1,9 @@
 package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers
 
-import dev.vilquer.petcarescheduler.core.domain.entity.Pet
-import dev.vilquer.petcarescheduler.core.domain.entity.PetId
-import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.entity.*
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
+import java.time.LocalDateTime
 
 /**
  * Mapper responsible for converting between Pet domain entities and JPA entities.
@@ -15,16 +15,30 @@ object PetMapper {
      * @param jpa The JPA entity to convert
      * @return The corresponding domain entity
      */
-    fun toDomain(jpa: PetJpa): Pet = Pet(
-        id = jpa.id?.let(::PetId),
-        name = jpa.name,
-        specie = jpa.specie,
-        race = jpa.race,
-        birthdate = jpa.birthdate,
-        tutorId = TutorId(jpa.tutorId),
-        events = jpa.events.map(EventMapper::toDomain)
-    )
+    fun toDomain(jpa: PetJpa): Pet{
+        val petId = PetId(jpa.id ?: throw IllegalStateException("Id cannot be null when mapping PetJpa to domain"))
 
+        return Pet(
+            id = petId,
+            name = jpa.name,
+            specie = jpa.specie,
+            race = jpa.race,
+            birthdate = jpa.birthdate,
+            tutorId = TutorId(jpa.tutorId),
+            events = jpa.events.map { eventJpa ->
+                Event(
+                    id = eventJpa.id?.let { EventId(it) },
+                    type = eventJpa.type,
+                    description = eventJpa.description,
+                    dateStart = eventJpa.dateStart,
+                    recurrence = eventJpa.recurrenceEmb?.toDomain(),
+                    status = eventJpa.status,
+                    petId = petId  // This is the key fix - use the pet's ID
+                )
+            }
+
+        )
+    }
     /**
      * Maps domain entity to JPA entity.
      *
