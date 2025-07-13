@@ -4,6 +4,8 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.TutorMapper
@@ -34,9 +36,9 @@ class TutorMapperTest {
             assertEquals(TutorId(TUTOR_ID), id)
             assertEquals("Carlos", firstName)
             assertEquals("Silva", lastName)
-            assertEquals("carlos@ex.com", email)
+            assertEquals("carlos@ex.com", email.toString())
             assertEquals("abc123", passwordHash)
-            assertEquals("99999-0000", phoneNumber)
+            assertEquals(PhoneNumber.of("55599990000").getOrNull(), phoneNumber)
             assertEquals("avatar.png", avatar)
 
             // Pets assertions
@@ -65,9 +67,9 @@ class TutorMapperTest {
             assertNull(id)
             assertEquals("Mariana", firstName)
             assertEquals("Costa", lastName)
-            assertEquals("mari@ex.com", email)
+            assertEquals("mari@ex.com", email.toString())
             assertEquals("senhaX", passwordHash)
-            assertEquals("88888-1111", phoneNumber)
+            assertEquals(PhoneNumber.of("55588881111").getOrNull(), phoneNumber)
             assertNull(avatar)
 
             // Pets assertions
@@ -97,9 +99,9 @@ class TutorMapperTest {
             assertEquals(5L, id)
             assertEquals("Ana Paula", firstName)
             assertEquals("Lima", lastName)
-            assertEquals("ana.paula@ex.com", email)
+            assertEquals("ana.paula@ex.com", email.toString())
             assertEquals("newHash", passwordHash)
-            assertEquals("77777-3333", phoneNumber)
+            assertEquals(PhoneNumber.of("55577773333").getOrNull(), phoneNumber)
             assertEquals("new.png", avatar)
 
             // Pets assertions
@@ -124,9 +126,9 @@ class TutorMapperTest {
             id = TUTOR_ID
             firstName = "Carlos"
             lastName = "Silva"
-            email = "carlos@ex.com"
+            email = Email.of("carlos@ex.com").getOrThrow()
             passwordHash = "abc123"
-            phoneNumber = "99999-0000"
+            phoneNumber = PhoneNumber.of("55599990000").getOrNull()
             avatar = "avatar.png"
         }
 
@@ -147,9 +149,9 @@ class TutorMapperTest {
             id = null,
             firstName = "Mariana",
             lastName = "Costa",
-            email = "mari@ex.com",
+            email = Email.of("mari@ex.com").getOrThrow(),
             passwordHash = "senhaX",
-            phoneNumber = "88888-1111",
+            phoneNumber = PhoneNumber.of("55588881111").getOrNull(),
             avatar = null,
             pets = listOf(
                 Pet(
@@ -169,9 +171,9 @@ class TutorMapperTest {
             id = 5
             firstName = "Ana"
             lastName = "Lima"
-            email = "ana@ex.com"
+            email = Email.of("ana@ex.com").getOrThrow()
             passwordHash = "oldHash"
-            phoneNumber = "77777-2222"
+            phoneNumber = PhoneNumber.of("55577772222").getOrNull()
             avatar = "old.png"
 
             pets.add(PetJpa().apply {
@@ -189,9 +191,9 @@ class TutorMapperTest {
             id = TutorId(5),
             firstName = "Ana Paula",
             lastName = "Lima",
-            email = "ana.paula@ex.com",
+            email = Email.of("ana.paula@ex.com").getOrThrow(),
             passwordHash = "newHash",
-            phoneNumber = "77777-3333",
+            phoneNumber = PhoneNumber.of("55577773333").getOrNull(),
             avatar = "new.png",
             pets = listOf(
                 Pet(

@@ -1,4 +1,4 @@
-package dev.vilquer.petcarescheduler.dev.vilquer.petcarescheduler.infra.adapter.output.external
+package dev.vilquer.petcarescheduler.infra.adapter.output.external
 
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import org.springframework.stereotype.Component

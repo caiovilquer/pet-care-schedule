@@ -6,6 +6,8 @@ import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.reposit
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,9 +40,9 @@ class TutorMapperIntegrationTest {
             id = TutorId(1),
             firstName = "Carlos",
             lastName = "Mendes",
-            email = "carlos@ex.com",
+            email = Email.of("carlos@ex.com").getOrThrow(),
             passwordHash = "hash123",
-            phoneNumber = "1199999-0000",
+            phoneNumber = PhoneNumber.of("1199999-0000").getOrNull(),
             avatar = null,
             pets = listOf(
                 Pet(

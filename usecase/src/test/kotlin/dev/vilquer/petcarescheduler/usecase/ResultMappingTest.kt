@@ -1,4 +1,6 @@
 import dev.vilquer.petcarescheduler.core.domain.entity.*
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.usecase.result.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -25,8 +27,8 @@ class ResultMappingTest {
         id = id!!,
         firstName = firstName,
         lastName = lastName,
-        email = email,
-        phoneNumber = phoneNumber,
+        email = email.value,
+        phoneNumber = phoneNumber.toString(),
         avatar = avatar,
         pets = pets.map { p ->
             TutorDetailResult.PetInfo(p.id!!, p.name, p.specie)
@@ -67,9 +69,9 @@ class ResultMappingTest {
             id = TutorId(5L),
             firstName = "Ana",
             lastName = "Silva",
-            email = "ana@ex.com",
+            email = Email.of("ana@ex.com").getOrThrow(),
             passwordHash = "hash",
-            phoneNumber = "1111",
+            phoneNumber = PhoneNumber.of("1111").getOrNull(),
             avatar = null,
             pets = listOf(
                 Pet(

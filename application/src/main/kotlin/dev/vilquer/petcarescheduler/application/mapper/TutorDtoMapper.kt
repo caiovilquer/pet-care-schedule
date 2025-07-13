@@ -1,6 +1,8 @@
 package dev.vilquer.petcarescheduler.application.mapper
 
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.usecase.command.*
 import org.springframework.stereotype.Component
 
@@ -29,9 +31,9 @@ class TutorDtoMapper {
         CreateTutorCommand(
             firstName   = dto.firstName,
             lastName    = dto.lastName,
-            email       = dto.email,
+            email       = Email.of(dto.email).getOrThrow(),
             rawPassword = dto.rawPassword,
-            phoneNumber = dto.phoneNumber,
+            phoneNumber = PhoneNumber.of(dto.phoneNumber).getOrThrow(),
             avatar      = dto.avatar
         )
 
@@ -40,7 +42,7 @@ class TutorDtoMapper {
             tutorId     = TutorId(id),
             firstName   = dto.firstName,
             lastName    = dto.lastName,
-            phoneNumber = dto.phoneNumber,
+            phoneNumber = dto.phoneNumber?.let { PhoneNumber.of(it).getOrThrow() },
             avatar      = dto.avatar
         )
 }
