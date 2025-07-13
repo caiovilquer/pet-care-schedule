@@ -63,7 +63,7 @@ class PetMapperTest {
         assertEquals(jpa.specie, domain.specie, "Pet species should be correctly mapped")
         assertEquals(jpa.race, domain.race, "Pet race should be correctly mapped")
         assertEquals(jpa.birthdate, domain.birthdate, "Pet birthdate should be correctly mapped")
-        assertEquals(jpa.tutorId, domain.tutorId.value, "Pet tutor ID should be correctly mapped")
+        assertEquals(jpa.tutorId, domain.tutorId?.value, "Pet tutor ID should be correctly mapped")
 
         // Verify events mapping
         assertEquals(jpa.events.size, domain.events.size, "Number of events should match")
@@ -98,7 +98,7 @@ class PetMapperTest {
                     matchingDomainEvent.status.name,
                     "Event status should be correctly mapped"
                 )
-                assertEquals(jpa.id, matchingDomainEvent.petId.value, "Event pet ID should be correctly mapped")
+                assertEquals(jpa.id, matchingDomainEvent.petId?.value, "Event pet ID should be correctly mapped")
             } else {
                 throw AssertionError("Missing matching domain event for JPA event with ID: ${jpaEvent.id}")
             }
@@ -112,7 +112,7 @@ class PetMapperTest {
         assertEquals(domain.specie, jpa.specie, "Pet species should be correctly mapped")
         assertEquals(domain.race, jpa.race, "Pet race should be correctly mapped")
         assertEquals(domain.birthdate, jpa.birthdate, "Pet birthdate should be correctly mapped")
-        assertEquals(domain.tutorId.value, jpa.tutorId, "Pet tutor ID should be correctly mapped")
+        assertEquals(domain.tutorId?.value, jpa.tutorId, "Pet tutor ID should be correctly mapped")
 
         // Verify events mapping
         assertEquals(domain.events.size, jpa.events.size, "Number of events should match")
@@ -147,7 +147,7 @@ class PetMapperTest {
                     matchingJpaEvent.status.name,
                     "Event status should be correctly mapped"
                 )
-                assertEquals(domainEvent.petId.value, jpa.id, "Event pet ID reference should be correctly mapped")
+                assertEquals(domainEvent.petId?.value, jpa.id, "Event pet ID reference should be correctly mapped")
             } else {
                 throw AssertionError("Missing matching JPA event for domain event with ID: ${domainEvent.id?.value}")
             }
