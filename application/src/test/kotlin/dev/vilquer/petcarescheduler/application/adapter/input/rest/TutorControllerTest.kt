@@ -1,9 +1,11 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import dev.vilquer.petcarescheduler.application.config.JacksonVoModule
 import dev.vilquer.petcarescheduler.application.mapper.TutorDtoMapper
 import dev.vilquer.petcarescheduler.application.service.TutorAppService
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.result.TutorCreatedResult
 import dev.vilquer.petcarescheduler.usecase.result.TutorSummary
 import dev.vilquer.petcarescheduler.usecase.result.TutorsPageResult
@@ -19,9 +21,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class TutorControllerTest {
 
     private val service: TutorAppService = mock()
-    private val mapper = TutorDtoMapper()         // classe concreta
+    private val mapper = TutorDtoMapper()
     private lateinit var mvc: MockMvc
     private val objectMapper = jacksonObjectMapper()
+        .registerModule(
+            JacksonVoModule().voModule()
+        )
 
     @BeforeEach
     fun setup() {
@@ -40,24 +45,23 @@ class TutorControllerTest {
             lastName    = null,
             email       = "a@e.com",
             rawPassword = "pwd",
-            phoneNumber = "1",
+            phoneNumber = "(11) 99876-5432",
             avatar      = null
         )
 
-        mvc.perform(
-            post("/api/v1/tutors")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req))
-        )
+        mvc.perform(post("/api/v1/tutors")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(req)))
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.tutorId").value(1))
+        verify(service).createTutor(any())
     }
 
     @Test
     fun `list tutors returns page`() {
         val page = TutorsPageResult(
             items = listOf(
-                TutorSummary(TutorId(1),"Ana","a@e.com",0)
+                TutorSummary(TutorId(1),"Ana",Email.of("a@e.com").getOrThrow(),0)
             ),
             total = 1, page = 0, size = 20
         )

@@ -32,8 +32,8 @@ fun Tutor.toDetailResult(): TutorDetailResult = TutorDetailResult(
     id = id!!,
     firstName = firstName,
     lastName = lastName,
-    email = email,
-    phoneNumber = phoneNumber,
+    email = email.value,
+    phoneNumber = phoneNumber?.e164,
     avatar = avatar,
     pets = pets.map { pet ->
         TutorDetailResult.PetInfo(

@@ -3,6 +3,8 @@ package petcarescheduler.infra.test
 import dev.vilquer.petcarescheduler.PetCareSchedulerApplication
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.PetMapper
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.PetJpaRepository
@@ -29,9 +31,9 @@ class PetRepositoryIntegrationTest {
         // 1) Cria e persiste um tutor
         val tutorJpa = TutorJpa().apply {
             firstName = "Ana"
-            email = "ana@ex.com"
+            email = Email.of("ana@ex.com").getOrThrow()
             passwordHash = "hash"
-            phoneNumber = "1234"
+            phoneNumber = PhoneNumber.of("1198888-1111").getOrNull()
         }
         tutorRepoJpa.save(tutorJpa)
 
