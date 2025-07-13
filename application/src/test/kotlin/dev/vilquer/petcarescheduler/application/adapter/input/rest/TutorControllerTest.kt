@@ -9,7 +9,7 @@ import dev.vilquer.petcarescheduler.usecase.result.TutorSummary
 import dev.vilquer.petcarescheduler.usecase.result.TutorsPageResult
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.*
+import org.mockito.kotlin.*
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
@@ -17,32 +17,52 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 class TutorControllerTest {
-    private val service: TutorAppService = mock(TutorAppService::class.java)
-    private val mapper: TutorDtoMapper = object : TutorDtoMapper {}
+
+    private val service: TutorAppService = mock()
+    private val mapper = TutorDtoMapper()         // classe concreta
     private lateinit var mvc: MockMvc
     private val objectMapper = jacksonObjectMapper()
 
     @BeforeEach
     fun setup() {
-        mvc = MockMvcBuilders.standaloneSetup(TutorController(service, mapper)).build()
+        mvc = MockMvcBuilders.standaloneSetup(
+            TutorController(service, mapper)
+        ).build()
     }
 
     @Test
     fun `create tutor returns 201`() {
-        `when`(service.createTutor(any())).thenReturn(TutorCreatedResult(TutorId(1)))
-        val req = TutorDtoMapper.CreateRequest("Ana", null, "a@e.com", "pwd", "1", null)
+        whenever(service.createTutor(any()))
+            .thenReturn(TutorCreatedResult(TutorId(1)))
 
-        mvc.perform(post("/api/v1/tutors")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(req)))
+        val req = TutorDtoMapper.CreateRequest(
+            firstName   = "Ana",
+            lastName    = null,
+            email       = "a@e.com",
+            rawPassword = "pwd",
+            phoneNumber = "1",
+            avatar      = null
+        )
+
+        mvc.perform(
+            post("/api/v1/tutors")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req))
+        )
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.tutorId").value(1))
     }
 
     @Test
     fun `list tutors returns page`() {
-        val page = TutorsPageResult(listOf(TutorSummary(TutorId(1),"Ana","a@e.com",0)),1,0,20)
-        `when`(service.listTutors(0,20)).thenReturn(page)
+        val page = TutorsPageResult(
+            items = listOf(
+                TutorSummary(TutorId(1),"Ana","a@e.com",0)
+            ),
+            total = 1, page = 0, size = 20
+        )
+
+        whenever(service.listTutors(eq(0), eq(20))).thenReturn(page)
 
         mvc.perform(get("/api/v1/tutors"))
             .andExpect(status().isOk)

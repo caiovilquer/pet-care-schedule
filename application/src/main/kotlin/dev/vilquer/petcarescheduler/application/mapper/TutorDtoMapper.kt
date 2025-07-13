@@ -2,10 +2,10 @@ package dev.vilquer.petcarescheduler.application.mapper
 
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
-import org.mapstruct.Mapper
+import org.springframework.stereotype.Component
 
-@Mapper(componentModel = "spring")
-interface TutorDtoMapper {
+@Component
+class TutorDtoMapper {
 
     data class CreateRequest(
         val firstName:   String,

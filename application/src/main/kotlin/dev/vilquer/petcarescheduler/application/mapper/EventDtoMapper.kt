@@ -3,11 +3,11 @@ package dev.vilquer.petcarescheduler.application.mapper
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
-import org.mapstruct.Mapper
+import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
-@Mapper(componentModel = "spring")
-interface EventDtoMapper {
+@Component
+class EventDtoMapper {
 
     data class RegisterRequest(
         val petId: Long,
