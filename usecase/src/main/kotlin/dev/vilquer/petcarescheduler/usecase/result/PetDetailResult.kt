@@ -4,7 +4,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.EventId
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import java.time.LocalDate
-import java.time.ZonedDateTime
+import java.time.LocalDateTime
 
 data class PetDetailResult(
     val id: PetId,
@@ -17,6 +17,6 @@ data class PetDetailResult(
     data class EventInfo(
         val id: EventId,
         val type: EventType,
-        val dateStart: ZonedDateTime
+        val dateStart: LocalDateTime
     )
 }

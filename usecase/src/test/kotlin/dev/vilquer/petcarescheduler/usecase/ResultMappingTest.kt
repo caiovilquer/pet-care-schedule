@@ -4,9 +4,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
-
 class ResultMappingTest {
 
     private fun Pet.toDetailResult(): PetDetailResult = PetDetailResult(
@@ -19,7 +16,7 @@ class ResultMappingTest {
             PetDetailResult.EventInfo(
                 id = e.id!!,
                 type = e.type,
-                dateStart = ZonedDateTime.of(e.dateStart, ZoneId.systemDefault())
+                dateStart = e.dateStart
             )
         }
     )
