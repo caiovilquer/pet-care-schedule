@@ -3,6 +3,7 @@ package petcarescheduler.infra.test
 import dev.vilquer.petcarescheduler.PetCareSchedulerApplication
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
@@ -62,5 +63,74 @@ class PetRepositoryIntegrationTest {
         assertEquals("Labrador", fetchedDom.race)
         assertEquals(LocalDate.of(2019, 8, 1), fetchedDom.birthdate)
         assertEquals(TutorId(tutorJpa.id!!), fetchedDom.tutorId)
+    }
+
+    @Test
+    fun `should update pet entity and reflect changes in domain`() {
+        // Persistir tutor inicial
+        val tutorJpa = TutorJpa().apply {
+            firstName = "Ana"
+            email = Email.of("ana@ex.com").getOrThrow()
+            passwordHash = "hash"
+            phoneNumber = PhoneNumber.of("1198888-1111").getOrNull()
+        }
+        tutorRepoJpa.save(tutorJpa)
+
+        // Persistir pet
+        val originalDom = Pet(
+            id = null,
+            name = "Rex",
+            specie = "Cachorro",
+            race = "Labrador",
+            birthdate = LocalDate.of(2019, 8, 1),
+            tutorId = TutorId(tutorJpa.id!!)
+        )
+        val originalJpa = PetMapper.toJpa(originalDom)
+        val savedJpa = petRepoJpa.save(originalJpa)
+
+        // Atualizar domínio
+        val updatedDom = originalDom.copy(
+            id = PetId(savedJpa.id!!),
+            name = "Bolt",
+            race = "Golden"
+        )
+        val updatedJpa = petRepoJpa.save(PetMapper.toJpa(updatedDom, existing = savedJpa))
+
+        // Buscar novamente e verificar consistência
+        val fetchedJpa = petRepoJpa.findById(updatedJpa.id!!).orElseThrow()
+        val fetchedDom = PetMapper.toDomain(fetchedJpa)
+
+        assertEquals(updatedDom.name, fetchedDom.name)
+        assertEquals(updatedDom.race, fetchedDom.race)
+        assertEquals(updatedDom.specie, fetchedDom.specie)
+    }
+
+    @Test
+    fun `should delete pet entity and it should no longer exist`() {
+        // Persistir tutor e pet
+        val tutorJpa = TutorJpa().apply {
+            firstName = "Ana"
+            email = Email.of("ana@ex.com").getOrThrow()
+            passwordHash = "hash"
+            phoneNumber = PhoneNumber.of("1198888-1111").getOrNull()
+        }
+        tutorRepoJpa.save(tutorJpa)
+
+        val petDom = Pet(
+            id = null,
+            name = "Rex",
+            specie = "Cachorro",
+            race = "Labrador",
+            birthdate = LocalDate.of(2019, 8, 1),
+            tutorId = TutorId(tutorJpa.id!!)
+        )
+        val savedJpa = petRepoJpa.save(PetMapper.toJpa(petDom))
+
+        // Excluir pet
+        petRepoJpa.deleteById(savedJpa.id!!)
+
+        // Garantir que não exista mais
+        val result = petRepoJpa.findById(savedJpa.id!!)
+        assertTrue(result.isEmpty)
     }
 }
