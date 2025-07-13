@@ -30,8 +30,8 @@ class EventJpa {
     @Column(nullable = false)
     lateinit var status: Status
 
-    @Column(name = "pet_id", nullable = false)
-    var petId: Long = 0
+    @Column(name = "pet_id", nullable = true)
+    var petId: Long? = null
 
     override fun equals(other: Any?): Boolean =
         this === other || (other is EventJpa && this.id != null && this.id == other.id)

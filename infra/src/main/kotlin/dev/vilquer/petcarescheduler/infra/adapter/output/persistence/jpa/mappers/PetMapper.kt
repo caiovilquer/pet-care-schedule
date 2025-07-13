@@ -23,7 +23,7 @@ object PetMapper {
             specie = jpa.specie,
             race = jpa.race,
             birthdate = jpa.birthdate,
-            tutorId = TutorId(jpa.tutorId),
+            tutorId = jpa.tutorId?.let { TutorId(it) },
             events = jpa.events.map { eventJpa ->
                 Event(
                     id = eventJpa.id?.let { EventId(it) },
@@ -75,7 +75,7 @@ object PetMapper {
 
             // Use forceTutorId if provided, otherwise use the tutorId from domain
             // This is crucial when creating pets within a tutor that hasn't been persisted yet
-            jpa.tutorId = forceTutorId ?: tutorId.value
+            jpa.tutorId = forceTutorId ?: tutorId?.value
         }
 
         mapEvents(domain, jpa, updateDomain)

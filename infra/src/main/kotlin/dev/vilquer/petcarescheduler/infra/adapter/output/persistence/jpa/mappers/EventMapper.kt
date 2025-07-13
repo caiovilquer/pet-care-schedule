@@ -22,7 +22,7 @@ object EventMapper {
         dateStart = jpa.dateStart,
         recurrence = jpa.recurrenceEmb?.toDomain(),
         status = jpa.status,
-        petId = PetId(jpa.petId)
+        petId = jpa.petId?.let { PetId(it) }
     )
 
     /**
@@ -48,7 +48,7 @@ object EventMapper {
             jpa.dateStart = dateStart
             jpa.recurrenceEmb = recurrence?.toEmb()
             jpa.status = status
-            jpa.petId = petId.value
+            jpa.petId = petId?.value
         }
         return jpa
     }
