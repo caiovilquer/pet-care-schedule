@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":usecase"))
 
+    implementation("org.springframework.security:spring-security-crypto")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
