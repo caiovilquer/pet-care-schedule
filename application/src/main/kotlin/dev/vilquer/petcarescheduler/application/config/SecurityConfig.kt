@@ -25,6 +25,7 @@ open class SecurityConfig {
                     .requestMatchers(
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
+                        "/api/v1/public/**",
                         "/api/v1/auth/**"
                     ).permitAll()
                     .anyRequest().authenticated()

@@ -18,12 +18,6 @@ class TutorController(
     private val mapper: TutorDtoMapper
 ) {
 
-    @PostMapping
-    fun create(@RequestBody dto: TutorDtoMapper.CreateRequest): ResponseEntity<TutorCreatedResult> =
-        ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(tutorService.createTutor(mapper.toCreateCommand(dto)))
-
     @GetMapping
     fun list(@RequestParam page: Int = 0,
              @RequestParam size: Int = 20): TutorsPageResult =
