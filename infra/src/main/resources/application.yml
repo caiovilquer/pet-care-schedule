@@ -21,3 +21,20 @@ spring:
   mail:
     host: localhost
     port: 1025
+
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: classpath:ssl/keystore.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+
+jwt:
+  issuer: "petcare-api"
+  secret: "P4s5FraseSuperSecretaComPeloMenos32Chars123"
+
+springdoc:
+  swagger-ui:
+    oauth:
+      clientId: swagger

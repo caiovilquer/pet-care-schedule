@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.external
 
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.toDomain
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.toJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.TutorJpaRepository
@@ -25,6 +26,9 @@ class TutorRepositoryAdapter(
 
     override fun findAll(page: Int, size: Int): List<Tutor> =
         jpa.findAll(PageRequest.of(page, size)).content.map { it.toDomain() }
+
+    override fun findByEmail(email: Email): Tutor? =
+        jpa.findByEmail(email.value)?.toDomain()
 
     override fun countAll(): Long = jpa.count()
 }
