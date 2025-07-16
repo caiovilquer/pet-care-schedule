@@ -5,20 +5,22 @@ import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.result.*
 import org.springframework.stereotype.Service
 
 @Service
 class TutorAppService(
-    private val tutorRepo: TutorRepositoryPort
+    private val tutorRepo: TutorRepositoryPort,
+    private val passwordHash: PasswordHashPort
 ) {
     fun createTutor(cmd: CreateTutorCommand): TutorCreatedResult {
         val tutor = Tutor(
             firstName = cmd.firstName,
             lastName = cmd.lastName,
             email = cmd.email,
-            passwordHash = cmd.rawPassword,
+            passwordHash = passwordHash.hash(cmd.rawPassword),
             phoneNumber = cmd.phoneNumber,
             avatar = cmd.avatar
         )

@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":usecase"))
     implementation(project(":application"))
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     runtimeOnly("com.h2database:h2:2.2.220")
 

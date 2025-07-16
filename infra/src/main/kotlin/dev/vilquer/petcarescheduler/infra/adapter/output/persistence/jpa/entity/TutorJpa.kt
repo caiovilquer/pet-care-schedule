@@ -30,7 +30,6 @@ class TutorJpa {
     var avatar: String? = null
 
     @OneToMany(
-        fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )

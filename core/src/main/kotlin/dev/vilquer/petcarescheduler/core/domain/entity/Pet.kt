@@ -8,7 +8,7 @@ data class Pet(
     val specie: String,
     val race: String?,
     val birthdate: LocalDate?,
-    val tutorId: TutorId,
+    val tutorId: TutorId?,
     val events: List<Event> = mutableListOf()
 )
 

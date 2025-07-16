@@ -22,12 +22,11 @@ class PetJpa {
     @Column(name = "birthdate")
     var birthdate: LocalDate? = null
 
-    @Column(name = "tutor_id", nullable = false)
-    var tutorId: Long = 0
+    @Column(name = "tutor_id", nullable = true)
+    var tutorId: Long? = null
 
 
     @OneToMany(
-        fetch = FetchType.LAZY,
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
