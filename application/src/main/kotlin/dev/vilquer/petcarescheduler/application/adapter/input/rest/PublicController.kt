@@ -1,7 +1,7 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
 import dev.vilquer.petcarescheduler.application.mapper.TutorDtoMapper
-import dev.vilquer.petcarescheduler.application.service.TutorAppService
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CreateTutorUseCase
 import dev.vilquer.petcarescheduler.usecase.result.TutorCreatedResult
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping(value = ["/api/v1/public"])
 class PublicController(
-    private val tutorService: TutorAppService,
+    private val createTutor: CreateTutorUseCase,
     private val mapper: TutorDtoMapper) {
 
     @PostMapping("/signup")
     fun create(@RequestBody dto: TutorDtoMapper.CreateRequest): ResponseEntity<TutorCreatedResult> =
         ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(tutorService.createTutor(mapper.toCreateCommand(dto)))
+            .body(createTutor.execute(mapper.toCreateCommand(dto)))
 }
