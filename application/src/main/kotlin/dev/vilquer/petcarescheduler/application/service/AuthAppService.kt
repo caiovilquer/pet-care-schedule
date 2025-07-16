@@ -6,18 +6,19 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepository
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.AuthUseCase
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import io.jsonwebtoken.JwtBuilder
+import io.jsonwebtoken.Jwts
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.security.authentication.BadCredentialsException
 import java.time.Instant
 import java.util.Date
+import javax.crypto.SecretKey
 
 
 @Service
 open class AuthAppService(
     private val tutorRepo: TutorRepositoryPort,
     private val encoder: PasswordEncoder,
-    private val jwtBuilder: JwtBuilder,
+    private val signingKey: SecretKey,
     private val props: JwtProperties
 ) : AuthUseCase {
 
@@ -25,16 +26,20 @@ open class AuthAppService(
     override fun authenticate(cmd: LoginCommand): String {
 
         val tutor = tutorRepo.findByEmail(cmd.email)
-            ?: throw BadCredentialsException("e-mail ou senha inválidos")
+            ?: throw BadCredentialsException("Invalid e-mail or password")
 
         if (!encoder.matches(cmd.rawPassword, tutor.passwordHash)) {
-            throw BadCredentialsException("e-mail ou senha inválidos")
+            throw BadCredentialsException("Invalid e-mail or password")
         }
 
         val now = Instant.now()
         val expirationTime = now.plus(props.expiration)
 
-        return jwtBuilder
+        val builder = Jwts.builder()
+            .issuer(props.issuer)
+            .signWith(signingKey)
+
+        return builder
             .subject(tutor.id!!.value.toString())
             .claim("name", tutor.firstName)
             .claim("role", "TUTOR")

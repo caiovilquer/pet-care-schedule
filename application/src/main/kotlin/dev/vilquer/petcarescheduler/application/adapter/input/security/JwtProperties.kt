@@ -1,6 +1,5 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.security
 
-import io.jsonwebtoken.JwtBuilder
 import io.jsonwebtoken.JwtParser
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
@@ -34,12 +33,5 @@ open class JwtBeans(private val props: JwtProperties) {
             .requireIssuer(props.issuer)
             .verifyWith(signingKey)
             .build()
-    }
-
-    @Bean
-    open fun jwtBuilder(signingKey: SecretKey): JwtBuilder {
-        return Jwts.builder()
-            .issuer(props.issuer)
-            .signWith(signingKey)
     }
 }

@@ -26,9 +26,13 @@ open class SecurityConfig {
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/api/v1/public/**",
+                        "/h2-console/**",
                         "/api/v1/auth/**"
                     ).permitAll()
                     .anyRequest().authenticated()
+            }
+            .headers { headers ->
+                headers.frameOptions { it.sameOrigin() }
             }
             .oauth2ResourceServer { rs ->
                 rs.jwt { jwt ->

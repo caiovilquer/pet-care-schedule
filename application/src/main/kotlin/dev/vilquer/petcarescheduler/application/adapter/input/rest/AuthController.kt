@@ -1,12 +1,8 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
-import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.command.LoginCommand
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.AuthUseCase
-import dev.vilquer.petcarescheduler.usecase.result.TutorDetailResult
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.*
 
 @RestController
