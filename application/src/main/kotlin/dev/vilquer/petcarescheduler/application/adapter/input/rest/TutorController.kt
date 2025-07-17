@@ -1,7 +1,6 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
 import dev.vilquer.petcarescheduler.application.mapper.TutorDtoMapper
-import dev.vilquer.petcarescheduler.application.service.TutorAppService
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.DeleteTutorCommand
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*

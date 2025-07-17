@@ -25,10 +25,7 @@ class EventRepositoryAdapter(
     override fun findByPetId(petId: PetId): List<Event> =
         jpa.findAllByPetId(petId.value).map { it.toDomain() }
 
-//    override fun findByDate(date: LocalDate): List<Event> =
-//        jpa.findByDateStartBetween(
-//            date.atStartOfDay(ZoneId.systemDefault()),
-//            date.plusDays(1).atStartOfDay(ZoneId.systemDefault())
-//        ).map { it.toDomain() }
-
+    override fun delete(id: EventId) {
+        jpa.deleteById(id.value)
+    }
 }

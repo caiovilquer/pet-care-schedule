@@ -13,6 +13,7 @@ data class Event(
     val petId: PetId?
 ) {
     fun markDone() = copy(status = Status.DONE)
+    fun markPending() = copy(status = Status.PENDING)
 }
 
 @JvmInline value class EventId(val value: Long)

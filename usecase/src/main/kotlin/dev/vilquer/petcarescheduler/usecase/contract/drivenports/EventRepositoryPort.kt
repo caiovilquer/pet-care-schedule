@@ -8,4 +8,5 @@ interface EventRepositoryPort {
     fun save(event: Event): Event
     fun findById(id: EventId): Event?
     fun findByPetId(petId: PetId): List<Event>
+    fun delete(id: EventId)
 }
