@@ -43,3 +43,11 @@ fun Tutor.toDetailResult(): TutorDetailResult = TutorDetailResult(
         )
     }
 )
+
+fun Event.toDetailResult(): EventDetailResult = EventDetailResult(
+    id = id!!,
+    type = type,
+    description = description,
+    dateStart = dateStart,
+    recurrence = recurrence,
+)

@@ -7,6 +7,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
 import org.springframework.stereotype.Service
 
@@ -14,8 +15,14 @@ import org.springframework.stereotype.Service
 class PetAppService(
     private val petRepo: PetRepositoryPort,
     private val tutorRepo: TutorRepositoryPort
-) {
-    fun createPet(cmd: CreatePetCommand): PetCreatedResult {
+):
+    CreatePetUseCase,
+    ListPetsUseCase,
+    UpdatePetUseCase,
+    DeletePetUseCase,
+    GetPetUseCase {
+
+    override fun execute(cmd: CreatePetCommand): PetCreatedResult {
         val tutor = tutorRepo.findById(cmd.tutorId)
             ?: throw IllegalArgumentException("Tutor ${cmd.tutorId.value} not found")
 
@@ -30,13 +37,13 @@ class PetAppService(
         return PetCreatedResult(saved.id!!)
     }
 
-    fun listPets(page: Int, size: Int): PetsPageResult {
+    override fun list(page: Int, size: Int): PetsPageResult {
         val items = petRepo.findAll(page, size).map { it.toSummary() }
         val total = petRepo.countAll()
         return PetsPageResult(items, total, page, size)
     }
 
-    fun updatePet(cmd: UpdatePetCommand): PetDetailResult {
+    override fun execute(cmd: UpdatePetCommand): PetDetailResult {
         val existing = petRepo.findById(cmd.petId)
             ?: throw IllegalArgumentException("Pet ${cmd.petId.value} not found")
         val updated = existing.copy(
@@ -48,11 +55,11 @@ class PetAppService(
         return saved.toDetailResult()
     }
 
-    fun deletePet(cmd: DeletePetCommand) {
+    override fun execute(cmd: DeletePetCommand) {
         petRepo.delete(cmd.petId)
     }
 
-    fun getPet(id: PetId): PetDetailResult =
+    override fun get(id: PetId): PetDetailResult =
         petRepo.findById(id)?.toDetailResult()
             ?: throw IllegalArgumentException("Pet ${id.value} not found")
 }

@@ -7,6 +7,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
 import org.springframework.stereotype.Service
 
@@ -14,8 +15,14 @@ import org.springframework.stereotype.Service
 class TutorAppService(
     private val tutorRepo: TutorRepositoryPort,
     private val passwordHash: PasswordHashPort
-) {
-    fun createTutor(cmd: CreateTutorCommand): TutorCreatedResult {
+):
+    CreateTutorUseCase,
+    ListTutorsUseCase,
+    UpdateTutorUseCase,
+    DeleteTutorUseCase,
+    GetTutorUseCase
+{
+    override fun execute(cmd: CreateTutorCommand): TutorCreatedResult {
         val tutor = Tutor(
             firstName = cmd.firstName,
             lastName = cmd.lastName,
@@ -28,13 +35,13 @@ class TutorAppService(
         return TutorCreatedResult(saved.id!!)
     }
 
-    fun listTutors(page: Int, size: Int): TutorsPageResult {
+    override fun list(page: Int, size: Int): TutorsPageResult {
         val items = tutorRepo.findAll(page, size).map { it.toSummary() }
         val total = tutorRepo.countAll()
         return TutorsPageResult(items, total, page, size)
     }
 
-    fun updateTutor(cmd: UpdateTutorCommand): TutorDetailResult {
+    override fun execute(cmd: UpdateTutorCommand): TutorDetailResult {
         val existing = tutorRepo.findById(cmd.tutorId)
             ?: throw IllegalArgumentException("Tutor ${cmd.tutorId.value} not found")
         val updated = existing.copy(
@@ -47,11 +54,11 @@ class TutorAppService(
         return saved.toDetailResult()
     }
 
-    fun deleteTutor(cmd: DeleteTutorCommand) {
+    override fun execute(cmd: DeleteTutorCommand) {
         tutorRepo.delete(cmd.tutorId)
     }
 
-    fun getTutor(id: TutorId): TutorDetailResult =
+    override fun get(id: TutorId): TutorDetailResult =
         tutorRepo.findById(id)?.toDetailResult()
             ?: throw IllegalArgumentException("Tutor ${id.value} not found")
 }

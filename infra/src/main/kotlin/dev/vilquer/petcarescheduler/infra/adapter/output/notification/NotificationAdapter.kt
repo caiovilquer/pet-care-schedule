@@ -19,7 +19,7 @@ class EmailNotificationAdapter(
         val helper = MimeMessageHelper(message)
         helper.setTo("test@example.com")
         helper.setSubject("PetCareScheduler reminder")
-        helper.setText("Event ${'$'}{event.type} on ${'$'}{event.dateStart}: ${'$'}{event.description}")
+        helper.setText("Event ${event.type} on ${event.dateStart}: ${event.description}")
         mailSender.send(message)
         log.info("Sent fake mail for event {}", event.id)
     }
