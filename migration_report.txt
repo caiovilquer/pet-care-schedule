@@ -1,0 +1,20 @@
+Migration Summary
+=================
+
+Files moved to new bounded-context packages:
+- core/domain primitives -> kernel (Email.kt, PhoneNumber.kt)
+- Tutor and Pet entities -> customer.core.domain.entity
+- Event and Recurrence classes -> scheduling.core.domain
+- Identity auth classes and configs moved under identity.*
+- Customer related commands, ports, results and services moved under customer.*
+- Scheduling related commands, ports, results, services and scheduler moved under scheduling.*
+- NotificationPort and NotificationAdapter moved under notification.*
+- JPA adapters and repositories moved to their respective subdomains (customer or scheduling)
+
+Updated import statements to reference new packages.
+
+Manual TODOs
+------------
+- Review build scripts if any package based component scanning is configured.
+- Verify tests compile; some may require package line adjustments.
+- Remove now-empty old package directories if desired.
