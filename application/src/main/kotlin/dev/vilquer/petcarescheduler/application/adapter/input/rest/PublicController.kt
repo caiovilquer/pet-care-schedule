@@ -14,11 +14,16 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping(value = ["/api/v1/public"])
 class PublicController(
     private val createTutor: CreateTutorUseCase,
-    private val mapper: TutorDtoMapper) {
+    private val mapper: TutorDtoMapper
+) {
 
     @PostMapping("/signup")
     fun create(@RequestBody dto: TutorDtoMapper.CreateRequest): ResponseEntity<TutorCreatedResult> =
-        ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(createTutor.execute(mapper.toCreateCommand(dto)))
+        try {
+            ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(createTutor.execute(mapper.toCreateCommand(dto)))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
 }

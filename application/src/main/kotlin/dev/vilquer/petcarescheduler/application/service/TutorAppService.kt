@@ -15,14 +15,16 @@ import org.springframework.stereotype.Service
 class TutorAppService(
     private val tutorRepo: TutorRepositoryPort,
     private val passwordHash: PasswordHashPort
-):
+) :
     CreateTutorUseCase,
     ListTutorsUseCase,
     UpdateTutorUseCase,
     DeleteTutorUseCase,
-    GetTutorUseCase
-{
+    GetTutorUseCase {
     override fun execute(cmd: CreateTutorCommand): TutorCreatedResult {
+        tutorRepo.findByEmail(cmd.email)?.let {
+            throw IllegalArgumentException("E-mail ${cmd.email.value} already exists")
+        }
         val tutor = Tutor(
             firstName = cmd.firstName,
             lastName = cmd.lastName,
