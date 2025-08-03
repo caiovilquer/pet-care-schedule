@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
 import dev.vilquer.petcarescheduler.core.domain.entity.*
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DeleteEventUseCase
@@ -57,9 +58,21 @@ class EventAppService(
     override fun execute(cmd: UpdateEventCommand): EventDetailResult {
         val existing = eventRepo.findById(cmd.eventId)
             ?: throw IllegalArgumentException("Event ${cmd.eventId.value} not found")
+
+        val updatedRecurrence =
+            if (cmd.frequency != null || cmd.intervalCount != null || cmd.repetitions != null || cmd.finalDate != null) {
+                val base = existing.recurrence ?: Recurrence()
+                base.copy(
+                    frequency = cmd.frequency ?: base.frequency,
+                    intervalCount = cmd.intervalCount ?: base.intervalCount,
+                    repetitions = cmd.repetitions ?: base.repetitions,
+                    finalDate = cmd.finalDate ?: base.finalDate,
+                )
+            } else existing.recurrence
         val updated = existing.copy(
+            type = cmd.type ?: existing.type,
             description = cmd.description ?: existing.description,
-            recurrence = cmd.recurrence ?: existing.recurrence,
+            recurrence = updatedRecurrence,
             dateStart = cmd.dateStart ?: existing.dateStart
         )
         val saved = eventRepo.save(updated)
