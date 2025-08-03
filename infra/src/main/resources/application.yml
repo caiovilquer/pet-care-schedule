@@ -38,3 +38,5 @@ springdoc:
   swagger-ui:
     oauth:
       clientId: swagger
+      clientSecret: swagger-secret
+      scopes: openid,profile,email
