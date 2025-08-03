@@ -1,8 +1,6 @@
 package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity
 
 
-import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
-import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import jakarta.persistence.*
 
 @Entity
@@ -19,13 +17,13 @@ class TutorJpa {
     var lastName: String? = null
 
     @Column(nullable = false, unique = true)
-    var email: Email = Email.of("placeholder@example.com").getOrThrow()
+    lateinit var email: String
 
     @Column(nullable = false)
     lateinit var passwordHash: String
 
-    @Column(nullable = false)
-    var phoneNumber: PhoneNumber? = null
+    @Column(nullable = true)
+    var phoneNumber: String? = null
 
     var avatar: String? = null
 

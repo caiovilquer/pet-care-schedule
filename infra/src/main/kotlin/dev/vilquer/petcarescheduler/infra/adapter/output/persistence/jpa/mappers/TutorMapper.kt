@@ -4,6 +4,8 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
 
@@ -24,9 +26,9 @@ object TutorMapper {
             id = tutorId,
             firstName = jpa.firstName,
             lastName = jpa.lastName,
-            email = jpa.email,
+            email = Email.of(jpa.email).getOrThrow(),
             passwordHash = jpa.passwordHash,
-            phoneNumber = jpa.phoneNumber,
+            phoneNumber = jpa.phoneNumber?.let { PhoneNumber.of(it).getOrThrow()},
             avatar = jpa.avatar,
             pets = jpa.pets.map { petJpa ->
                 Pet(
@@ -59,9 +61,9 @@ object TutorMapper {
             jpa.id = id?.value
             jpa.firstName = firstName
             jpa.lastName = lastName
-            jpa.email = email
+            jpa.email = email.value
             jpa.passwordHash = passwordHash
-            jpa.phoneNumber = phoneNumber
+            jpa.phoneNumber = phoneNumber?.e164
             jpa.avatar = avatar
         }
 

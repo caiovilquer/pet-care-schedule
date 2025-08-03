@@ -4,8 +4,6 @@ import dev.vilquer.petcarescheduler.PetCareSchedulerApplication
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
-import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
-import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.PetMapper
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.PetJpaRepository
@@ -32,9 +30,9 @@ class PetRepositoryIntegrationTest {
         // 1) Cria e persiste um tutor
         val tutorJpa = TutorJpa().apply {
             firstName = "Ana"
-            email = Email.of("ana@ex.com").getOrThrow()
+            email = "ana@ex.com"
             passwordHash = "hash"
-            phoneNumber = PhoneNumber.of("1198888-1111").getOrNull()
+            phoneNumber = "1198888-1111"
         }
         tutorRepoJpa.save(tutorJpa)
 
@@ -70,9 +68,9 @@ class PetRepositoryIntegrationTest {
         // Persistir tutor inicial
         val tutorJpa = TutorJpa().apply {
             firstName = "Ana"
-            email = Email.of("ana@ex.com").getOrThrow()
+            email = "ana@ex.com"
             passwordHash = "hash"
-            phoneNumber = PhoneNumber.of("1198888-1111").getOrNull()
+            phoneNumber = "1198888-1111"
         }
         tutorRepoJpa.save(tutorJpa)
 
@@ -110,9 +108,9 @@ class PetRepositoryIntegrationTest {
         // Persistir tutor e pet
         val tutorJpa = TutorJpa().apply {
             firstName = "Ana"
-            email = Email.of("ana@ex.com").getOrThrow()
+            email = "ana@ex.com"
             passwordHash = "hash"
-            phoneNumber = PhoneNumber.of("1198888-1111").getOrNull()
+            phoneNumber = "1198888-1111"
         }
         tutorRepoJpa.save(tutorJpa)
 

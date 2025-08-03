@@ -5,8 +5,6 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Event
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.Status
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
-import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
-import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.EventMapper
@@ -43,9 +41,9 @@ class EventMapperIntegrationTest {
         // Create and save test tutor
         val tutor = TutorJpa().apply {
             firstName = "Ana"
-            email = Email.of("ana@ex.com").getOrThrow()
+            email = "ana@ex.com"
             passwordHash = "pwd"
-            phoneNumber = PhoneNumber.of("1198888-1111").getOrNull()
+            phoneNumber = "1198888-1111"
         }
         tutorRepository.save(tutor)
 

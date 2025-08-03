@@ -67,7 +67,7 @@ class TutorMapperTest {
             assertNull(id)
             assertEquals("Mariana", firstName)
             assertEquals("Costa", lastName)
-            assertEquals("mari@ex.com", email.toString())
+            assertEquals("mari@ex.com", email)
             assertEquals("senhaX", passwordHash)
             assertEquals(PhoneNumber.of("55588881111").getOrNull(), phoneNumber)
             assertNull(avatar)
@@ -99,7 +99,7 @@ class TutorMapperTest {
             assertEquals(5L, id)
             assertEquals("Ana Paula", firstName)
             assertEquals("Lima", lastName)
-            assertEquals("ana.paula@ex.com", email.toString())
+            assertEquals("ana.paula@ex.com", email)
             assertEquals("newHash", passwordHash)
             assertEquals(PhoneNumber.of("55577773333").getOrNull(), phoneNumber)
             assertEquals("new.png", avatar)
@@ -126,9 +126,9 @@ class TutorMapperTest {
             id = TUTOR_ID
             firstName = "Carlos"
             lastName = "Silva"
-            email = Email.of("carlos@ex.com").getOrThrow()
+            email = "carlos@ex.com"
             passwordHash = "abc123"
-            phoneNumber = PhoneNumber.of("55599990000").getOrNull()
+            phoneNumber = "55599990000"
             avatar = "avatar.png"
         }
 
@@ -171,9 +171,8 @@ class TutorMapperTest {
             id = 5
             firstName = "Ana"
             lastName = "Lima"
-            email = Email.of("ana@ex.com").getOrThrow()
-            passwordHash = "oldHash"
-            phoneNumber = PhoneNumber.of("55577772222").getOrNull()
+            email = "ana@ex.com"
+            phoneNumber = "55577772222"
             avatar = "old.png"
 
             pets.add(PetJpa().apply {

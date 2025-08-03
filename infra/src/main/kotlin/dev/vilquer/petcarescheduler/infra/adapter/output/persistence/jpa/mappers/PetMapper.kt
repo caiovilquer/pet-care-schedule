@@ -1,6 +1,10 @@
 package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers
 
-import dev.vilquer.petcarescheduler.core.domain.entity.*
+import dev.vilquer.petcarescheduler.core.domain.entity.Event
+import dev.vilquer.petcarescheduler.core.domain.entity.EventId
+import dev.vilquer.petcarescheduler.core.domain.entity.Pet
+import dev.vilquer.petcarescheduler.core.domain.entity.PetId
+import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.EventJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
 
