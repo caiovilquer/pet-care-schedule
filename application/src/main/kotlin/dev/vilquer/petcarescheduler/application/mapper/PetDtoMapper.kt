@@ -3,22 +3,25 @@ package dev.vilquer.petcarescheduler.application.mapper
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Past
+import jakarta.validation.constraints.Positive
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 
 @Component
 class PetDtoMapper {
     data class CreateRequest(
-        val name: String,
-        val specie: String,
+        @field:NotBlank val name: String,
+        @field:NotBlank val specie: String,
         val race: String?,
-        val birthdate: String,
-        val tutorId: Long
+        @field:Past val birthdate: LocalDate,
+        @field:Positive val tutorId: Long
     )
     data class UpdateRequest(
         val name: String?,
         val race: String?,
-        val birthdate: String?
+        @field:Past val birthdate: LocalDate?
     )
 
     // === converters ===
@@ -27,7 +30,7 @@ class PetDtoMapper {
             name      = dto.name,
             specie    = dto.specie,
             race      = dto.race,
-            birthdate = LocalDate.parse(dto.birthdate),
+            birthdate = dto.birthdate,
             tutorId   = TutorId(dto.tutorId)
         )
 
@@ -36,6 +39,6 @@ class PetDtoMapper {
             petId      = PetId(id),
             name       = dto.name,
             race       = dto.race,
-            birthdate  = dto.birthdate?.let(LocalDate::parse)
+            birthdate = dto.birthdate
         )
 }

@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.application.adapter.input.rest
 import dev.vilquer.petcarescheduler.application.mapper.TutorDtoMapper
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CreateTutorUseCase
 import dev.vilquer.petcarescheduler.usecase.result.TutorCreatedResult
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -18,7 +19,7 @@ class PublicController(
 ) {
 
     @PostMapping("/signup")
-    fun create(@RequestBody dto: TutorDtoMapper.CreateRequest): ResponseEntity<TutorCreatedResult> =
+    fun create(@Valid @RequestBody dto: TutorDtoMapper.CreateRequest): ResponseEntity<TutorCreatedResult> =
         try {
             ResponseEntity
                 .status(HttpStatus.CREATED)

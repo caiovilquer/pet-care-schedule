@@ -10,6 +10,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivingports.ToggleEventUse
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.UpdateEventUseCase
 import dev.vilquer.petcarescheduler.usecase.result.EventDetailResult
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
+import jakarta.validation.Valid
 import org.springframework.http.*
 import org.springframework.web.bind.annotation.*
 
@@ -23,7 +24,7 @@ class EventController(
     private val mapper: EventDtoMapper
 ) {
     @PostMapping
-    fun register(@RequestBody dto: EventDtoMapper.RegisterRequest): ResponseEntity<EventRegisteredResult> =
+    fun register(@Valid @RequestBody dto: EventDtoMapper.RegisterRequest): ResponseEntity<EventRegisteredResult> =
         ResponseEntity.status(HttpStatus.CREATED)
             .body(registerEvent.execute(mapper.toRegisterCommand(dto)))
 
@@ -35,7 +36,7 @@ class EventController(
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
-        @RequestBody dto: EventDtoMapper.UpdateRequest
+        @Valid @RequestBody dto: EventDtoMapper.UpdateRequest
     ): EventDetailResult =
         mapper.toUpdateCommand(id, dto).let(updateEvent::execute)
 

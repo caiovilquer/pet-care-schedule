@@ -8,6 +8,7 @@ import dev.vilquer.petcarescheduler.usecase.result.*
 import org.springframework.http.*
 import org.springframework.web.bind.annotation.*
 import dev.vilquer.petcarescheduler.usecase.result.TutorDetailResult
+import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 
@@ -29,7 +30,7 @@ class TutorController(
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
-        @RequestBody dto: TutorDtoMapper.UpdateRequest
+        @Valid @RequestBody dto: TutorDtoMapper.UpdateRequest
     ): TutorDetailResult =
         mapper.toUpdateCommand(id, dto).let(updateTutor::execute)
 

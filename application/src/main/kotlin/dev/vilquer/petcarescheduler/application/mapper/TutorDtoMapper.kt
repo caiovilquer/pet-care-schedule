@@ -1,20 +1,22 @@
 package dev.vilquer.petcarescheduler.application.mapper
 
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
-import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email as EmailVO
 import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.usecase.command.*
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
 import org.springframework.stereotype.Component
 
 @Component
 class TutorDtoMapper {
 
     data class CreateRequest(
-        val firstName:   String,
+        @field:NotBlank val firstName:   String,
         val lastName:    String?,
-        val email:       String,
-        val rawPassword: String,
-        val phoneNumber: String? = null,
+        @field:Email @field:NotBlank val email: String,
+        @field:NotBlank val rawPassword: String,
+        val phoneNumber: String?,
         val avatar:      String? = null
     )
 
@@ -31,7 +33,7 @@ class TutorDtoMapper {
         CreateTutorCommand(
             firstName   = dto.firstName,
             lastName    = dto.lastName,
-            email       = Email.of(dto.email).getOrThrow(),
+            email       = EmailVO.of(dto.email).getOrThrow(),
             rawPassword = dto.rawPassword,
             phoneNumber = dto.phoneNumber?.let { PhoneNumber.of(it).getOrThrow() },
             avatar      = dto.avatar

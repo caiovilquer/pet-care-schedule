@@ -5,6 +5,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
+import jakarta.validation.Valid
 import org.springframework.http.*
 import org.springframework.web.bind.annotation.*
 
@@ -20,7 +21,7 @@ class PetController(
 ) {
 
     @PostMapping
-    fun create(@RequestBody dto: PetDtoMapper.CreateRequest): ResponseEntity<PetCreatedResult> =
+    fun create(@Valid @RequestBody dto: PetDtoMapper.CreateRequest): ResponseEntity<PetCreatedResult> =
         ResponseEntity.status(HttpStatus.CREATED)
             .body(createPet.execute(mapper.toCreateCommand(dto)))
 
@@ -33,7 +34,7 @@ class PetController(
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
-        @RequestBody dto: PetDtoMapper.UpdateRequest
+        @Valid @RequestBody dto: PetDtoMapper.UpdateRequest
     ): PetDetailResult =
         mapper.toUpdateCommand(id, dto).let(updatePet::execute)
 

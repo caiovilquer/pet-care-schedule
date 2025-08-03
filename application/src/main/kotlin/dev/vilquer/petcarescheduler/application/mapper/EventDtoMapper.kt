@@ -7,6 +7,9 @@ import dev.vilquer.petcarescheduler.core.domain.valueobject.Frequency
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
 import dev.vilquer.petcarescheduler.usecase.command.UpdateEventCommand
+import jakarta.validation.constraints.FutureOrPresent
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Positive
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
@@ -14,23 +17,23 @@ import java.time.LocalDateTime
 class EventDtoMapper {
 
     data class RegisterRequest(
-        val petId: Long,
-        val type: String,          // "VACCINE", "BATH"…
-        val description: String,
+        @field:Positive val petId: Long,
+        @field:NotBlank val type: String,          // "VACCINE", "BATH"…
+        @field:NotBlank val description: String,
         /** ISO-8601 (ex.: 2025-07-01T09:00:00Z) */
-        val dateStart: LocalDateTime,
+        @field:FutureOrPresent val dateStart: LocalDateTime,
         val frequency: Frequency?,
-        val intervalCount: Long = 1,
-        val repetitions: Int? = null,
-        val finalDate: LocalDateTime? = null
+        @field:Positive val intervalCount: Long = 1,
+        @field:Positive val repetitions: Int? = null,
+        @field:FutureOrPresent val finalDate: LocalDateTime? = null
     )
     data class UpdateRequest(
-        val description: String,
-        val dateStart: LocalDateTime,
+        @field:NotBlank val description: String,
+        @field:FutureOrPresent val dateStart: LocalDateTime,
         val frequency: Frequency?,
-        val intervalCount: Long = 1,
-        val repetitions: Int? = null,
-        val finalDate: LocalDateTime? = null
+        @field:Positive val intervalCount: Long = 1,
+        @field:Positive val repetitions: Int? = null,
+        @field:FutureOrPresent val finalDate: LocalDateTime? = null
     )
 
     fun toRegisterCommand(dto: RegisterRequest): RegisterEventCommand =
