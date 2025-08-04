@@ -1,9 +1,6 @@
 package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers
 
-import dev.vilquer.petcarescheduler.core.domain.entity.Pet
-import dev.vilquer.petcarescheduler.core.domain.entity.PetId
-import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
-import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
@@ -37,7 +34,8 @@ object TutorMapper {
                     specie = petJpa.specie,
                     race = petJpa.race,
                     birthdate = petJpa.birthdate,
-                    tutorId = tutorId
+                    tutorId = tutorId,
+                    events = petJpa.events.map { e -> e.toDomain() }
                 )
             }
         )
@@ -113,32 +111,6 @@ object TutorMapper {
         }
 
         jpa.pets.addAll(petsToAdd)
-    }
-
-    /**
-     * Updates a domain entity with IDs from a persisted JPA entity.
-     * This should be called after the JPA entity has been persisted.
-     *
-     * @param domain The domain entity to update
-     * @param jpa The persisted JPA entity with generated IDs
-     */
-    fun updateDomainWithGeneratedIds(domain: Tutor, jpa: TutorJpa) {
-        // Update tutor ID using reflection since Tutor is immutable
-        val idField = Tutor::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(domain, jpa.id?.let { TutorId(it) })
-
-        val domainPets = domain.pets.toMutableList()
-        val jpaPets = jpa.pets.toList()
-
-        if (domainPets.size == jpaPets.size) {
-            domainPets.forEachIndexed { index, pet ->
-                val petJpa = jpaPets[index]
-                val petIdField = Pet::class.java.getDeclaredField("id")
-                petIdField.isAccessible = true
-                petIdField.set(pet, petJpa.id?.let { PetId(it) })
-            }
-        }
     }
 }
 

@@ -26,4 +26,16 @@ class PetRepositoryAdapter(
         jpa.findAll(PageRequest.of(page, size)).content.map { it.toDomain() }
 
     override fun countAll(): Long = jpa.count()
+
+    override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Pet> =
+        jpa.findAllByTutorId(tutorId.value, PageRequest.of(page, size)).content.map { it.toDomain() }
+
+    override fun countByTutor(tutorId: TutorId): Long =
+        jpa.countByTutorId(tutorId.value)
+
+    override fun findByIdAndTutor(id: PetId, tutorId: TutorId): Pet? =
+        jpa.findByIdAndTutorId(id.value, tutorId.value)?.toDomain()
+
+    override fun existsForTutor(id: PetId, tutorId: TutorId): Boolean =
+        jpa.existsByIdAndTutorId(id.value, tutorId.value)
 }
