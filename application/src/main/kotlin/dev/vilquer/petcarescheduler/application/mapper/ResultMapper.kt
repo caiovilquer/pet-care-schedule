@@ -55,6 +55,7 @@ fun Event.toDetailResult(): EventDetailResult = EventDetailResult(
 fun Event.toSummary(): EventSummary = EventSummary(
     id = id!!,
     type = type,
+    status = status,
     description = description,
     dateStart = dateStart,
     petId = petId!!
