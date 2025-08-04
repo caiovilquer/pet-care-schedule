@@ -28,9 +28,10 @@ class EventDtoMapper {
         @field:FutureOrPresent val finalDate: LocalDateTime? = null
     )
     data class UpdateRequest(
-        @field:NotBlank val description: String,
-        @field:FutureOrPresent val dateStart: LocalDateTime,
-        val frequency: Frequency?,
+        val description: String? = null,
+        @field:FutureOrPresent val dateStart: LocalDateTime? = null,
+        val frequency: Frequency? = null,
+        val type: EventType? = null,
         @field:Positive val intervalCount: Long = 1,
         @field:Positive val repetitions: Int? = null,
         @field:FutureOrPresent val finalDate: LocalDateTime? = null
@@ -46,9 +47,13 @@ class EventDtoMapper {
         )
     fun toUpdateCommand(id: Long, dto: UpdateRequest): UpdateEventCommand =
         UpdateEventCommand(
-            eventId      = EventId(id),
-            dateStart   = dto.dateStart,
-            description = dto.description,
-            recurrence = if (dto.frequency != null) Recurrence(dto.frequency, dto.intervalCount ,dto.repetitions, dto.finalDate) else null
+            eventId       = EventId(id),
+            dateStart     = dto.dateStart,
+            type          = dto.type,
+            description   = dto.description,
+            frequency     = dto.frequency,
+            intervalCount = dto.intervalCount,
+            repetitions   = dto.repetitions,
+            finalDate     = dto.finalDate,
         )
 }

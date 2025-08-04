@@ -1,5 +1,8 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
+import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentJwt
+import dev.vilquer.petcarescheduler.application.adapter.input.security.tutorId
+import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.application.mapper.TutorDtoMapper
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.DeleteTutorCommand
@@ -10,7 +13,6 @@ import org.springframework.web.bind.annotation.*
 import dev.vilquer.petcarescheduler.usecase.result.TutorDetailResult
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.oauth2.jwt.Jwt
 
 @RestController
 @RequestMapping("/api/v1/tutors")
@@ -30,18 +32,23 @@ class TutorController(
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
-        @Valid @RequestBody dto: TutorDtoMapper.UpdateRequest
-    ): TutorDetailResult =
-        mapper.toUpdateCommand(id, dto).let(updateTutor::execute)
+        @Valid @RequestBody dto: TutorDtoMapper.UpdateRequest,
+        @AuthenticationPrincipal jwt: CurrentJwt
+    ): TutorDetailResult {
+        if (id != jwt.tutorId()) throw ForbiddenException("Não pode alterar outro tutor")
+        return mapper.toUpdateCommand(id, dto).let(updateTutor::execute)
+    }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun delete(@PathVariable id: Long) =
+    fun delete(@PathVariable id: Long, @AuthenticationPrincipal jwt: CurrentJwt) {
+        if (id != jwt.tutorId()) throw ForbiddenException("Não pode alterar outro tutor")
         deleteTutor.execute(DeleteTutorCommand(TutorId(id)))
+    }
 
     @GetMapping("/me")
-    fun myProfile(@AuthenticationPrincipal jwt: Jwt): TutorDetailResult {
-        val id = TutorId(jwt.subject.toLong())
+    fun myProfile(@AuthenticationPrincipal jwt: CurrentJwt): TutorDetailResult {
+        val id = TutorId(jwt.tutorId())
         return getTutor.get(id)
     }
 }

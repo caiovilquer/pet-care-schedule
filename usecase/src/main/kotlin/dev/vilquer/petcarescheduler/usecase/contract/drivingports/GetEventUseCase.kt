@@ -1,9 +1,9 @@
 package dev.vilquer.petcarescheduler.usecase.contract.drivingports
 
+import dev.vilquer.petcarescheduler.core.domain.entity.EventId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
-import dev.vilquer.petcarescheduler.usecase.command.UpdateEventCommand
 import dev.vilquer.petcarescheduler.usecase.result.EventDetailResult
 
-fun interface UpdateEventUseCase {
-    fun execute(cmd: UpdateEventCommand, tutorId: TutorId): EventDetailResult
+fun interface GetEventUseCase {
+    fun get(id: EventId, tutorId: TutorId): EventDetailResult
 }

@@ -16,7 +16,7 @@ class TutorDtoMapper {
         val lastName:    String?,
         @field:Email @field:NotBlank val email: String,
         @field:NotBlank val rawPassword: String,
-        val phoneNumber: String?,
+        val phoneNumber: PhoneNumber?,
         val avatar:      String? = null
     )
 
@@ -35,7 +35,7 @@ class TutorDtoMapper {
             lastName    = dto.lastName,
             email       = EmailVO.of(dto.email).getOrThrow(),
             rawPassword = dto.rawPassword,
-            phoneNumber = dto.phoneNumber?.let { PhoneNumber.of(it).getOrThrow() },
+            phoneNumber = dto.phoneNumber,
             avatar      = dto.avatar
         )
 
