@@ -125,50 +125,6 @@ object PetMapper {
 
         jpa.events.addAll(eventsToAdd)
     }
-
-    /**
-     * Updates a domain entity with IDs from a persisted JPA entity.
-     * This should be called after the JPA entity has been persisted.
-     *
-     * @param domain The domain entity to update
-     * @param jpa The persisted JPA entity with generated IDs
-     */
-    fun updateDomainWithGeneratedIds(domain: Pet, jpa: PetJpa) {
-        // Update pet ID using reflection since Pet is immutable
-        val idField = Pet::class.java.getDeclaredField("id")
-        idField.isAccessible = true
-        idField.set(domain, jpa.id?.let { PetId(it) })
-
-        // Now that we have a pet ID, we can map the events
-        if (domain.events.isNotEmpty() && jpa.events.isEmpty()) {
-            val updatedJpa = toJpa(domain, jpa)
-
-            // After adding events, update their IDs in the domain model
-            val domainEvents = domain.events.toMutableList()
-            val jpaEvents = updatedJpa.events.toList()
-
-            if (domainEvents.size == jpaEvents.size) {
-                domainEvents.forEachIndexed { index, event ->
-                    val eventJpa = jpaEvents[index]
-                    val eventIdField = Event::class.java.getDeclaredField("id")
-                    eventIdField.isAccessible = true
-                    eventIdField.set(event, eventJpa.id?.let { EventId(it) })
-                }
-            }
-        } else {
-            val domainEvents = domain.events.toMutableList()
-            val jpaEvents = jpa.events.toList()
-
-            if (domainEvents.size == jpaEvents.size) {
-                domainEvents.forEachIndexed { index, event ->
-                    val eventJpa = jpaEvents[index]
-                    val eventIdField = Event::class.java.getDeclaredField("id")
-                    eventIdField.isAccessible = true
-                    eventIdField.set(event, eventJpa.id?.let { EventId(it) })
-                }
-            }
-        }
-    }
 }
 
 // Extension functions for more convenient use within the codebase

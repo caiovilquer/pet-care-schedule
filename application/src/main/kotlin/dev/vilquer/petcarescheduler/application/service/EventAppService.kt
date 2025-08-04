@@ -2,16 +2,15 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
+import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DeleteEventUseCase
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.ToggleEventUseCase
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.RegisterEventUseCase
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.UpdateEventUseCase
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.EventDetailResult
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
+import dev.vilquer.petcarescheduler.usecase.result.EventsPageResult
 import org.springframework.stereotype.Service
 
 @Service
@@ -24,7 +23,10 @@ class EventAppService(
     RegisterEventUseCase,
     DeleteEventUseCase,
     UpdateEventUseCase,
-    ToggleEventUseCase
+    ToggleEventUseCase,
+    ListEventsUseCase,
+    ListPetEventsUseCase,
+    GetEventUseCase
 
 {
     override fun execute(cmd: RegisterEventCommand, tutorId: TutorId): EventRegisteredResult {
@@ -83,6 +85,21 @@ class EventAppService(
         val saved = eventRepo.save(updated)
         return saved.toDetailResult()
     }
+    override fun list(tutorId: TutorId, page: Int, size: Int): EventsPageResult {
+        val items = eventRepo.listByTutor(tutorId, page, size).map { it.toSummary() }
+        val total = eventRepo.countByTutor(tutorId)
+        return EventsPageResult(items, total, page, size)
+    }
+
+    override fun list(petId: PetId, tutorId: TutorId): List<EventDetailResult> {
+        if (!petRepo.existsForTutor(petId, tutorId))
+            throw ForbiddenException("Não pode listar eventos de pet de outro tutor")
+        return eventRepo.findByPetId(petId).map { it.toDetailResult() }
+    }
+
+    override fun get(id: EventId, tutorId: TutorId): EventDetailResult =
+        eventRepo.findByIdAndTutor(id, tutorId)?.toDetailResult()
+            ?: throw IllegalArgumentException("Event ${id.value} not found")
 
     fun sendRemindersForToday() {
         val today = clock.now().toLocalDate()

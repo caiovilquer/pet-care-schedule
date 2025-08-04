@@ -4,15 +4,14 @@ import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentJw
 import dev.vilquer.petcarescheduler.application.adapter.input.security.tutorId
 import dev.vilquer.petcarescheduler.application.mapper.EventDtoMapper
 import dev.vilquer.petcarescheduler.core.domain.entity.EventId
+import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.DeleteEventCommand
 import dev.vilquer.petcarescheduler.usecase.command.ToggleEventCommand
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DeleteEventUseCase
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.RegisterEventUseCase
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.ToggleEventUseCase
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.UpdateEventUseCase
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.EventDetailResult
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
+import dev.vilquer.petcarescheduler.usecase.result.EventsPageResult
 import jakarta.validation.Valid
 import org.springframework.http.*
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -25,6 +24,9 @@ class EventController(
     private val deleteEvent: DeleteEventUseCase,
     private val updateEvent: UpdateEventUseCase,
     private val toggleEvent: ToggleEventUseCase,
+    private val listEvents: ListEventsUseCase,
+    private val listPetEvents: ListPetEventsUseCase,
+    private val getEvent: GetEventUseCase,
     private val mapper: EventDtoMapper
 ) {
     @PostMapping
@@ -58,5 +60,30 @@ class EventController(
     fun done(@PathVariable id: Long, @AuthenticationPrincipal jwt: CurrentJwt) {
         val tutorId = TutorId(jwt.tutorId())
         toggleEvent.execute(ToggleEventCommand(EventId(id)), tutorId)
+    }
+
+    @GetMapping
+    fun list(
+        @AuthenticationPrincipal jwt: CurrentJwt,
+        @RequestParam page: Int = 0,
+        @RequestParam size: Int = 20
+    ): EventsPageResult {
+        val tutorId = TutorId(jwt.tutorId())
+        return listEvents.list(tutorId, page, size)
+    }
+
+    @GetMapping("/pet/{petId}")
+    fun listByPet(
+        @PathVariable petId: Long,
+        @AuthenticationPrincipal jwt: CurrentJwt
+    ): List<EventDetailResult> {
+        val tutorId = TutorId(jwt.tutorId())
+        return listPetEvents.list(PetId(petId), tutorId)
+    }
+
+    @GetMapping("/{id}")
+    fun getById(@PathVariable id: Long, @AuthenticationPrincipal jwt: CurrentJwt): EventDetailResult {
+        val tutorId = TutorId(jwt.tutorId())
+        return getEvent.get(EventId(id), tutorId)
     }
 }
