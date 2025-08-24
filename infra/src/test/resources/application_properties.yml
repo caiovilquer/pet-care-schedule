@@ -1,17 +1,26 @@
-spring:
-  datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
 
-  h2:
-    console:
-      enabled: true
+  spring:
+    datasource:
+      url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+      username: sa
+      password:
+      driver-class-name: org.h2.Driver
+    jpa:
+      hibernate:
+        ddl-auto: create-drop
+      show-sql: true
+      properties:
+        hibernate:
+          format_sql: true
+
+    h2:
+      console:
+        enabled: true
+
+  server:
+    ssl:
+      enabled: false
+
+  jwt:
+    issuer: test-issuer
+    secret: test-secret-which-is-long-enough-for-hmac

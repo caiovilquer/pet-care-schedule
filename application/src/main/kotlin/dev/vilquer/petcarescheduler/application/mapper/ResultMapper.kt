@@ -50,11 +50,13 @@ fun Event.toDetailResult(): EventDetailResult = EventDetailResult(
     description = description,
     dateStart = dateStart,
     recurrence = recurrence,
+    status = status,
 )
 
 fun Event.toSummary(): EventSummary = EventSummary(
     id = id!!,
     type = type,
+    status = status,
     description = description,
     dateStart = dateStart,
     petId = petId!!
