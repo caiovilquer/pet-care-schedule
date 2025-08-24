@@ -6,33 +6,29 @@ spring:
     password:
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
   flyway:
-    enabled: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    enabled: true
 
   mail:
-    host: localhost
-    port: 1025
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
 
 server:
   port: 8443
   ssl:
     enabled: true
-    key-store: classpath:ssl/keystore.p12
-    key-store-password: changeit
+    key-store: ${SERVER_SSL_KEY_STORE}
+    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD}
     key-store-type: PKCS12
 
 jwt:
-  issuer: "petcare-api"
-  secret: "P4s5FraseSuperSecretaComPeloMenos32Chars123"
+  issuer: ${JWT_ISSUER}
+  secret: ${JWT_SECRET}
 
 springdoc:
   swagger-ui:
