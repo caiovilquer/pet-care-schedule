@@ -50,6 +50,7 @@ fun Event.toDetailResult(): EventDetailResult = EventDetailResult(
     description = description,
     dateStart = dateStart,
     recurrence = recurrence,
+    status = status,
 )
 
 fun Event.toSummary(): EventSummary = EventSummary(
