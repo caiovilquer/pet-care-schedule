@@ -13,7 +13,7 @@ open class CorsConfig : WebMvcConfigurer {
             ?.toTypedArray()
             ?: arrayOf("http://localhost:4200")
         registry.addMapping("/api/**")
-            .allowedOrigins("http://localhost:4200")
+            .allowedOrigins(*origins)
             .allowedMethods("*")
     }
 }
