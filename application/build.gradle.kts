@@ -1,11 +1,13 @@
 plugins {
-    kotlin("jvm") version "1.9.25"
-    kotlin("kapt") version "1.9.25"
-    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm")
+    kotlin("kapt")
+    kotlin("plugin.spring")
+    id("io.spring.dependency-management")
+    `java-library`
 }
-
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+kotlin { jvmToolchain(17) }
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions { jvmTarget = "17" }
 }
 
 dependencyManagement {
