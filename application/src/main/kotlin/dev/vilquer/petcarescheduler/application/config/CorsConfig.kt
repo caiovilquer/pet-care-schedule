@@ -11,9 +11,9 @@ open class CorsConfig : WebMvcConfigurer {
             ?.split(",")
             ?.map(String::trim)
             ?.toTypedArray()
-            ?: arrayOf("http://localhost:3000")
+            ?: arrayOf("http://localhost:4200")
         registry.addMapping("/api/**")
-            .allowedOrigins(*origins)
+            .allowedOrigins("http://localhost:4200")
             .allowedMethods("*")
     }
 }

@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}  # usa env, se não achar, cai em "dev"
   datasource:
     url: jdbc:h2:mem:petcare;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -17,6 +19,8 @@ spring:
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
 
 server:
   port: 8443
@@ -31,8 +35,7 @@ jwt:
   secret: ${JWT_SECRET}
 
 springdoc:
+  api-docs:
+    enabled: false
   swagger-ui:
-    oauth:
-      clientId: swagger
-      clientSecret: swagger-secret
-      scopes: openid,profile,email
+    enabled: false
