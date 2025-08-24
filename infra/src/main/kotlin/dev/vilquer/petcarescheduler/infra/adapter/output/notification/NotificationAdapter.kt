@@ -5,6 +5,8 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPor
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.mail.MailException
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Component
@@ -14,6 +16,7 @@ class EmailNotificationAdapter(
     private val mailSender: JavaMailSender,
     private val tutorRepo: TutorRepositoryPort,
     private val petRepo: PetRepositoryPort,
+    @param:Value("\${app.mail.from}") private val from: String,
 ) : NotificationPort {
 
     private val log = LoggerFactory.getLogger(EmailNotificationAdapter::class.java)
@@ -31,11 +34,16 @@ class EmailNotificationAdapter(
 
         val message = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(message)
+        helper.setFrom(from)
         helper.setTo(tutorEmail)
         helper.setSubject("PetCareScheduler reminder")
         helper.setText(renderTemplate(event))
-        mailSender.send(message)
-        log.info("Sent fake mail for event {}", event.id)
+        try {
+            mailSender.send(message)
+            log.info("Sent mail for event {} to {}", event.id, tutorEmail)
+        } catch (ex: MailException) {
+            log.error("Failed to send mail for event {}", event.id, ex)
+        }
     }
 
     private fun renderTemplate(event: Event) =
