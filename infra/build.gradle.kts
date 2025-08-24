@@ -1,3 +1,5 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
     kotlin("jvm") version "1.9.25"
     kotlin("kapt") version "1.9.25"
@@ -52,4 +54,11 @@ java {
 }
 kotlin {
     jvmToolchain(21)
+}
+tasks.withType<BootJar>().configureEach {
+    archiveFileName.set("petcare.jar")
+}
+
+springBoot {
+    mainClass.set("dev.vilquer.petcarescheduler.PetCareSchedulerApplicationKt")
 }
