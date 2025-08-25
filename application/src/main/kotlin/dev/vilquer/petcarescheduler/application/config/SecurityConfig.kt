@@ -14,11 +14,12 @@ import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
-open class SecurityConfig {
+class SecurityConfig {
 
     @Bean
-    open fun filterChain(http: HttpSecurity, jwtDecoder: JwtDecoder): SecurityFilterChain {
+    fun filterChain(http: HttpSecurity, jwtDecoder: JwtDecoder): SecurityFilterChain {
         http
+            .cors { }
             .csrf { it.disable() }
             .authorizeHttpRequests { auth ->
                 auth
@@ -42,7 +43,7 @@ open class SecurityConfig {
     }
 
     @Bean
-    open fun jwtDecoder(jwtParser: JwtParser): JwtDecoder {
+    fun jwtDecoder(jwtParser: JwtParser): JwtDecoder {
         return JwtDecoder { token ->
             try {
                 val jws = jwtParser.parseSignedClaims(token)

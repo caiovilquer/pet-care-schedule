@@ -1,19 +1,35 @@
 package dev.vilquer.petcarescheduler.application.config
 
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.servlet.config.annotation.CorsRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import org.springframework.web.cors.CorsConfigurationSource
 
 @Configuration
-open class CorsConfig : WebMvcConfigurer {
-    override fun addCorsMappings(registry: CorsRegistry) {
-        val origins = System.getenv("ALLOWED_ORIGINS")
-            ?.split(",")
-            ?.map(String::trim)
-            ?.toTypedArray()
-            ?: arrayOf("http://localhost:4200")
-        registry.addMapping("/api/**")
-            .allowedOrigins("https://petcare.vilquer.dev")
-            .allowedMethods("*")
+class WebCorsConfig {
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val config = CorsConfiguration().apply {
+            allowedOriginPatterns = listOf("https://petcare.vilquer.dev")
+            allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            allowedHeaders = listOf(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "Origin",
+                "Accept",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers"
+            )
+            exposedHeaders = listOf("Location", "Authorization", "Content-Disposition")
+            allowCredentials = false
+            maxAge = 3600
+        }
+
+        return UrlBasedCorsConfigurationSource().apply {
+            registerCorsConfiguration("/**", config)
+        }
     }
 }
