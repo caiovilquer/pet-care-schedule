@@ -1,62 +1,95 @@
 package dev.vilquer.petcarescheduler.infra.adapter.output.notification
 
+
 import dev.vilquer.petcarescheduler.core.domain.entity.Event
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
+import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.mail.MailException
-import org.springframework.mail.javamail.JavaMailSender
-import org.springframework.mail.javamail.MimeMessageHelper
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.bodyToMono
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-// Se usar imagem inline (logo), descomentar a linha abaixo e o addInline no HTML:
-// import org.springframework.core.io.ClassPathResource
 
 @Component
 class EmailNotificationAdapter(
-    private val mailSender: JavaMailSender,
+    private val http: WebClient,
+    private val props: MailApiProps,
     private val tutorRepo: TutorRepositoryPort,
     private val petRepo: PetRepositoryPort,
-    @param:Value("\${app.mail.from}") private val from: String,
 ) : NotificationPort {
 
     private val log = LoggerFactory.getLogger(EmailNotificationAdapter::class.java)
 
     override fun sendEventReminder(event: Event) {
-        val tutorEmail = event.petId
-            ?.let { petRepo.findById(it) }
-            ?.tutorId
-            ?.let { tutorRepo.findById(it)?.email?.value }
+        val tutorEmail =
+            event.petId?.let { petRepo.findById(it) }?.tutorId?.let { tutorRepo.findById(it)?.email?.value }
 
         if (tutorEmail == null) {
             log.warn("Could not determine tutor email for event {}", event.id)
             return
         }
 
-// ===== Dados formatados que vão para o e-mail =====
+        val html = renderTemplate(event)
+        val subject = "Lembrete do PetCare: ${event.type.pt()}"
+
+        val payload = mapOf(
+            "from" to mapOf("email" to props.from, "name" to props.fromName),
+            "to" to listOf(mapOf("email" to tutorEmail)),
+            "subject" to subject,
+            // envie um dos dois ou ambos:
+            "text" to stripHtml(html),
+            "html" to html
+        )
+
+        try {
+            val status =
+                http.post().uri("/email").bodyValue(payload).retrieve().onStatus({ s -> s.value() >= 400 }) { resp ->
+                    resp.bodyToMono(String::class.java).map { body ->
+                        IllegalStateException("Mail Send error ${resp.statusCode().value()}: $body")
+                    }
+                }.toBodilessEntity().map { it.statusCode }.block() ?: HttpStatus.ACCEPTED
+
+            if (status.is2xxSuccessful || status == HttpStatus.ACCEPTED) {
+                log.info("Sent mail (API) for event {} to {}", event.id, tutorEmail)
+            } else {
+                log.error("Mail Send returned status {} for event {}", status.value(), event.id)
+            }
+        } catch (ex: Exception) {
+            log.error("Failed to call Mail Send API for event {}", event.id, ex)
+        }
+    }
+
+    // ===== apresentação =====
+
+    private val PTBR = Locale("pt", "BR")
+    private val DEFAULTZONE = ZoneId.of("America/Sao_Paulo")
+    private val DATEFMT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, dd/MM/yyyy 'às' HH:mm", PTBR)
+
+    private fun EventType?.pt(): String = when (this) {
+        EventType.VACCINE -> "Vacinação"
+        EventType.MEDICINE -> "Medicação"
+        EventType.DIARY -> "Diário"
+        EventType.BREED -> "Reprodução"
+        EventType.SERVICE -> "Serviço"
+        else -> "Evento"
+    }
+
+    private fun renderTemplate(event: Event, zoneId: ZoneId = DEFAULTZONE): String {
         val tipo = event.type.pt()
-        val dataStr = event.dateStart.atZone(DEFAULTZONE)
-            .format(DATEFMT)
-            .replaceFirstChar { it.titlecase(PTBR) }
-        val pet = event.petId?.let { petRepo.findById(it) }
-        val petName = pet?.name ?: "seu pet"
+        val dataStr = event.dateStart.atZone(zoneId).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
+
+        val petName = event.petId?.let { petRepo.findById(it) }?.name
         val descricao = event.description?.takeIf { it.isNotBlank() } ?: "Sem descrição"
         val ctaUrl = "https://petcare.vilquer.dev/events"
 
-        val plain = """
-            $tipo de $petName
-            Quando: $dataStr
-            Detalhes: $descricao
-            Acesse: $ctaUrl
-        """.trimIndent()
-
-        val html = """
-            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        return """
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -110,40 +143,28 @@ class EmailNotificationAdapter(
 </body>
 </html>
         """.trimIndent()
-
-        val msg = mailSender.createMimeMessage()
-        val helper = MimeMessageHelper(
-            msg,
-            MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
-            Charsets.UTF_8.name()
-        )
-
-        // Se usar logo em resources/static/logo.png:
-        // helper.addInline("logo", ClassPathResource("static/logo.png"))
-
-        helper.setFrom(from)
-        helper.setTo(tutorEmail)
-        helper.setSubject("Lembrete • $tipo")
-        helper.setText(plain, html)
-
-        try {
-            mailSender.send(msg)
-            log.info("Sent mail for event {} to {}", event.id, tutorEmail)
-        } catch (ex: MailException) {
-            log.error("Failed to send mail for event {}", event.id, ex)
-        }
     }
 
-    private val PTBR = Locale("pt", "BR")
-    private val DEFAULTZONE = ZoneId.of("America/Sao_Paulo")
-    private val DATEFMT: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("EEEE, dd/MM/yyyy 'às' HH:mm", PTBR)
+    // ===== util =====
 
-    private fun EventType.pt(): String = when (this) {
-        EventType.VACCINE  -> "Vacinação"
-        EventType.MEDICINE -> "Medicação"
-        EventType.DIARY    -> "Diário"
-        EventType.BREED    -> "Reprodução"
-        EventType.SERVICE  -> "Serviço"
-    }
+    private fun stripHtml(html: String) =
+        html.replace(Regex("<[^>]*>"), " ").replace("&nbsp;", " ").replace(Regex("\\s+"), " ").trim()
+
+    private fun escapeHtml(s: String): String = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

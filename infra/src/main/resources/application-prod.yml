@@ -26,24 +26,10 @@ spring:
   flyway:
     enabled: true
 
-  mail:
-    host: ${MAIL_HOST:587}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    protocol: smtp
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          ssl:
-            enable: false
-
-
 app:
   mail:
     from: ${MAIL_FROM}
+    from-name: PetCare Scheduler
+    base-url: ${MAIL_URL}
+    api-key: ${MAIL_KEY}
 
