@@ -32,4 +32,6 @@ app:
     from-name: PetCare Scheduler
     base-url: ${MAIL_URL}
     api-key: ${MAIL_KEY}
+  frontend:
+    base-url: https://petcare.vilquer.dev
 

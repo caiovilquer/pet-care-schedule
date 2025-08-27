@@ -64,7 +64,7 @@ class PasswordResetService(
     }
 
     private fun sendResetEmail(to: String, token: String) {
-        val link = "$frontBase/reset-password?token=$token"
+        val link = "$frontBase/auth/reset-password?token=$token"
         val subject = "Redefinição de senha"
         val text = "Use este link para redefinir sua senha: $link (expira em $ttlMinutes minutos)."
         val html = """
