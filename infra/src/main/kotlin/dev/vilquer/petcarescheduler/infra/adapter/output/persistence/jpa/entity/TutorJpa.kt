@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity
 
 
 import jakarta.persistence.*
+import java.time.Instant
 
 @Entity
 @Table(name = "tutor")
@@ -33,6 +34,9 @@ class TutorJpa {
     )
     @JoinColumn(name = "tutor_id")
     val pets: MutableList<PetJpa> = mutableListOf()
+
+    @Column(name = "password_changed_at")
+    var passwordChangedAt: Instant? = null
 
     override fun equals(other: Any?): Boolean =
         this === other || (other is TutorJpa && this.id != null && this.id == other.id)

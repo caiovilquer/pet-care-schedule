@@ -15,7 +15,7 @@ import javax.crypto.SecretKey
 data class JwtProperties(
     val issuer: String,
     val secret: String,
-    val expiration: Duration = Duration.ofHours(4)
+    val expiration: Duration = Duration.ofMinutes(20)
 )
 
 @Configuration

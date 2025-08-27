@@ -46,7 +46,7 @@ class EmailNotificationAdapter(
         val pet = event.petId?.let { petRepo.findById(it) }
         val petName = pet?.name ?: "seu pet"
         val descricao = event.description?.takeIf { it.isNotBlank() } ?: "Sem descrição"
-        val ctaUrl = "https://petcare.vilquer.dev/app/events"
+        val ctaUrl = "https://petcare.vilquer.dev/events"
 
         val plain = """
             $tipo de $petName
@@ -56,39 +56,59 @@ class EmailNotificationAdapter(
         """.trimIndent()
 
         val html = """
-            <!doctype html>
-            <html lang="pt-BR">
-              <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width">
-                <title>Lembrete PetCare</title>
-                <style>
-                  .card{max-width:560px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;
-                        border:1px solid #e6e6e6;border-radius:10px;padding:16px}
-                  .title{font-size:18px;margin:0 0 8px}
-                  .meta{color:#555;margin:0 0 12px}
-                  .btn{display:inline-block;padding:10px 16px;text-decoration:none;
-                       background:#2f855a;color:#fff;border-radius:6px}
-                  .muted{color:#777;font-size:12px;margin-top:16px}
-                  .pet{font-weight:600}
-                </style>
-              </head>
-              <body>
-                <div class="card">
-                  <!-- Para logo via CID, descomente o addInline abaixo e use: <img src="cid:logo" alt="PetCare" width="48" height="48" /> -->
-                  <h1 class="title">Lembrete: $tipo</h1>
-                  <p class="meta"><strong>Pet:</strong> <span class="pet">$petName</span></p>
-                  <p class="meta"><strong>Quando:</strong> $dataStr</p>
-                  <p><strong>Detalhes:</strong> $descricao</p>
-                  <p style="margin:16px 0">
-                    <a class="btn" href="$ctaUrl" target="_blank" rel="noopener">Ver evento</a>
-                  </p>
-                  <p class="muted">
-                    Você recebeu este lembrete porque cadastrou um evento no PetCare Scheduler.
-                  </p>
-                </div>
-              </body>
-            </html>
+            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lembrete PetCare</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f0f0f0;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td style="padding: 20px 0;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="560" style="border-collapse: collapse; border: 1px solid #e6e6e6; border-radius: 10px; background-color: #ffffff;">
+          <tr>
+            <td style="padding: 16px; font-family: Arial, Helvetica, sans-serif;">
+              
+              <h1 style="font-size: 18px; margin: 0 0 8px 0; font-family: Arial, Helvetica, sans-serif; font-weight: bold; color: #333333;">
+                Lembrete: $tipo
+              </h1>
+
+              <p style="margin: 0 0 12px 0; font-family: Arial, Helvetica, sans-serif; color: #555555; font-size: 16px;">
+                <strong>Pet:</strong> <span style="font-weight: 600;">$petName</span>
+              </p>
+
+              <p style="margin: 0 0 12px 0; font-family: Arial, Helvetica, sans-serif; color: #555555; font-size: 16px;">
+                <strong>Quando:</strong> $dataStr
+              </p>
+
+              <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; color: #333333; font-size: 16px; line-height: 24px;">
+                <strong>Detalhes:</strong> $descricao
+              </p>
+              
+              <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 16px 0;">
+                <tr>
+                  <td align="left" style="border-radius: 6px;" bgcolor="#0895c4">
+                    <a href="$ctaUrl" target="_blank" rel="noopener" style="display: inline-block; padding: 10px 16px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">
+                      Ver evento
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 16px 0 0 0; font-family: Arial, Helvetica, sans-serif; color: #777777; font-size: 12px; line-height: 18px;">
+                Você recebeu este lembrete porque cadastrou um evento no PetCare Scheduler.
+              </p>
+
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
         """.trimIndent()
 
         val msg = mailSender.createMimeMessage()

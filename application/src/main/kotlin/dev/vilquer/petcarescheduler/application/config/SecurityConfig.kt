@@ -25,7 +25,10 @@ class SecurityConfig {
                 auth
                     .requestMatchers(
                         "/api/v1/public/**",
-                        "/api/v1/auth/**"
+                        "/api/v1/auth/**",
+                        "/api/v1/auth/password/forgot",
+                        "/api/v1/auth/password/reset",
+                        "/api/v1/auth/password/reset/validate"
                     ).permitAll()
                     .anyRequest().authenticated()
             }

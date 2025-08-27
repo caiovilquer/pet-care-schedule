@@ -1,7 +1,7 @@
 package dev.vilquer.petcarescheduler.core.domain.valueobject
 
 @JvmInline
-value class Email private constructor(val value: String) {
+value class Email(val value: String) {
 
     companion object {
         /** Regex RFC 5322 simplificada */

@@ -11,4 +11,6 @@ interface TutorRepositoryPort {
     fun findByEmail(email: Email): Tutor?
     fun countAll(): Long
     fun delete(id: TutorId)
+    fun updatePassword(id: TutorId, passwordHash: String)
+    fun bumpPasswordChangedAt(id: TutorId, whenUtc: java.time.Instant)
 }
