@@ -1,0 +1,1 @@
+ALTER TABLE pet ADD COLUMN photo_url VARCHAR(512);
