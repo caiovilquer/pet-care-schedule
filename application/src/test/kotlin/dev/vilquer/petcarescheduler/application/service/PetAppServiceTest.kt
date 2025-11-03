@@ -18,18 +18,26 @@ class PetAppServiceTest {
 
     @Test
     fun `createPet should throw when tutor is missing`() {
-        val cmd = CreatePetCommand("Rex", "Dog", null, LocalDate.now(), TutorId(1))
+        val cmd = CreatePetCommand("Rex", "Dog", null, LocalDate.now(), photoUrl = null, tutorId = TutorId(1))
         assertThrows(IllegalArgumentException::class.java) { service.createPet(cmd) }
     }
 
     @Test
     fun `createPet saves pet and returns id`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val cmd = CreatePetCommand("Rex", "Dog", "Labrador", LocalDate.now(), tutor.id!!)
+        val cmd = CreatePetCommand(
+            "Rex",
+            "Dog",
+            "Labrador",
+            LocalDate.now(),
+            photoUrl = "https://example.com/pets/rex.png",
+            tutorId = tutor.id!!
+        )
         val result = service.createPet(cmd)
         assertNotNull(result.petId)
         val saved = petRepo.findById(result.petId)!!
         assertEquals("Rex", saved.name)
+        assertEquals("https://example.com/pets/rex.png", saved.photoUrl)
     }
 
     @Test
@@ -44,7 +52,7 @@ class PetAppServiceTest {
     @Test
     fun `listPets returns paginated result`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        petRepo.save(Pet(name="P1", specie="Dog", race=null, birthdate=LocalDate.now(), tutorId=tutor.id!!))
+        petRepo.save(Pet(name="P1", specie="Dog", race=null, birthdate=LocalDate.now(), photoUrl = null, tutorId=tutor.id!!))
         val page = service.listPets(0, 10)
         assertEquals(1, page.total)
         assertEquals(1, page.items.size)

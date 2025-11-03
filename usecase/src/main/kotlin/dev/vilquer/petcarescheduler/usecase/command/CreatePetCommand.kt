@@ -8,5 +8,6 @@ data class CreatePetCommand(
     val specie: String,
     val race: String?,
     val birthdate: LocalDate,
+    val photoUrl: String?,
     val tutorId: TutorId
 )

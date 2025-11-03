@@ -54,7 +54,7 @@ class PetControllerTest {
     @Test
     fun `list pets returns page`() {
         val page = PetsPageResult(
-            items = listOf(PetSummary(PetId(1), "Rex", "Dog")),
+            items = listOf(PetSummary(PetId(1), "Rex", "Dog", photoUrl = "https://example.com/pets/rex.png")),
             total = 1, page = 0, size = 20
         )
 

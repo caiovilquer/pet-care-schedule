@@ -14,6 +14,7 @@ CREATE TABLE pet (
                      specie VARCHAR(255) NOT NULL,
                      race VARCHAR(255),
                      birthdate DATE,
+                     photo_url VARCHAR(512),
                      tutor_id BIGINT REFERENCES tutor(id)
 );
 

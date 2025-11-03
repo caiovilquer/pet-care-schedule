@@ -14,6 +14,7 @@ class ResultMappingTest {
         specie = specie,
         race = race,
         birthdate = birthdate!!,
+        photoUrl = photoUrl,
         events = events.map { e ->
             PetDetailResult.EventInfo(
                 id = e.id!!,
@@ -31,7 +32,7 @@ class ResultMappingTest {
         phoneNumber = phoneNumber.toString(),
         avatar = avatar,
         pets = pets.map { p ->
-            TutorDetailResult.PetInfo(p.id!!, p.name, p.specie)
+            TutorDetailResult.PetInfo(p.id!!, p.name, p.specie, p.photoUrl)
         }
     )
 
@@ -43,6 +44,7 @@ class ResultMappingTest {
             specie = "Cat",
             race = "SRD",
             birthdate = LocalDate.of(2022, 1, 1),
+            photoUrl = "https://example.com/pets/luna.png",
             tutorId = TutorId(2L),
             events = listOf(
                 Event(
@@ -80,6 +82,7 @@ class ResultMappingTest {
                     specie = "Dog",
                     race = null,
                     birthdate = LocalDate.of(2020, 5, 4),
+                    photoUrl = "https://example.com/pets/bidu.png",
                     tutorId = TutorId(5L)
                 )
             )

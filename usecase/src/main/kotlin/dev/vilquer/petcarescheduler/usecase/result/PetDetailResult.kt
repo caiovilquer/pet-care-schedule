@@ -12,6 +12,7 @@ data class PetDetailResult(
     val specie: String,
     val race: String?,
     val birthdate: LocalDate,
+    val photoUrl: String?,
     val events: List<EventInfo>
 ) {
     data class EventInfo(

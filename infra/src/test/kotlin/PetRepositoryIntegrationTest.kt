@@ -43,6 +43,7 @@ class PetRepositoryIntegrationTest {
             specie = "Cachorro",
             race = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
+            photoUrl = "https://example.com/pets/rex.png",
             tutorId = TutorId(tutorJpa.id!!)
         )
         val petJpa = PetMapper.toJpa(petDom, existing = null)
@@ -60,6 +61,7 @@ class PetRepositoryIntegrationTest {
         assertEquals("Cachorro", fetchedDom.specie)
         assertEquals("Labrador", fetchedDom.race)
         assertEquals(LocalDate.of(2019, 8, 1), fetchedDom.birthdate)
+        assertEquals("https://example.com/pets/rex.png", fetchedDom.photoUrl)
         assertEquals(TutorId(tutorJpa.id!!), fetchedDom.tutorId)
     }
 
@@ -81,6 +83,7 @@ class PetRepositoryIntegrationTest {
             specie = "Cachorro",
             race = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
+            photoUrl = "https://example.com/pets/rex.png",
             tutorId = TutorId(tutorJpa.id!!)
         )
         val originalJpa = PetMapper.toJpa(originalDom)
@@ -90,7 +93,8 @@ class PetRepositoryIntegrationTest {
         val updatedDom = originalDom.copy(
             id = PetId(savedJpa.id!!),
             name = "Bolt",
-            race = "Golden"
+            race = "Golden",
+            photoUrl = "https://example.com/pets/bolt.png"
         )
         val updatedJpa = petRepoJpa.save(PetMapper.toJpa(updatedDom, existing = savedJpa))
 
@@ -101,6 +105,7 @@ class PetRepositoryIntegrationTest {
         assertEquals(updatedDom.name, fetchedDom.name)
         assertEquals(updatedDom.race, fetchedDom.race)
         assertEquals(updatedDom.specie, fetchedDom.specie)
+        assertEquals(updatedDom.photoUrl, fetchedDom.photoUrl)
     }
 
     @Test
@@ -120,6 +125,7 @@ class PetRepositoryIntegrationTest {
             specie = "Cachorro",
             race = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
+            photoUrl = "https://example.com/pets/rex.png",
             tutorId = TutorId(tutorJpa.id!!)
         )
         val savedJpa = petRepoJpa.save(PetMapper.toJpa(petDom))

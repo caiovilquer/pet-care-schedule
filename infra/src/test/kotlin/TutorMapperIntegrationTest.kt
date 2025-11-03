@@ -51,6 +51,7 @@ class TutorMapperIntegrationTest {
                     specie = "Cachorro",
                     race = "SRD",
                     birthdate = LocalDate.of(2020, 5, 10),
+                    photoUrl = "https://example.com/pets/rex.png",
                     tutorId = TutorId(5) // will be adjusted by mapper
                 )
             )
@@ -89,6 +90,7 @@ class TutorMapperIntegrationTest {
         assertEquals("Cachorro", pet.specie)
         assertEquals("SRD", pet.race)
         assertEquals(LocalDate.of(2020, 5, 10), pet.birthdate)
+        assertEquals("https://example.com/pets/rex.png", pet.photoUrl)
 
         // Pet's tutorId should match the tutor's id
         assertEquals(tutor.id, pet.tutorId)

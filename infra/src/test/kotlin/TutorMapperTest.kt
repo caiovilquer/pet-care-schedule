@@ -49,6 +49,7 @@ class TutorMapperTest {
                 assertEquals("Gato", specie)
                 assertEquals("Siames", race)
                 assertEquals(SAMPLE_BIRTHDATE, birthdate)
+                assertEquals("https://example.com/pets/luna.jpg", photoUrl)
                 assertEquals(TutorId(TUTOR_ID), tutorId)
             }
         }
@@ -80,6 +81,7 @@ class TutorMapperTest {
                 assertEquals("Cachorro", specie)
                 assertEquals("Labrador", race)
                 assertEquals(LocalDate.of(2018, 2, 1), birthdate)
+                assertEquals("https://example.com/pets/rex.jpg", photoUrl)
             }
         }
     }
@@ -117,6 +119,7 @@ class TutorMapperTest {
             assertNotNull(addedPet)
             assertEquals("Nina", addedPet?.name)
             assertEquals("Gato", addedPet?.specie)
+            assertEquals("https://example.com/pets/nina.jpg", addedPet?.photoUrl)
         }
     }
 
@@ -138,6 +141,7 @@ class TutorMapperTest {
             specie = "Gato"
             race = "Siames"
             birthdate = SAMPLE_BIRTHDATE
+            photoUrl = "https://example.com/pets/luna.jpg"
         }
 
         tutorJpa.pets.add(petJpa)
@@ -160,6 +164,7 @@ class TutorMapperTest {
                     specie = "Cachorro",
                     race = "Labrador",
                     birthdate = LocalDate.of(2018, 2, 1),
+                    photoUrl = "https://example.com/pets/rex.jpg",
                     tutorId = TutorId(10)
                 )
             )
@@ -181,6 +186,7 @@ class TutorMapperTest {
                 specie = "Papagaio"
                 race = null
                 birthdate = LocalDate.of(2017, 3, 3)
+                photoUrl = "https://example.com/pets/bola.jpg"
             })
         }
     }
@@ -201,6 +207,7 @@ class TutorMapperTest {
                     specie = "Papagaio",
                     race = null,
                     birthdate = LocalDate.of(2017, 3, 3),
+                    photoUrl = "https://example.com/pets/bola-new.jpg",
                     tutorId = TutorId(5)
                 ),
                 Pet(
@@ -209,6 +216,7 @@ class TutorMapperTest {
                     specie = "Gato",
                     race = "SRD",
                     birthdate = LocalDate.of(2020, 12, 12),
+                    photoUrl = "https://example.com/pets/nina.jpg",
                     tutorId = TutorId(5)
                 )
             )

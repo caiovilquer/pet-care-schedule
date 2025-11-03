@@ -33,6 +33,7 @@ class PetAppService(
             specie = cmd.specie,
             race = cmd.race,
             birthdate = cmd.birthdate,
+            photoUrl = cmd.photoUrl,
             tutorId = tutor.id!!
         )
         val saved = petRepo.save(pet)
@@ -53,7 +54,8 @@ class PetAppService(
         val updated = existing.copy(
             name = cmd.name ?: existing.name,
             race = cmd.race ?: existing.race,
-            birthdate = cmd.birthdate ?: existing.birthdate
+            birthdate = cmd.birthdate ?: existing.birthdate,
+            photoUrl = cmd.photoUrl ?: existing.photoUrl
         )
         val saved = petRepo.save(updated)
         return saved.toDetailResult()

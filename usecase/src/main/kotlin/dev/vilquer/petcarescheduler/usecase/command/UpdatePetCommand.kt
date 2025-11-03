@@ -7,5 +7,6 @@ data class UpdatePetCommand(
     val petId: PetId,
     val name: String? = null,
     val race: String? = null,
-    val birthdate: LocalDate? = null
+    val birthdate: LocalDate? = null,
+    val photoUrl: String? = null
 )

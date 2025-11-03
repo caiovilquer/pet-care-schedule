@@ -34,6 +34,7 @@ object TutorMapper {
                     specie = petJpa.specie,
                     race = petJpa.race,
                     birthdate = petJpa.birthdate,
+                    photoUrl = petJpa.photoUrl,
                     tutorId = tutorId,
                     events = petJpa.events.map { e -> e.toDomain() }
                 )

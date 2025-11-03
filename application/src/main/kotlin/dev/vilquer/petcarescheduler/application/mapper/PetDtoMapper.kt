@@ -15,11 +15,13 @@ class PetDtoMapper {
         @field:NotBlank val specie: String,
         val race: String?,
         @field:Past val birthdate: LocalDate,
+        val photoUrl: String? = null,
     )
     data class UpdateRequest(
         val name: String?,
         val race: String?,
-        @field:Past val birthdate: LocalDate?
+        @field:Past val birthdate: LocalDate?,
+        val photoUrl: String? = null,
     )
 
     // === converters ===
@@ -29,6 +31,7 @@ class PetDtoMapper {
             specie    = dto.specie,
             race      = dto.race,
             birthdate = dto.birthdate,
+            photoUrl  = dto.photoUrl,
             tutorId   = tutorId
         )
 
@@ -37,6 +40,7 @@ class PetDtoMapper {
             petId      = PetId(id),
             name       = dto.name,
             race       = dto.race,
-            birthdate = dto.birthdate
+            birthdate = dto.birthdate,
+            photoUrl  = dto.photoUrl
         )
 }

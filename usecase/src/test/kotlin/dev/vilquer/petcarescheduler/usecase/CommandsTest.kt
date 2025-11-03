@@ -15,12 +15,14 @@ class CommandsTest {
             specie = "Dog",
             race = "Mixed",
             birthdate = LocalDate.of(2020, 5, 4),
+            photoUrl = "https://example.com/pets/bidu.png",
             tutorId = TutorId(5L)
         )
         assertEquals("Bidu", cmd.name)
         assertEquals("Dog", cmd.specie)
         assertEquals("Mixed", cmd.race)
         assertEquals(LocalDate.of(2020, 5, 4), cmd.birthdate)
+        assertEquals("https://example.com/pets/bidu.png", cmd.photoUrl)
         assertEquals(TutorId(5L), cmd.tutorId)
     }
 

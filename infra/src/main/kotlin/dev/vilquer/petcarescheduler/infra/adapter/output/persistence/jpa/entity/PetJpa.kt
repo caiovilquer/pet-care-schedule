@@ -22,6 +22,9 @@ class PetJpa {
     @Column(name = "birthdate")
     var birthdate: LocalDate? = null
 
+    @Column(name = "photo_url")
+    var photoUrl: String? = null
+
     @Column(name = "tutor_id", nullable = true)
     var tutorId: Long? = null
 

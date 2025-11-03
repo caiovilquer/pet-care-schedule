@@ -63,6 +63,7 @@ class PetMapperTest {
         assertEquals(jpa.specie, domain.specie, "Pet species should be correctly mapped")
         assertEquals(jpa.race, domain.race, "Pet race should be correctly mapped")
         assertEquals(jpa.birthdate, domain.birthdate, "Pet birthdate should be correctly mapped")
+        assertEquals(jpa.photoUrl, domain.photoUrl, "Pet photo URL should be correctly mapped")
         assertEquals(jpa.tutorId, domain.tutorId?.value, "Pet tutor ID should be correctly mapped")
 
         // Verify events mapping
@@ -112,6 +113,7 @@ class PetMapperTest {
         assertEquals(domain.specie, jpa.specie, "Pet species should be correctly mapped")
         assertEquals(domain.race, jpa.race, "Pet race should be correctly mapped")
         assertEquals(domain.birthdate, jpa.birthdate, "Pet birthdate should be correctly mapped")
+        assertEquals(domain.photoUrl, jpa.photoUrl, "Pet photo URL should be correctly mapped")
         assertEquals(domain.tutorId?.value, jpa.tutorId, "Pet tutor ID should be correctly mapped")
 
         // Verify events mapping
@@ -160,6 +162,7 @@ class PetMapperTest {
         assertEquals(expected.specie, actual.specie, "Pet species should match")
         assertEquals(expected.race, actual.race, "Pet race should match")
         assertEquals(expected.birthdate, actual.birthdate, "Pet birthdate should match")
+        assertEquals(expected.photoUrl, actual.photoUrl, "Pet photo URL should match")
         assertEquals(expected.tutorId, actual.tutorId, "Pet tutor ID should match")
 
         // Compare events
@@ -191,6 +194,7 @@ class PetMapperTest {
             specie = "Cachorro"
             race = "SRD"
             birthdate = LocalDate.of(2020, 1, 15)
+            photoUrl = "https://example.com/pets/bidu.jpg"
             tutorId = 7L
             events = mutableListOf()
         }
@@ -256,6 +260,7 @@ class PetMapperTest {
             specie = "Cachorro",
             race = "SRD",
             birthdate = LocalDate.of(2020, 1, 15),
+            photoUrl = "https://example.com/pets/bidu.jpg",
             tutorId = tutorId,
             events = listOf(event1, event2)
         )
