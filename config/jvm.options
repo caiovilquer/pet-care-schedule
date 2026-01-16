@@ -1,0 +1,9 @@
+-Xms256m
+-Xmx512m
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=200
+-XX:+UnlockDiagnosticVMOptions
+-XX:G1SummarizeRSetStatsPeriod=1
+-XX:G1HeapRegionSize=16M
+-XX:InitiatingHeapOccupancyPercent=35
+-Dspring.jit.mode=auto

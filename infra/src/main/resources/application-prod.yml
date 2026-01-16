@@ -9,6 +9,18 @@ jwt:
       secret: ${JWT_SECRET}
 
 spring:
+  jmx:
+    enabled: false
+  devtools:
+    restart:
+      enabled: false
+  task:
+    scheduling:
+      pool:
+        size: 2
+  threads:
+    virtual:
+      enabled: ${VIRTUAL_THREADS_ENABLED:false}
   datasource:
     url: ${JDBC_URL:jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}}
     username: ${PGUSER}
@@ -34,4 +46,4 @@ app:
     api-key: ${MAIL_KEY}
   frontend:
     base-url: https://petcare.vilquer.dev
-
+  timezone: ${APP_TIMEZONE:America/Sao_Paulo}

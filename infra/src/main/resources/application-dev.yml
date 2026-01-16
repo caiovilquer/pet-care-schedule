@@ -1,18 +1,18 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:petcare;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:petcare;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
     driver-class-name: org.h2.Driver
     username: sa
     password:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
   flyway:
-    enabled: false
+    enabled: true
   h2:
     console:
       enabled: true
@@ -31,8 +31,8 @@ server:
     key-store-type: PKCS12
 
 jwt:
-  issuer: "petcare-api"
-  secret: "P4s5FraseSuperSecretaComPeloMenos32Chars123"
+  issuer: ${JWT_ISSUER:petcare-api}
+  secret: ${JWT_SECRET:dev-only-change-me-please-32-chars}
 
 springdoc:
   swagger-ui:
@@ -44,3 +44,4 @@ springdoc:
 app:
   mail:
     from: ${MAIL_FROM}
+  timezone: ${APP_TIMEZONE:America/Sao_Paulo}
