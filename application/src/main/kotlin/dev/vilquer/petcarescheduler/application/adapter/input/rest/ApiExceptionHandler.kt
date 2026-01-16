@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
 import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
+import dev.vilquer.petcarescheduler.application.exception.RateLimitException
 import jakarta.validation.ConstraintViolationException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
@@ -88,4 +89,9 @@ class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body)
     }
 
+    @ExceptionHandler(RateLimitException::class)
+    fun handleRateLimit(ex: RateLimitException): ResponseEntity<ApiError> {
+        val body = ApiError(429, "Too Many Requests", ex.message ?: "Limite de tentativas excedido")
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body)
+    }
 }
