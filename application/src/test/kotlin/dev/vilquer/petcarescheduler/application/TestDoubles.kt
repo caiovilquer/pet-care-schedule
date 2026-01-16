@@ -11,6 +11,11 @@ internal class FakeClock(var fixed: ZonedDateTime) : ClockPort {
 internal class FakeNotifier : NotificationPort {
     val notified = mutableListOf<Event>()
     override fun sendEventReminder(event: Event) { notified.add(event) }
+    override fun sendEventReminder(event: Event, tutorEmail: String, petName: String?) { notified.add(event) }
+}
+
+internal class FakePasswordHash : PasswordHashPort {
+    override fun hash(raw: CharSequence): String = "hashed-$raw"
 }
 
 internal class InMemoryTutorRepo(initial: Map<TutorId, Tutor> = emptyMap()) : TutorRepositoryPort {
@@ -23,10 +28,20 @@ internal class InMemoryTutorRepo(initial: Map<TutorId, Tutor> = emptyMap()) : Tu
         return saved
     }
     override fun findById(id: TutorId): Tutor? = store[id]
+    override fun findByEmail(email: dev.vilquer.petcarescheduler.core.domain.valueobject.Email): Tutor? =
+        store.values.firstOrNull { it.email.value == email.value }
     override fun findAll(page: Int, size: Int): List<Tutor> =
         store.values.drop(page * size).take(size)
     override fun countAll(): Long = store.size.toLong()
     override fun delete(id: TutorId) { store.remove(id) }
+    override fun updatePassword(id: TutorId, passwordHash: String) {
+        val existing = store[id] ?: return
+        store[id] = existing.copy(passwordHash = passwordHash)
+    }
+    override fun bumpPasswordChangedAt(id: TutorId, whenUtc: java.time.Instant) {
+        val existing = store[id] ?: return
+        store[id] = existing.copy(passwordChangedAt = whenUtc)
+    }
 }
 
 internal class InMemoryPetRepo(initial: Map<PetId, Pet> = emptyMap()) : PetRepositoryPort {
@@ -43,6 +58,14 @@ internal class InMemoryPetRepo(initial: Map<PetId, Pet> = emptyMap()) : PetRepos
     override fun findAll(page: Int, size: Int): List<Pet> =
         store.values.drop(page * size).take(size)
     override fun countAll(): Long = store.size.toLong()
+    override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Pet> =
+        store.values.filter { it.tutorId == tutorId }.drop(page * size).take(size)
+    override fun countByTutor(tutorId: TutorId): Long =
+        store.values.count { it.tutorId == tutorId }.toLong()
+    override fun findByIdAndTutor(id: PetId, tutorId: TutorId): Pet? =
+        store[id]?.takeIf { it.tutorId == tutorId }
+    override fun existsForTutor(id: PetId, tutorId: TutorId): Boolean =
+        store[id]?.tutorId == tutorId
 }
 
 internal class InMemoryEventRepo(initial: Map<EventId, Event> = emptyMap()) : EventRepositoryPort {
@@ -57,6 +80,19 @@ internal class InMemoryEventRepo(initial: Map<EventId, Event> = emptyMap()) : Ev
     override fun findById(id: EventId): Event? = store[id]
     override fun findByPetId(petId: PetId): List<Event> =
         store.values.filter { it.petId == petId }
+    override fun delete(id: EventId) {
+        store.remove(id)
+    }
+    override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Event> =
+        emptyList()
+    override fun countByTutor(tutorId: TutorId): Long = 0
+    override fun findByIdAndTutor(id: EventId, tutorId: TutorId): Event? = store[id]
+    override fun existsForTutor(id: EventId, tutorId: TutorId): Boolean = store.containsKey(id)
+    override fun findPendingReminders(start: java.time.LocalDateTime, end: java.time.LocalDateTime):
+        List<EventReminderTarget> =
+        store.values.filter {
+            it.status == Status.PENDING && !it.dateStart.isBefore(start) && it.dateStart.isBefore(end)
+        }.map { EventReminderTarget(it, "test@example.com", null) }
 
     fun allEvents(): Collection<Event> = store.values
 }

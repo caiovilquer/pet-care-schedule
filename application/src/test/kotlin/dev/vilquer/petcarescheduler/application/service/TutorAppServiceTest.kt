@@ -11,12 +11,13 @@ import org.junit.jupiter.api.Test
 class TutorAppServiceTest {
 
     private val tutorRepo = InMemoryTutorRepo()
-    private val service = TutorAppService(tutorRepo)
+    private val passwordHash = FakePasswordHash()
+    private val service = TutorAppService(tutorRepo, passwordHash)
 
     @Test
     fun `createTutor persists and returns id`() {
         val cmd = CreateTutorCommand("Ana", null, Email.of("ana@ex.com").getOrThrow(), "pwd", PhoneNumber.of("+5511912345678").getOrNull(), null)
-        val result = service.createTutor(cmd)
+        val result = service.execute(cmd)
         assertNotNull(result.tutorId)
         assertEquals(1, tutorRepo.countAll())
     }
@@ -24,14 +25,14 @@ class TutorAppServiceTest {
     fun `updateTutor modifies existing tutor`() {
         val saved = tutorRepo.save(Tutor(firstName="Ana", lastName=null, email=Email.of("a@e.com").getOrThrow(), passwordHash="h", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
         val cmd = UpdateTutorCommand(saved.id!!, firstName="Maria", lastName=null, phoneNumber=null, avatar=null)
-        val detail = service.updateTutor(cmd)
+        val detail = service.execute(cmd)
         assertEquals("Maria", detail.firstName)
     }
 
     @Test
     fun `listTutors returns data`() {
         tutorRepo.save(Tutor(firstName="Ana", lastName=null, email=Email.of("a@e.com").getOrThrow(), passwordHash="h", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val page = service.listTutors(0, 10)
+        val page = service.list(0, 10)
         assertEquals(1, page.total)
         assertEquals(1, page.items.size)
     }
@@ -39,14 +40,14 @@ class TutorAppServiceTest {
     @Test
     fun `deleteTutor removes tutor`() {
         val saved = tutorRepo.save(Tutor(firstName="Ana", lastName=null, email=Email.of("a@e.com").getOrThrow(), passwordHash="h", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        service.deleteTutor(DeleteTutorCommand(saved.id!!))
+        service.execute(DeleteTutorCommand(saved.id!!))
         assertEquals(0, tutorRepo.countAll())
     }
 
     @Test
     fun `getTutor returns detail`() {
         val saved = tutorRepo.save(Tutor(firstName="Ana", lastName=null, email=Email.of("a@e.com").getOrThrow(), passwordHash="h", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val detail = service.getTutor(saved.id!!)
+        val detail = service.get(saved.id!!)
         assertEquals(saved.id, detail.id)
     }
 }

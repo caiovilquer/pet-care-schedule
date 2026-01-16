@@ -1,5 +1,6 @@
 package dev.vilquer.petcarescheduler.application.adapter.input
 
+import dev.vilquer.petcarescheduler.application.adapter.input.rest.ApiExceptionHandler
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @WebMvcTest(ExceptionHandlerTest.TestController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(ExceptionHandler::class)
+@Import(ApiExceptionHandler::class)
 class ExceptionHandlerTest {
 
     @Autowired
@@ -44,8 +45,9 @@ class ExceptionHandlerTest {
         mockMvc.perform(get("/illegal"))
             .andExpect(status().isBadRequest)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.status").value(400))
+            .andExpect(jsonPath("$.error").value("Bad Request"))
             .andExpect(jsonPath("$.message").value("bad arg"))
-            .andExpect(jsonPath("$.timestamp").exists())
     }
 
     @Test
@@ -53,8 +55,9 @@ class ExceptionHandlerTest {
         mockMvc.perform(get("/notfound"))
             .andExpect(status().isNotFound)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.error").value("Not Found"))
             .andExpect(jsonPath("$.message").value("missing"))
-            .andExpect(jsonPath("$.timestamp").exists())
     }
 
     @Test
@@ -62,7 +65,8 @@ class ExceptionHandlerTest {
         mockMvc.perform(get("/bad"))
             .andExpect(status().isUnauthorized)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.status").value(401))
+            .andExpect(jsonPath("$.error").value("Unauthorized"))
             .andExpect(jsonPath("$.message").value("bad creds"))
-            .andExpect(jsonPath("$.timestamp").exists())
     }
 }

@@ -19,11 +19,12 @@ class EventAppServiceTest {
     private val clock = FakeClock(ZonedDateTime.of(LocalDateTime.of(2025,7,1,8,0), ZoneId.systemDefault()))
     private val notifier = FakeNotifier()
     private val service = EventAppService(eventRepo, petRepo, clock, notifier)
+    private val tutorId = TutorId(1)
 
     @Test
     fun `registerEvent should throw when pet does not exist`() {
         val cmd = RegisterEventCommand(PetId(1), EventType.VACCINE, "vac", LocalDateTime.now())
-        assertThrows(IllegalArgumentException::class.java) { service.registerEvent(cmd) }
+        assertThrows(IllegalArgumentException::class.java) { service.execute(cmd, tutorId) }
     }
 
     @Test
@@ -31,7 +32,7 @@ class EventAppServiceTest {
         val pet = petRepo.save(Pet(id = PetId(1), name="rex", specie="dog", race=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val cmd = RegisterEventCommand(pet.id!!, EventType.SERVICE, "bath", LocalDateTime.of(2025,7,2,9,0))
 
-        val result: EventRegisteredResult = service.registerEvent(cmd)
+        val result: EventRegisteredResult = service.execute(cmd, tutorId)
 
         assertEquals(EventId(1), result.eventId)
         val saved = eventRepo.findById(result.eventId)
@@ -44,7 +45,7 @@ class EventAppServiceTest {
     fun `deleteEvent marks event done`() {
         val pet = petRepo.save(Pet(id = PetId(1), name="rex", specie="dog", race=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val ev = eventRepo.save(Event(type=EventType.DIARY, description=null, dateStart=LocalDateTime.now(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
-        service.deleteEvent(DeleteEventCommand(ev.id!!))
+        service.execute(DeleteEventCommand(ev.id!!), tutorId)
         val updated = eventRepo.findById(ev.id!!)
         assertEquals(Status.DONE, updated?.status)
     }

@@ -1,6 +1,7 @@
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventReminderTarget
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.RegisterEventUseCase
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
@@ -18,18 +19,26 @@ class PortInteractionTest {
         }
         override fun findById(id: EventId): Event? = if (received?.id == id) received else null
         override fun findByPetId(petId: PetId): List<Event> = received?.takeIf { it.petId == petId }?.let { listOf(it) } ?: emptyList()
+        override fun delete(id: EventId) {}
+        override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Event> = emptyList()
+        override fun countByTutor(tutorId: TutorId): Long = 0
+        override fun findByIdAndTutor(id: EventId, tutorId: TutorId): Event? = findById(id)
+        override fun existsForTutor(id: EventId, tutorId: TutorId): Boolean = received?.id == id
+        override fun findPendingReminders(start: LocalDateTime, end: LocalDateTime): List<EventReminderTarget> =
+            emptyList()
     }
 
     private class FakeNotification : NotificationPort {
         var notified: Event? = null
         override fun sendEventReminder(event: Event) { notified = event }
+        override fun sendEventReminder(event: Event, tutorEmail: String, petName: String?) { notified = event }
     }
 
     private class RegisterEventUseCaseService(
         private val repo: EventRepositoryPort,
         private val notifier: NotificationPort
     ) : RegisterEventUseCase {
-        override fun execute(cmd: RegisterEventCommand): EventRegisteredResult {
+        override fun execute(cmd: RegisterEventCommand, tutorId: TutorId): EventRegisteredResult {
             val toSave = Event(
                 type = cmd.type,
                 description = cmd.description,
@@ -57,7 +66,7 @@ class PortInteractionTest {
             dateStart = LocalDateTime.of(2025, 7, 14, 9, 0)
         )
 
-        val result = useCase.execute(cmd)
+        val result = useCase.execute(cmd, TutorId(1L))
 
         assertEquals(EventId(1L), result.eventId)
         assertEquals(cmd.type, repo.received?.type)
