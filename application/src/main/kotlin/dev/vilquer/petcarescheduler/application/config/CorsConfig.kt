@@ -16,6 +16,9 @@ class WebCorsConfig {
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf(
                 "Authorization",
+                "X-Authorization",
+                "X-Auth-Token",
+                "X-Access-Token",
                 "Content-Type",
                 "X-Requested-With",
                 "Origin",

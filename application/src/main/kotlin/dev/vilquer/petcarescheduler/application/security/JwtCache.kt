@@ -11,7 +11,8 @@ import java.util.concurrent.ConcurrentHashMap
 data class JwtCacheProperties(
     val ttl: Duration = Duration.ofMinutes(5),
     val maxSize: Int = 10_000,
-    val invalidationSkew: Duration = Duration.ofSeconds(5)
+    val invalidationSkew: Duration = Duration.ofMinutes(2),
+    val passwordChangedAtCheckEnabled: Boolean = true
 )
 
 @Component
