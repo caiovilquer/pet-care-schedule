@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.config
 
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.JwtParser
+import dev.vilquer.petcarescheduler.application.security.JwtCacheProperties
 import dev.vilquer.petcarescheduler.application.security.PasswordChangedAtCache
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
@@ -52,7 +53,8 @@ class SecurityConfig {
     fun jwtDecoder(
         jwtParser: JwtParser,
         tutorRepo: TutorRepositoryPort,
-        passwordChangedAtCache: PasswordChangedAtCache
+        passwordChangedAtCache: PasswordChangedAtCache,
+        jwtCacheProperties: JwtCacheProperties
     ): JwtDecoder {
         return JwtDecoder { token ->
             try {
@@ -68,7 +70,8 @@ class SecurityConfig {
                     tutorRepo.findById(TutorId(subject))?.passwordChangedAt
                         ?: throw BadJwtException("Tutor nao encontrado")
                 }
-                if (passwordChangedAt != null && issuedAt.isBefore(passwordChangedAt)) {
+                val skew = jwtCacheProperties.invalidationSkew
+                if (passwordChangedAt != null && issuedAt.isBefore(passwordChangedAt.minus(skew))) {
                     throw BadJwtException("JWT expirado por troca de senha")
                 }
 

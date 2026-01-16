@@ -28,9 +28,8 @@ object RecurrenceMapper {
      * @throws IllegalStateException if frequency is null
      */
     fun toDomain(emb: RecurrenceEmb): Recurrence {
-        val frequency = emb.frequency ?: throw IllegalStateException("Frequency cannot be null when mapping RecurrenceEmb to domain")
         return Recurrence(
-            frequency = frequency,
+            frequency = emb.frequency,
             intervalCount = emb.intervalCount ?: 1,
             repetitions = emb.repetitions,
             finalDate = emb.finalDate

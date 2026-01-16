@@ -10,7 +10,8 @@ import java.util.concurrent.ConcurrentHashMap
 @ConfigurationProperties("app.security.jwt-cache")
 data class JwtCacheProperties(
     val ttl: Duration = Duration.ofMinutes(5),
-    val maxSize: Int = 10_000
+    val maxSize: Int = 10_000,
+    val invalidationSkew: Duration = Duration.ofSeconds(5)
 )
 
 @Component
