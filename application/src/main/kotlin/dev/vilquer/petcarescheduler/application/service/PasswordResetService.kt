@@ -31,9 +31,11 @@ class PasswordResetService(
 
     override fun requestReset(email: Email) {
         val tutor = tutors.findByEmail(email) ?: return // resposta neutra
+        val now = Instant.now(clock)
+        tokens.invalidateAllForUser(tutor.id ?: throw IllegalStateException("User not found"), now)
         val tokenPlain = generateToken()
         val tokenHash = sha256Hex(tokenPlain)
-        val expires = Instant.now(clock).plus(Duration.ofMinutes(ttlMinutes))
+        val expires = now.plus(Duration.ofMinutes(ttlMinutes))
 
         tokens.create(
             PasswordResetToken(

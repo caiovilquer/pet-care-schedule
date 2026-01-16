@@ -6,6 +6,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTo
 import dev.vilquer.petcarescheduler.infra.adapter.output.reset.jpa.PasswordResetTokenJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.reset.jpa.PasswordResetTokenRepository
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.*
 
@@ -28,10 +29,14 @@ class PasswordResetTokenJpaAdapter(
         repo.save(jpa)
     }
 
+    @Transactional
+    override fun invalidateAllForUser(userId: TutorId, usedAt: Instant) {
+        repo.invalidateByUserId(userId.value, usedAt)
+    }
+
+    @Transactional
     override fun cleanup(now: Instant) {
-        // opcional: criar query @Modifying pra limpar expirados + usados
-        repo.findAll().filter { it.usedAt != null || it.expiresAt.isBefore(now) }
-            .forEach { repo.delete(it) }
+        repo.deleteExpiredOrUsed(now)
     }
 
     private fun PasswordResetToken.toJpa() = PasswordResetTokenJpa(

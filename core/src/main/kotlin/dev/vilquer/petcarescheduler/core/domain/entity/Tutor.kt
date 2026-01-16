@@ -9,6 +9,7 @@ data class Tutor(
     val lastName: String?,
     val email: Email,
     val passwordHash: String,
+    val passwordChangedAt: java.time.Instant? = null,
     val phoneNumber: PhoneNumber? = null,
     val avatar: String? = null,
     val pets: List<Pet> = mutableListOf()

@@ -25,6 +25,7 @@ object TutorMapper {
             lastName = jpa.lastName,
             email = Email.of(jpa.email).getOrThrow(),
             passwordHash = jpa.passwordHash,
+            passwordChangedAt = jpa.passwordChangedAt,
             phoneNumber = jpa.phoneNumber?.let { PhoneNumber.of(it).getOrThrow()},
             avatar = jpa.avatar,
             pets = jpa.pets.map { petJpa ->
@@ -62,6 +63,7 @@ object TutorMapper {
             jpa.lastName = lastName
             jpa.email = email.value
             jpa.passwordHash = passwordHash
+            jpa.passwordChangedAt = passwordChangedAt ?: jpa.passwordChangedAt
             jpa.phoneNumber = phoneNumber?.e164
             jpa.avatar = avatar
         }

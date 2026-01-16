@@ -20,11 +20,7 @@ class PublicController(
 
     @PostMapping("/signup")
     fun create(@Valid @RequestBody dto: TutorDtoMapper.CreateRequest): ResponseEntity<TutorCreatedResult> =
-        try {
-            ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(createTutor.execute(mapper.toCreateCommand(dto)))
-        } catch (e: IllegalArgumentException) {
-            ResponseEntity.status(HttpStatus.CONFLICT).build()
-        }
+        ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(createTutor.execute(mapper.toCreateCommand(dto)))
 }

@@ -1,5 +1,6 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
+import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import jakarta.validation.ConstraintViolationException
 import org.springframework.dao.DataIntegrityViolationException
@@ -9,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.security.authentication.BadCredentialsException
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -44,12 +46,40 @@ class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
     }
 
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgument(ex: IllegalArgumentException): ResponseEntity<ApiError> {
+        val body = ApiError(400, "Bad Request", ex.message ?: "Requisicao invalida")
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
+    @ExceptionHandler(NoSuchElementException::class)
+    fun handleNotFound(ex: NoSuchElementException): ResponseEntity<ApiError> {
+        val body = ApiError(404, "Not Found", ex.message ?: "Recurso nao encontrado")
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body)
+    }
+
+    @ExceptionHandler(BadCredentialsException::class)
+    fun handleBadCredentials(ex: BadCredentialsException): ResponseEntity<ApiError> {
+        val body = ApiError(401, "Unauthorized", ex.message ?: "Nao autorizado")
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body)
+    }
+
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleIntegrity(ex: DataIntegrityViolationException): ResponseEntity<ApiError> {
-        val message = if (ex.rootCause?.message?.contains("uq_tutor_email", ignoreCase = true) == true)
-            "E-mail já cadastrado"
-        else "Violação de integridade"
+        val message = when (val cause = ex.rootCause) {
+            is java.sql.SQLException -> {
+                if (cause.sqlState == "23505") "Registro duplicado"
+                else "Violação de integridade"
+            }
+            else -> "Violação de integridade"
+        }
         val body = ApiError(409, "Conflict", message)
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body)
+    }
+
+    @ExceptionHandler(ConflictException::class)
+    fun handleConflict(ex: ConflictException): ResponseEntity<ApiError> {
+        val body = ApiError(409, "Conflict", ex.message ?: "Conflito")
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body)
     }
     @ExceptionHandler(ForbiddenException::class)
@@ -57,4 +87,5 @@ class ApiExceptionHandler {
         val body = ApiError(403, "Forbidden", ex.message)
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body)
     }
+
 }

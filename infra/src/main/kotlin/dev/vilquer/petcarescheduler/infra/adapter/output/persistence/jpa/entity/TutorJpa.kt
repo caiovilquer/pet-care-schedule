@@ -36,7 +36,7 @@ class TutorJpa {
     val pets: MutableList<PetJpa> = mutableListOf()
 
     @Column(name = "password_changed_at")
-    var passwordChangedAt: Instant? = null
+    var passwordChangedAt: Instant = Instant.now()
 
     override fun equals(other: Any?): Boolean =
         this === other || (other is TutorJpa && this.id != null && this.id == other.id)

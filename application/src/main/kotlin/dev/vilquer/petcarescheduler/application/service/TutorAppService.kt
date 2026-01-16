@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
 import dev.vilquer.petcarescheduler.application.mapper.toSummary
+import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
@@ -23,13 +24,14 @@ class TutorAppService(
     GetTutorUseCase {
     override fun execute(cmd: CreateTutorCommand): TutorCreatedResult {
         tutorRepo.findByEmail(cmd.email)?.let {
-            throw IllegalArgumentException("E-mail ${cmd.email.value} already exists")
+            throw ConflictException("E-mail ${cmd.email.value} already exists")
         }
         val tutor = Tutor(
             firstName = cmd.firstName,
             lastName = cmd.lastName,
             email = cmd.email,
             passwordHash = passwordHash.hash(cmd.rawPassword),
+            passwordChangedAt = java.time.Instant.now(),
             phoneNumber = cmd.phoneNumber,
             avatar = cmd.avatar
         )

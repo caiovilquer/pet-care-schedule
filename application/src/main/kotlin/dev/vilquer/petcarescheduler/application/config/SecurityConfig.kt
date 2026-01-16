@@ -2,6 +2,9 @@ package dev.vilquer.petcarescheduler.application.config
 
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.JwtParser
+import dev.vilquer.petcarescheduler.application.security.PasswordChangedAtCache
+import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -46,16 +49,32 @@ class SecurityConfig {
     }
 
     @Bean
-    fun jwtDecoder(jwtParser: JwtParser): JwtDecoder {
+    fun jwtDecoder(
+        jwtParser: JwtParser,
+        tutorRepo: TutorRepositoryPort,
+        passwordChangedAtCache: PasswordChangedAtCache
+    ): JwtDecoder {
         return JwtDecoder { token ->
             try {
                 val jws = jwtParser.parseSignedClaims(token)
                 val headers = jws.header
                 val claims = jws.payload
+                val subject = claims.subject?.toLongOrNull()
+                    ?: throw BadJwtException("JWT sem subject valido")
+
+                val issuedAt = claims.issuedAt?.toInstant()
+                    ?: throw BadJwtException("JWT sem iat")
+                val passwordChangedAt = passwordChangedAtCache.getOrLoad(subject) {
+                    tutorRepo.findById(TutorId(subject))?.passwordChangedAt
+                        ?: throw BadJwtException("Tutor nao encontrado")
+                }
+                if (passwordChangedAt != null && issuedAt.isBefore(passwordChangedAt)) {
+                    throw BadJwtException("JWT expirado por troca de senha")
+                }
 
                 Jwt(
                     token,
-                    claims.issuedAt?.toInstant(),
+                    issuedAt,
                     claims.expiration?.toInstant(),
                     headers,
                     claims
