@@ -55,3 +55,11 @@ docker compose up -d mailhog
 
 # Inicia a aplicação (módulo infra) com H2 e swagger
 ./gradlew :infra:bootRun
+```
+
+## Producao (sem Docker)
+
+```bash
+./gradlew :infra:bootJar
+scripts/run-prod.sh
+```
