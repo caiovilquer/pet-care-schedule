@@ -102,18 +102,10 @@ class EventAppService(
             ?: throw IllegalArgumentException("Event ${id.value} not found")
 
     fun sendRemindersForToday() {
-        val today = clock.now().toLocalDate()
-        val pageSize = 50
-        val total = petRepo.countAll()
-        var page = 0
-        while (page * pageSize < total) {
-            val pets = petRepo.findAll(page, pageSize)
-            pets.forEach { pet ->
-                val events = eventRepo.findByPetId(pet.id!!)
-                events.filter { it.status == Status.PENDING && it.dateStart.toLocalDate() == today }
-                    .forEach { notifier.sendEventReminder(it) }
-            }
-            page++
-        }
+        val now = clock.now()
+        val start = now.toLocalDate().atStartOfDay()
+        val end = start.plusDays(1)
+        eventRepo.findPendingReminders(start, end)
+            .forEach { notifier.sendEventReminder(it.event, it.tutorEmail, it.petName) }
     }
 }

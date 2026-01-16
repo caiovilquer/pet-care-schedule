@@ -32,7 +32,7 @@ class EventDtoMapper {
         @field:FutureOrPresent val dateStart: LocalDateTime? = null,
         val frequency: Frequency? = null,
         val type: EventType? = null,
-        @field:Positive val intervalCount: Long = 1,
+        @field:Positive val intervalCount: Long? = null,
         @field:Positive val repetitions: Int? = null,
         @field:FutureOrPresent val finalDate: LocalDateTime? = null
     )

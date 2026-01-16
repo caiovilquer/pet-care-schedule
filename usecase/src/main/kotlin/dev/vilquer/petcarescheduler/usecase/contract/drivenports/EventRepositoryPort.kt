@@ -4,6 +4,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Event
 import dev.vilquer.petcarescheduler.core.domain.entity.EventId
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import java.time.LocalDateTime
 
 interface EventRepositoryPort {
     fun save(event: Event): Event
@@ -15,4 +16,11 @@ interface EventRepositoryPort {
     fun countByTutor(tutorId: TutorId): Long
     fun findByIdAndTutor(id: EventId, tutorId: TutorId): Event?
     fun existsForTutor(id: EventId, tutorId: TutorId): Boolean
+    fun findPendingReminders(start: LocalDateTime, end: LocalDateTime): List<EventReminderTarget>
 }
+
+data class EventReminderTarget(
+    val event: Event,
+    val tutorEmail: String,
+    val petName: String?
+)

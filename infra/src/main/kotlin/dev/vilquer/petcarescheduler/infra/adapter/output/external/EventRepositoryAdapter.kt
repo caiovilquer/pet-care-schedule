@@ -4,12 +4,15 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Event
 import dev.vilquer.petcarescheduler.core.domain.entity.EventId
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.entity.Status
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.toDomain
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.toJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.EventJpaRepository
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventReminderTarget
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class EventRepositoryAdapter(
@@ -41,4 +44,13 @@ class EventRepositoryAdapter(
 
     override fun existsForTutor(id: EventId, tutorId: TutorId): Boolean =
         jpa.existsByIdAndTutorId(id.value, tutorId.value)
+
+    override fun findPendingReminders(start: LocalDateTime, end: LocalDateTime): List<EventReminderTarget> =
+        jpa.findReminderTargets(Status.PENDING, start, end).map { row ->
+            EventReminderTarget(
+                event = row.event.toDomain(),
+                tutorEmail = row.tutorEmail,
+                petName = row.petName
+            )
+        }
 }

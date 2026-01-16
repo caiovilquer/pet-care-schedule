@@ -66,4 +66,27 @@ interface EventJpaRepository : JpaRepository<EventJpa, Long> {
     """
     )
     fun countByTutorId(@Param("tutorId") tutorId: Long): Long
+
+    @Query(
+        """
+        select e as event, t.email as tutorEmail, p.name as petName
+          from EventJpa e
+          join PetJpa   p on p.id = e.petId
+          join TutorJpa t on t.id = p.tutorId
+         where e.status = :status
+           and e.dateStart >= :start
+           and e.dateStart < :end
+    """
+    )
+    fun findReminderTargets(
+        @Param("status") status: Status,
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime
+    ): List<EventReminderTargetRow>
+}
+
+interface EventReminderTargetRow {
+    val event: EventJpa
+    val tutorEmail: String
+    val petName: String
 }

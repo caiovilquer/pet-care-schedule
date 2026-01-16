@@ -10,6 +10,7 @@ import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import java.time.ZoneId
@@ -22,6 +23,7 @@ class EmailNotificationAdapter(
     private val props: MailApiProps,
     private val tutorRepo: TutorRepositoryPort,
     private val petRepo: PetRepositoryPort,
+    @param:Value("\${app.timezone:America/Sao_Paulo}") private val timezone: String
 ) : NotificationPort {
 
     private val log = LoggerFactory.getLogger(EmailNotificationAdapter::class.java)
@@ -65,10 +67,40 @@ class EmailNotificationAdapter(
         }
     }
 
+    override fun sendEventReminder(event: Event, tutorEmail: String, petName: String?) {
+        val html = renderTemplate(event, petName)
+        val subject = "Lembrete do PetCare: ${event.type.pt()}"
+
+        val payload = mapOf(
+            "from" to mapOf("email" to props.from, "name" to props.fromName),
+            "to" to listOf(mapOf("email" to tutorEmail)),
+            "subject" to subject,
+            "text" to stripHtml(html),
+            "html" to html
+        )
+
+        try {
+            val status =
+                http.post().uri("/email").bodyValue(payload).retrieve().onStatus({ s -> s.value() >= 400 }) { resp ->
+                    resp.bodyToMono(String::class.java).map { body ->
+                        IllegalStateException("Mail Send error ${resp.statusCode().value()}: $body")
+                    }
+                }.toBodilessEntity().map { it.statusCode }.block() ?: HttpStatus.ACCEPTED
+
+            if (status.is2xxSuccessful || status == HttpStatus.ACCEPTED) {
+                log.info("Sent mail (API) for event {} to {}", event.id, tutorEmail)
+            } else {
+                log.error("Mail Send returned status {} for event {}", status.value(), event.id)
+            }
+        } catch (ex: Exception) {
+            log.error("Failed to call Mail Send API for event {}", event.id, ex)
+        }
+    }
+
     // ===== apresentação =====
 
     private val PTBR = Locale("pt", "BR")
-    private val DEFAULTZONE = ZoneId.of("America/Sao_Paulo")
+    private val DEFAULTZONE = parseZoneId(timezone)
     private val DATEFMT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, dd/MM/yyyy 'às' HH:mm", PTBR)
 
     private fun EventType?.pt(): String = when (this) {
@@ -80,12 +112,13 @@ class EmailNotificationAdapter(
         else -> "Evento"
     }
 
-    private fun renderTemplate(event: Event, zoneId: ZoneId = DEFAULTZONE): String {
+    private fun renderTemplate(event: Event, petNameOverride: String? = null, zoneId: ZoneId = DEFAULTZONE): String {
         val tipo = event.type.pt()
         val dataStr = event.dateStart.atZone(zoneId).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
 
-        val petName = event.petId?.let { petRepo.findById(it) }?.name
-        val descricao = event.description?.takeIf { it.isNotBlank() } ?: "Sem descrição"
+        val petNameRaw = petNameOverride ?: event.petId?.let { petRepo.findById(it) }?.name
+        val petName = petNameRaw?.let { escapeHtml(it) } ?: "Pet"
+        val descricao = event.description?.takeIf { it.isNotBlank() }?.let { escapeHtml(it) } ?: "Sem descrição"
         val ctaUrl = "https://petcare.vilquer.dev/events"
 
         return """
@@ -151,10 +184,14 @@ class EmailNotificationAdapter(
         html.replace(Regex("<[^>]*>"), " ").replace("&nbsp;", " ").replace(Regex("\\s+"), " ").trim()
 
     private fun escapeHtml(s: String): String = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    private fun parseZoneId(value: String): ZoneId =
+        try {
+            ZoneId.of(value)
+        } catch (ex: Exception) {
+            ZoneId.of("America/Sao_Paulo")
+        }
 }
-
-
-
 
 
 

@@ -9,7 +9,7 @@ class EventReminderScheduler(
     private val eventService: EventAppService
 ) {
     /** Every day at 8 o'clock */
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 0 8 * * *", zone = "\${app.timezone:America/Sao_Paulo}")
     fun sendDailyReminders() {
         eventService.sendRemindersForToday()
     }
