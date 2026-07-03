@@ -2,8 +2,8 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
-import dev.vilquer.petcarescheduler.usecase.contract.drivenports.MailSenderPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetNotifierPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.PasswordResetUseCase
@@ -21,11 +21,9 @@ import java.util.Base64
 class PasswordResetService(
     private val tutors: TutorRepositoryPort,
     private val tokens: PasswordResetTokenPort,
-    private val mail: MailSenderPort,
+    private val notifier: PasswordResetNotifierPort,
     private val passwordHash: PasswordHashPort,
     private val clock: Clock = Clock.systemUTC(),
-    @param:Value("\${app.mail.from}") private val from: String,
-    @param:Value("\${app.frontend.base-url:https://petcare.vilquer.dev}") private val frontBase: String,
     @param:Value("\${app.reset.ttl-minutes:30}") private val ttlMinutes: Long,
 ) : PasswordResetUseCase {
 
@@ -35,7 +33,8 @@ class PasswordResetService(
         tokens.invalidateAllForUser(tutor.id ?: throw IllegalStateException("User not found"), now)
         val tokenPlain = generateToken()
         val tokenHash = sha256Hex(tokenPlain)
-        val expires = now.plus(Duration.ofMinutes(ttlMinutes))
+        val ttl = Duration.ofMinutes(ttlMinutes)
+        val expires = now.plus(ttl)
 
         tokens.create(
             PasswordResetToken(
@@ -45,7 +44,7 @@ class PasswordResetService(
             )
         )
 
-        sendResetEmail(tutor.email.value, tokenPlain)
+        notifier.sendResetLink(tutor.email, tokenPlain, ttl)
     }
 
     override fun validate(token: String): Boolean {
@@ -63,23 +62,6 @@ class PasswordResetService(
         tutors.updatePassword(tutor.id!!, passwordHash.hash(newPassword))
         tutors.bumpPasswordChangedAt(tutor.id!!, now)
         tokens.markUsed(t.id, now)
-    }
-
-    private fun sendResetEmail(to: String, token: String) {
-        val link = "$frontBase/auth/reset-password?token=$token"
-        val subject = "Redefinição de senha"
-        val text = "Use este link para redefinir sua senha: $link (expira em $ttlMinutes minutos)."
-        val html = """
-          <html><body style="font-family:Arial,Helvetica,sans-serif">
-            <h2>Redefinição de senha</h2>
-            <p>Para criar uma nova senha, clique no botão abaixo:</p>
-            <p><a href="$link" style="background:#2f855a;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Redefinir senha</a></p>
-            <p style="color:#666">O link expira em $ttlMinutes minutos.</p>
-            <p style="color:#777;font-size:12px">Se você não solicitou, ignore este e-mail.</p>
-          </body></html>
-        """.trimIndent()
-
-        mail.sendHtml(from, to, subject, text, html)
     }
 
     private fun generateToken(): String {

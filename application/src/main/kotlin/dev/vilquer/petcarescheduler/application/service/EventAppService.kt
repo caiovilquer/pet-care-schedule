@@ -42,7 +42,9 @@ class EventAppService(
             petId = cmd.petId
         )
         val saved = eventRepo.save(toSave)
-        notifier.sendEventReminder(saved)
+        // Notificação é responsabilidade do scheduler diário, não do cadastro:
+        // disparar aqui enviava um "lembrete" de um evento que pode ocorrer daqui
+        // a meses, no meio da requisição de criação.
         return EventRegisteredResult(saved.id!!)
     }
 
@@ -106,6 +108,6 @@ class EventAppService(
         val start = now.toLocalDate().atStartOfDay()
         val end = start.plusDays(1)
         eventRepo.findPendingReminders(start, end)
-            .forEach { notifier.sendEventReminder(it.event, it.tutorEmail, it.petName) }
+            .forEach { notifier.sendEventReminder(it) }
     }
 }

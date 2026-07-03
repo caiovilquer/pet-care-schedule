@@ -10,8 +10,7 @@ internal class FakeClock(var fixed: ZonedDateTime) : ClockPort {
 
 internal class FakeNotifier : NotificationPort {
     val notified = mutableListOf<Event>()
-    override fun sendEventReminder(event: Event) { notified.add(event) }
-    override fun sendEventReminder(event: Event, tutorEmail: String, petName: String?) { notified.add(event) }
+    override fun sendEventReminder(target: EventReminderTarget) { notified.add(target.event) }
 }
 
 internal class FakePasswordHash : PasswordHashPort {

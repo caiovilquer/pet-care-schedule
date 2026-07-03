@@ -29,7 +29,7 @@ class EventAppServiceTest {
     }
 
     @Test
-    fun `registerEvent persists event and notifies`() {
+    fun `registerEvent persists event without notifying immediately`() {
         val pet = petRepo.save(Pet(id = PetId(1), name="rex", specie="dog", race=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val cmd = RegisterEventCommand(pet.id!!, EventType.SERVICE, "bath", LocalDateTime.of(2025,7,2,9,0))
 
@@ -38,8 +38,8 @@ class EventAppServiceTest {
         assertEquals(EventId(1), result.eventId)
         val saved = eventRepo.findById(result.eventId)
         assertEquals(Status.PENDING, saved?.status)
-        assertEquals(1, notifier.notified.size)
-        assertEquals(saved, notifier.notified.first())
+        // notificação é responsabilidade exclusiva do scheduler diário
+        assertEquals(0, notifier.notified.size)
     }
 
     @Test

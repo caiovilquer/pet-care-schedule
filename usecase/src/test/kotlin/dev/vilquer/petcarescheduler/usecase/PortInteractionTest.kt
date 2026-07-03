@@ -30,8 +30,7 @@ class PortInteractionTest {
 
     private class FakeNotification : NotificationPort {
         var notified: Event? = null
-        override fun sendEventReminder(event: Event) { notified = event }
-        override fun sendEventReminder(event: Event, tutorEmail: String, petName: String?) { notified = event }
+        override fun sendEventReminder(target: EventReminderTarget) { notified = target.event }
     }
 
     private class RegisterEventUseCaseService(
@@ -48,7 +47,7 @@ class PortInteractionTest {
                 petId = cmd.petId
             )
             val saved = repo.save(toSave)
-            notifier.sendEventReminder(saved)
+            notifier.sendEventReminder(EventReminderTarget(saved, "tutor@example.com", null))
             return EventRegisteredResult(saved.id!!)
         }
     }

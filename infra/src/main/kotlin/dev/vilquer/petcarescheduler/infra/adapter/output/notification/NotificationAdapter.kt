@@ -3,9 +3,8 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.notification
 
 import dev.vilquer.petcarescheduler.core.domain.entity.Event
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventReminderTarget
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
-import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
-import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -21,59 +20,19 @@ import java.util.Locale
 class EmailNotificationAdapter(
     private val http: WebClient,
     private val props: MailApiProps,
-    private val tutorRepo: TutorRepositoryPort,
-    private val petRepo: PetRepositoryPort,
     @param:Value("\${app.timezone:America/Sao_Paulo}") private val timezone: String
 ) : NotificationPort {
 
     private val log = LoggerFactory.getLogger(EmailNotificationAdapter::class.java)
 
-    override fun sendEventReminder(event: Event) {
-        val tutorEmail =
-            event.petId?.let { petRepo.findById(it) }?.tutorId?.let { tutorRepo.findById(it)?.email?.value }
-
-        if (tutorEmail == null) {
-            log.warn("Could not determine tutor email for event {}", event.id)
-            return
-        }
-
-        val html = renderTemplate(event)
+    override fun sendEventReminder(target: EventReminderTarget) {
+        val event = target.event
+        val html = renderTemplate(event, target.petName)
         val subject = "Lembrete do PetCare: ${event.type.pt()}"
 
         val payload = mapOf(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
-            "to" to listOf(mapOf("email" to tutorEmail)),
-            "subject" to subject,
-            // envie um dos dois ou ambos:
-            "text" to stripHtml(html),
-            "html" to html
-        )
-
-        try {
-            val status =
-                http.post().uri("/email").bodyValue(payload).retrieve().onStatus({ s -> s.value() >= 400 }) { resp ->
-                    resp.bodyToMono(String::class.java).map { body ->
-                        IllegalStateException("Mail Send error ${resp.statusCode().value()}: $body")
-                    }
-                }.toBodilessEntity().map { it.statusCode }.block() ?: HttpStatus.ACCEPTED
-
-            if (status.is2xxSuccessful || status == HttpStatus.ACCEPTED) {
-                log.info("Sent mail (API) for event {} to {}", event.id, tutorEmail)
-            } else {
-                log.error("Mail Send returned status {} for event {}", status.value(), event.id)
-            }
-        } catch (ex: Exception) {
-            log.error("Failed to call Mail Send API for event {}", event.id, ex)
-        }
-    }
-
-    override fun sendEventReminder(event: Event, tutorEmail: String, petName: String?) {
-        val html = renderTemplate(event, petName)
-        val subject = "Lembrete do PetCare: ${event.type.pt()}"
-
-        val payload = mapOf(
-            "from" to mapOf("email" to props.from, "name" to props.fromName),
-            "to" to listOf(mapOf("email" to tutorEmail)),
+            "to" to listOf(mapOf("email" to target.tutorEmail)),
             "subject" to subject,
             "text" to stripHtml(html),
             "html" to html
@@ -88,7 +47,7 @@ class EmailNotificationAdapter(
                 }.toBodilessEntity().map { it.statusCode }.block() ?: HttpStatus.ACCEPTED
 
             if (status.is2xxSuccessful || status == HttpStatus.ACCEPTED) {
-                log.info("Sent mail (API) for event {} to {}", event.id, tutorEmail)
+                log.info("Sent mail (API) for event {} to {}", event.id, target.tutorEmail)
             } else {
                 log.error("Mail Send returned status {} for event {}", status.value(), event.id)
             }
@@ -112,11 +71,10 @@ class EmailNotificationAdapter(
         else -> "Evento"
     }
 
-    private fun renderTemplate(event: Event, petNameOverride: String? = null, zoneId: ZoneId = DEFAULTZONE): String {
+    private fun renderTemplate(event: Event, petNameRaw: String?, zoneId: ZoneId = DEFAULTZONE): String {
         val tipo = event.type.pt()
         val dataStr = event.dateStart.atZone(zoneId).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
 
-        val petNameRaw = petNameOverride ?: event.petId?.let { petRepo.findById(it) }?.name
         val petName = petNameRaw?.let { escapeHtml(it) } ?: "Pet"
         val descricao = event.description?.takeIf { it.isNotBlank() }?.let { escapeHtml(it) } ?: "Sem descrição"
         val ctaUrl = "https://petcare.vilquer.dev/events"
