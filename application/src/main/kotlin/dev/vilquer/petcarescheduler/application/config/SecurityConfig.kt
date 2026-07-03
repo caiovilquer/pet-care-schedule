@@ -88,8 +88,11 @@ class SecurityConfig {
                 val issuedAt = claims.issuedAt?.toInstant()
                     ?: throw BadJwtException("JWT sem iat")
                 if (jwtCacheProperties.passwordChangedAtCheckEnabled) {
+                    // Consulta escalar: no filtro não existe sessão Hibernate
+                    // (open-in-view só cobre o MVC), então carregar o agregado
+                    // Tutor aqui estoura LazyInitializationException
                     val passwordChangedAt = passwordChangedAtCache.getOrLoad(subject) {
-                        tutorRepo.findById(TutorId(subject))?.passwordChangedAt
+                        tutorRepo.findPasswordChangedAt(TutorId(subject))
                             ?: throw BadJwtException("Tutor nao encontrado")
                     }
                     val skew = jwtCacheProperties.invalidationSkew

@@ -41,6 +41,9 @@ class TutorRepositoryAdapter(
         if (rows == 0) throw EntityNotFoundException("Tutor id=$id não encontrado")
     }
 
+    override fun findPasswordChangedAt(id: TutorId): Instant? =
+        jpa.findPasswordChangedAtById(id.value)
+
     override fun findAll(page: Int, size: Int): List<Tutor> =
         jpa.findAll(PageRequest.of(page, size)).content.map { it.toDomain() }
 

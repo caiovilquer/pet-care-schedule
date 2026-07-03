@@ -37,6 +37,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     runtimeOnly("org.postgresql:postgresql")
+    // Perfil dev e testes de integração usam H2 em modo PostgreSQL
+    runtimeOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

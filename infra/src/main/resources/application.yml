@@ -1,3 +1,6 @@
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE}
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  flyway:
+    # migrações comuns + variantes por banco ({vendor} -> postgresql | h2)
+    locations: classpath:db/migration/common,classpath:db/migration/{vendor}

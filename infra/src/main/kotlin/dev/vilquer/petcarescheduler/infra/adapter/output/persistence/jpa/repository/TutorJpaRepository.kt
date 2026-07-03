@@ -13,6 +13,9 @@ interface TutorJpaRepository: JpaRepository<TutorJpa,Long> {
     fun findByEmail(email: String): TutorJpa?
     fun findByPhoneNumber(phoneNumber: String): TutorJpa?
 
+    @Query("select t.passwordChangedAt from TutorJpa t where t.id = :id")
+    fun findPasswordChangedAtById(@Param("id") id: Long): Instant?
+
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

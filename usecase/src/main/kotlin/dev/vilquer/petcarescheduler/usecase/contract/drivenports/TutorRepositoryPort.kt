@@ -13,4 +13,10 @@ interface TutorRepositoryPort {
     fun delete(id: TutorId)
     fun updatePassword(id: TutorId, passwordHash: String)
     fun bumpPasswordChangedAt(id: TutorId, whenUtc: java.time.Instant)
+
+    /**
+     * Consulta enxuta para validação de JWT (roda fora de sessão/transação):
+     * devolve null quando o tutor não existe.
+     */
+    fun findPasswordChangedAt(id: TutorId): java.time.Instant?
 }

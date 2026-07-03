@@ -70,7 +70,7 @@ class TutorMapperTest {
             assertEquals("Costa", lastName)
             assertEquals("mari@ex.com", email)
             assertEquals("senhaX", passwordHash)
-            assertEquals(PhoneNumber.of("55588881111").getOrNull(), phoneNumber)
+            assertEquals(PhoneNumber.of("55588881111").getOrNull()?.e164, phoneNumber)
             assertNull(avatar)
 
             // Pets assertions
@@ -103,7 +103,7 @@ class TutorMapperTest {
             assertEquals("Lima", lastName)
             assertEquals("ana.paula@ex.com", email)
             assertEquals("newHash", passwordHash)
-            assertEquals(PhoneNumber.of("55577773333").getOrNull(), phoneNumber)
+            assertEquals(PhoneNumber.of("55577773333").getOrNull()?.e164, phoneNumber)
             assertEquals("new.png", avatar)
 
             // Pets assertions

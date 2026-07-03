@@ -36,8 +36,10 @@ class TutorMapperIntegrationTest {
     }
 
     private fun createTestTutorWithPet(): Tutor {
+        // id null: o identity do H2 é compartilhado entre os testes do mesmo
+        // contexto, então qualquer id pré-fixado quebra a FK criada na V5
         return Tutor(
-            id = TutorId(1),
+            id = null,
             firstName = "Carlos",
             lastName = "Mendes",
             email = Email.of("carlos@ex.com").getOrThrow(),
@@ -52,7 +54,7 @@ class TutorMapperIntegrationTest {
                     race = "SRD",
                     birthdate = LocalDate.of(2020, 5, 10),
                     photoUrl = "https://example.com/pets/rex.png",
-                    tutorId = TutorId(5) // will be adjusted by mapper
+                    tutorId = null
                 )
             )
         )

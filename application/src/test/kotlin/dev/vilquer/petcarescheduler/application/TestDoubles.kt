@@ -42,6 +42,8 @@ internal class InMemoryTutorRepo(initial: Map<TutorId, Tutor> = emptyMap()) : Tu
         val existing = store[id] ?: return
         store[id] = existing.copy(passwordChangedAt = whenUtc)
     }
+    override fun findPasswordChangedAt(id: TutorId): java.time.Instant? =
+        store[id]?.passwordChangedAt
 }
 
 internal class InMemoryPetRepo(initial: Map<PetId, Pet> = emptyMap()) : PetRepositoryPort {
