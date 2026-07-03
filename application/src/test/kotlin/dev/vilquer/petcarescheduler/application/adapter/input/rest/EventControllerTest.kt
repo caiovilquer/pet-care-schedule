@@ -1,5 +1,6 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.vilquer.petcarescheduler.application.mapper.EventDtoMapper
 import dev.vilquer.petcarescheduler.core.domain.entity.EventId
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.springframework.http.MediaType
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
@@ -33,7 +35,7 @@ class EventControllerTest {
     private val getEvent: GetEventUseCase = mock()
     private val mapper = EventDtoMapper()            // classe concreta
     private lateinit var mvc: MockMvc
-    private val objectMapper = jacksonObjectMapper()
+    private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
     @BeforeEach
     fun setup() {
@@ -51,23 +53,25 @@ class EventControllerTest {
                 )
             )
             .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
+            .setMessageConverters(MappingJackson2HttpMessageConverter(objectMapper))
             .build()
     }
 
     @Test
     fun `register returns 201`() {
         setJwtPrincipal()
-        // stub do serviço
-        whenever(registerEvent.execute(any(), any()))
-            .thenReturn(EventRegisteredResult(EventId(2)))
-
         val req = EventDtoMapper.RegisterRequest(
             petId       = 1,
             type        = "SERVICE",
             description = "desc",
-            dateStart   = LocalDateTime.of(2025, 7, 1, 10, 0),
+            // precisa ser futuro por causa do @FutureOrPresent do DTO
+            dateStart   = LocalDateTime.now().plusDays(1).withNano(0),
             frequency   = null
         )
+        // Matchers (any/eq) sobre value classes explodem no unboxing; usar valores concretos
+        val expectedCmd = mapper.toRegisterCommand(req)
+        whenever(registerEvent.execute(expectedCmd, TutorId(1)))
+            .thenReturn(EventRegisteredResult(EventId(2)))
 
         mvc.perform(
             post("/api/v1/events")
@@ -77,8 +81,7 @@ class EventControllerTest {
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.eventId").value(2))
 
-        // opcional: verificar que o serviço foi chamado
-        verify(registerEvent).execute(any(), eq(TutorId(1)))
+        verify(registerEvent).execute(expectedCmd, TutorId(1))
     }
 
     private fun setJwtPrincipal(tutorId: Long = 1L) {

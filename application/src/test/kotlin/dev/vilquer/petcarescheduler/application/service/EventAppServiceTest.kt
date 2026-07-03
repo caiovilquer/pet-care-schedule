@@ -1,6 +1,7 @@
 package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.*
+import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.usecase.command.DeleteEventCommand
 import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
@@ -24,7 +25,7 @@ class EventAppServiceTest {
     @Test
     fun `registerEvent should throw when pet does not exist`() {
         val cmd = RegisterEventCommand(PetId(1), EventType.VACCINE, "vac", LocalDateTime.now())
-        assertThrows(IllegalArgumentException::class.java) { service.execute(cmd, tutorId) }
+        assertThrows(ForbiddenException::class.java) { service.execute(cmd, tutorId) }
     }
 
     @Test
@@ -42,12 +43,11 @@ class EventAppServiceTest {
     }
 
     @Test
-    fun `deleteEvent marks event done`() {
+    fun `deleteEvent removes event`() {
         val pet = petRepo.save(Pet(id = PetId(1), name="rex", specie="dog", race=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val ev = eventRepo.save(Event(type=EventType.DIARY, description=null, dateStart=LocalDateTime.now(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
         service.execute(DeleteEventCommand(ev.id!!), tutorId)
-        val updated = eventRepo.findById(ev.id!!)
-        assertEquals(Status.DONE, updated?.status)
+        assertNull(eventRepo.findById(ev.id!!))
     }
 
     @Test

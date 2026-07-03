@@ -83,7 +83,7 @@ class TutorControllerTest {
             pets = emptyList()
         )
 
-        whenever(getTutor.get(eq(TutorId(1)))).thenReturn(detail)
+        whenever(getTutor.get(TutorId(1))).thenReturn(detail)
 
         mvc.perform(get("/api/v1/tutors/me"))
             .andExpect(status().isOk)

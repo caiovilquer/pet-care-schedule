@@ -2,25 +2,15 @@ package dev.vilquer.petcarescheduler.application.adapter.input
 
 import dev.vilquer.petcarescheduler.application.adapter.input.rest.ApiExceptionHandler
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.BadCredentialsException
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
-@WebMvcTest(ExceptionHandlerTest.TestController::class)
-@AutoConfigureMockMvc(addFilters = false)
-@Import(ApiExceptionHandler::class)
 class ExceptionHandlerTest {
-
-    @Autowired
-    private lateinit var mockMvc: MockMvc
 
     @RestController
     class TestController {
@@ -39,6 +29,11 @@ class ExceptionHandlerTest {
             throw BadCredentialsException("bad creds")
         }
     }
+
+    private val mockMvc = MockMvcBuilders
+        .standaloneSetup(TestController())
+        .setControllerAdvice(ApiExceptionHandler())
+        .build()
 
     @Test
     fun `illegal argument maps to 400`() {

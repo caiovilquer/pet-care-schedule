@@ -1,5 +1,6 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.vilquer.petcarescheduler.application.mapper.PetDtoMapper
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.springframework.http.MediaType
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
@@ -31,7 +33,7 @@ class PetControllerTest {
     private val getPet: GetPetUseCase = mock()
     private val mapper = PetDtoMapper()               // classe concreta
     private lateinit var mvc: MockMvc
-    private val objectMapper = jacksonObjectMapper()
+    private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
     @BeforeEach
     fun setup() {
@@ -47,6 +49,7 @@ class PetControllerTest {
                 )
             )
             .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
+            .setMessageConverters(MappingJackson2HttpMessageConverter(objectMapper))
             .build()
     }
 
@@ -81,7 +84,8 @@ class PetControllerTest {
             total = 1, page = 0, size = 20
         )
 
-        whenever(listPets.list(eq(TutorId(1)), eq(0), eq(20))).thenReturn(page)
+        // Matchers sobre value classes não casam com o argumento desembrulhado; usar valores concretos
+        whenever(listPets.list(TutorId(1), 0, 20)).thenReturn(page)
 
         mvc.perform(get("/api/v1/pets"))
             .andExpect(status().isOk)
@@ -91,14 +95,11 @@ class PetControllerTest {
     @Test
     fun `delete pet delegates to service`() {
         setJwtPrincipal()
-        val captor = argumentCaptor<DeletePetCommand>()
-        doNothing().whenever(deletePet).execute(captor.capture(), any())
-
         mvc.perform(delete("/api/v1/pets/3"))
             .andExpect(status().isNoContent)
 
-        verify(deletePet).execute(any(), eq(TutorId(1))) // garante que foi chamado
-        assert(captor.firstValue.petId == PetId(3))     // verifica ID capturado
+        // Matchers/captors sobre value classes explodem no unboxing; usar valores concretos
+        verify(deletePet).execute(DeletePetCommand(PetId(3)), TutorId(1))
     }
 
     private fun setJwtPrincipal(tutorId: Long = 1L) {
