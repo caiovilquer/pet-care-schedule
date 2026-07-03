@@ -13,9 +13,6 @@ import java.time.LocalDateTime
 
 @Repository
 interface EventJpaRepository : JpaRepository<EventJpa, Long> {
-    fun findByType(type: EventType): List<EventJpa>
-    fun findByDateStart(start: LocalDateTime): List<EventJpa>
-    fun findByStatus(status: Status): List<EventJpa>
     fun findAllByPetId(petId: Long): List<EventJpa>
 
     @Query(

@@ -22,13 +22,6 @@ fun Pet.toDetailResult(): PetDetailResult = PetDetailResult(
     }
 )
 
-fun Tutor.toSummary(): TutorSummary = TutorSummary(
-    id = id!!,
-    fullName = listOfNotNull(firstName, lastName).joinToString(" ").trim(),
-    email = email,
-    petsCount = pets.size
-)
-
 fun Tutor.toDetailResult(): TutorDetailResult = TutorDetailResult(
     id = id!!,
     firstName = firstName,

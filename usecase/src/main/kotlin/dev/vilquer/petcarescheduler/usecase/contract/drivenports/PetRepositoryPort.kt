@@ -8,8 +8,6 @@ interface PetRepositoryPort {
     fun save(pet: Pet): Pet
     fun findById(id: PetId): Pet?
     fun delete(id: PetId)
-    fun findAll(page: Int, size: Int): List<Pet>
-    fun countAll(): Long
 
     fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Pet>
     fun countByTutor(tutorId: TutorId): Long

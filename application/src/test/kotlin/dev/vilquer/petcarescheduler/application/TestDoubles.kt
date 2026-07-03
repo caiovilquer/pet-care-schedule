@@ -57,9 +57,6 @@ internal class InMemoryPetRepo(initial: Map<PetId, Pet> = emptyMap()) : PetRepos
     }
     override fun findById(id: PetId): Pet? = store[id]
     override fun delete(id: PetId) { store.remove(id) }
-    override fun findAll(page: Int, size: Int): List<Pet> =
-        store.values.drop(page * size).take(size)
-    override fun countAll(): Long = store.size.toLong()
     override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Pet> =
         store.values.filter { it.tutorId == tutorId }.drop(page * size).take(size)
     override fun countByTutor(tutorId: TutorId): Long =

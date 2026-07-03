@@ -22,11 +22,6 @@ class PetRepositoryAdapter(
     override fun delete(id: PetId) =
         jpa.deleteById(id.value)
 
-    override fun findAll(page: Int, size: Int) =
-        jpa.findAll(PageRequest.of(page, size)).content.map { it.toDomain() }
-
-    override fun countAll(): Long = jpa.count()
-
     override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Pet> =
         jpa.findAllByTutorId(tutorId.value, PageRequest.of(page, size)).content.map { it.toDomain() }
 

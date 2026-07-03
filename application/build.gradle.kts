@@ -1,6 +1,5 @@
 plugins {
     kotlin("jvm")
-    kotlin("kapt")
     kotlin("plugin.spring")
     id("io.spring.dependency-management")
     `java-library`
@@ -30,10 +29,6 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-
-
-    implementation("org.mapstruct:mapstruct:1.6.3")
-    kapt("org.mapstruct:mapstruct-processor:1.6.3")
 
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
     testImplementation("org.springframework.boot:spring-boot-starter-test") {

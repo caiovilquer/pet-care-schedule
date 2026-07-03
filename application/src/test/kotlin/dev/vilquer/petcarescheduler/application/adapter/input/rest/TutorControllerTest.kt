@@ -9,8 +9,6 @@ import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.TutorCreatedResult
 import dev.vilquer.petcarescheduler.usecase.result.TutorDetailResult
-import dev.vilquer.petcarescheduler.usecase.result.TutorSummary
-import dev.vilquer.petcarescheduler.usecase.result.TutorsPageResult
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*

@@ -30,14 +30,6 @@ class TutorAppServiceTest {
     }
 
     @Test
-    fun `listTutors returns data`() {
-        tutorRepo.save(Tutor(firstName="Ana", lastName=null, email=Email.of("a@e.com").getOrThrow(), passwordHash="h", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val page = service.list(0, 10)
-        assertEquals(1, page.total)
-        assertEquals(1, page.items.size)
-    }
-
-    @Test
     fun `deleteTutor removes tutor`() {
         val saved = tutorRepo.save(Tutor(firstName="Ana", lastName=null, email=Email.of("a@e.com").getOrThrow(), passwordHash="h", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
         service.execute(DeleteTutorCommand(saved.id!!))

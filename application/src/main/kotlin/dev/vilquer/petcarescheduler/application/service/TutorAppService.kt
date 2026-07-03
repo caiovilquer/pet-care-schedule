@@ -1,7 +1,6 @@
 package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
-import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
@@ -18,7 +17,6 @@ class TutorAppService(
     private val passwordHash: PasswordHashPort
 ) :
     CreateTutorUseCase,
-    ListTutorsUseCase,
     UpdateTutorUseCase,
     DeleteTutorUseCase,
     GetTutorUseCase {
@@ -37,12 +35,6 @@ class TutorAppService(
         )
         val saved = tutorRepo.save(tutor)
         return TutorCreatedResult(saved.id!!)
-    }
-
-    override fun list(page: Int, size: Int): TutorsPageResult {
-        val items = tutorRepo.findAll(page, size).map { it.toSummary() }
-        val total = tutorRepo.countAll()
-        return TutorsPageResult(items, total, page, size)
     }
 
     override fun execute(cmd: UpdateTutorCommand): TutorDetailResult {
