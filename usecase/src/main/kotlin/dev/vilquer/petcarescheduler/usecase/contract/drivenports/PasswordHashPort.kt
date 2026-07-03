@@ -1,5 +1,6 @@
 package dev.vilquer.petcarescheduler.usecase.contract.drivenports
 
-fun interface PasswordHashPort {
+interface PasswordHashPort {
     fun hash(raw: CharSequence): String
+    fun matches(raw: CharSequence, hash: String): Boolean
 }

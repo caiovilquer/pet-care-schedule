@@ -3,11 +3,11 @@ package dev.vilquer.petcarescheduler.application.service
 import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.MailSenderPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.PasswordResetUseCase
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -22,7 +22,7 @@ class PasswordResetService(
     private val tutors: TutorRepositoryPort,
     private val tokens: PasswordResetTokenPort,
     private val mail: MailSenderPort,
-    private val passwordEncoder: PasswordEncoder,
+    private val passwordHash: PasswordHashPort,
     private val clock: Clock = Clock.systemUTC(),
     @param:Value("\${app.mail.from}") private val from: String,
     @param:Value("\${app.frontend.base-url:https://petcare.vilquer.dev}") private val frontBase: String,
@@ -60,7 +60,7 @@ class PasswordResetService(
         if (t.expiresAt.isBefore(now)) throw IllegalArgumentException("expired_token")
 
         val tutor = tutors.findById(t.userId) ?: throw IllegalStateException("user_not_found")
-        tutors.updatePassword(tutor.id!!, passwordEncoder.encode(newPassword))
+        tutors.updatePassword(tutor.id!!, passwordHash.hash(newPassword))
         tutors.bumpPasswordChangedAt(tutor.id!!, now)
         tokens.markUsed(t.id, now)
     }

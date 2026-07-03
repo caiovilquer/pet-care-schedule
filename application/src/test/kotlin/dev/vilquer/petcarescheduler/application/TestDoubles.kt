@@ -16,6 +16,7 @@ internal class FakeNotifier : NotificationPort {
 
 internal class FakePasswordHash : PasswordHashPort {
     override fun hash(raw: CharSequence): String = "hashed-$raw"
+    override fun matches(raw: CharSequence, hash: String): Boolean = hash(raw) == hash
 }
 
 internal class InMemoryTutorRepo(initial: Map<TutorId, Tutor> = emptyMap()) : TutorRepositoryPort {

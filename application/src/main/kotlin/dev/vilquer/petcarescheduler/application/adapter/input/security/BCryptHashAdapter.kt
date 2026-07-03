@@ -9,4 +9,5 @@ class BCryptHashAdapter(
     private val encoder: PasswordEncoder
 ) : PasswordHashPort {
     override fun hash(raw: CharSequence): String = encoder.encode(raw)
+    override fun matches(raw: CharSequence, hash: String): Boolean = encoder.matches(raw, hash)
 }
