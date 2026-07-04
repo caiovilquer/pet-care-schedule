@@ -1,5 +1,5 @@
 rootProject.name = "petcarescheduler"
-include("core", "usecase", "application", "infra")
+include("core", "usecase", "application", "adapter-persistence", "adapter-messaging", "adapter-rest", "bootstrap")
 pluginManagement {
     repositories { gradlePluginPortal(); mavenCentral() }
 }

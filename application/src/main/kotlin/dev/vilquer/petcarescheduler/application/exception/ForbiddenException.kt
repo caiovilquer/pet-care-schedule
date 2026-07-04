@@ -1,7 +1,4 @@
 package dev.vilquer.petcarescheduler.application.exception
 
-import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.ResponseStatus
-
-@ResponseStatus(HttpStatus.FORBIDDEN)
+// O mapeamento HTTP (403) é responsabilidade do ApiExceptionHandler, no adapter REST.
 class ForbiddenException(msg: String) : RuntimeException(msg)

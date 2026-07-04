@@ -4,6 +4,7 @@ plugins {
     id("io.spring.dependency-management")
     `java-library`
 }
+
 kotlin { jvmToolchain(17) }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions { jvmTarget = "17" }
@@ -19,12 +20,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":usecase"))
 
-    // @Service/@Value/@ConfigurationProperties (contexto/autoconfigure mínimos)
-    implementation("org.springframework.boot:spring-boot-starter")
-    // @Transactional
-    implementation("org.springframework:spring-tx")
-    // BadCredentialsException — o único tipo de spring-security usado pelos services
-    implementation("org.springframework.security:spring-security-core")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

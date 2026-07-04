@@ -53,13 +53,13 @@ Estrutura em quatro módulos seguindo DDD:
 # Opcional: servidor de e‑mail fake
 docker compose up -d mailhog
 
-# Inicia a aplicação (módulo infra) com H2 e swagger
-./gradlew :infra:bootRun
+# Inicia a aplicação (módulo bootstrap) com H2 e swagger
+./gradlew :bootstrap:bootRun
 ```
 
 ## Producao (sem Docker)
 
 ```bash
-./gradlew :infra:bootJar
+./gradlew :bootstrap:bootJar
 scripts/run-prod.sh
 ```
