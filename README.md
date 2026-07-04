@@ -32,14 +32,25 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
 
 ## Arquitetura
 
-Estrutura em quatro módulos seguindo DDD:
+Estrutura hexagonal (ports & adapters) em seis módulos. `core` e `application`
+são Kotlin puro — nenhuma dependência de Spring, Jakarta ou qualquer
+framework — e essa fronteira é verificada em tempo de teste (testes de
+arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
+`./gradlew check`), não apenas por convenção.
 
-| Módulo         | Papel                                                             |
-|----------------|-------------------------------------------------------------------|
-| **core**       | Entidades (Tutor, Pet, Event) e Value Objects (Email, Phone, etc.)|
-| **usecase**    | Portas de entrada/saída, comandos e resultados das regras de negócio |
-| **application**| Services, REST controllers, scheduler e mapeadores (MapStruct)    |
-| **infra**      | Spring Boot: JPA, mail, configuração, adaptadores e entidade JPA  |
+| Módulo                  | Papel                                                                    |
+|-------------------------|---------------------------------------------------------------------------|
+| **core**                | Entidades (Tutor, Pet, Event) e Value Objects (Email, Phone, etc.). Zero dependências. |
+| **application**         | Ports de entrada/saída, comandos, resultados e os use cases (services). Kotlin puro — sem Spring. |
+| **adapter-rest**        | Controllers REST, DTOs, `ApiExceptionHandler`, Spring Security (JWT, CORS), emissão de token, hash de senha. |
+| **adapter-persistence** | Entidades JPA, repositórios Spring Data, mappers, adapters de persistência e migrações Flyway. |
+| **adapter-messaging**   | Cliente HTTP (WebClient) e adapters de e-mail (MailerSend).              |
+| **bootstrap**           | Ponto de entrada Spring Boot: wiring manual dos use cases (`UseCaseWiring`), schedulers, configuração de ambiente (`application*.yml`, SSL, JVM). |
+
+`core` e `application` não conhecem nenhum dos três adapters nem o
+`bootstrap`; os adapters não se importam entre si; todo o grafo de beans dos
+use cases é montado explicitamente em `UseCaseWiring` (bootstrap), já que os
+services não carregam `@Service`/`@Value`/`@ConfigurationProperties`.
 
 ## Requisitos
 

@@ -327,10 +327,15 @@ não importa adapter; (4) services implementam ao menos um driving port;
 
 ## 8. Definition of Done
 
-- [ ] `settings.gradle.kts` = `core, application, adapter-rest, adapter-persistence, adapter-messaging, bootstrap`
-- [ ] `./gradlew :application:dependencies` e `:core:dependencies` sem qualquer artefato Spring/Jakarta
-- [ ] Konsist verde no `./gradlew check` (e falhando quando violado de propósito)
-- [ ] Smoke E2E (PR 0) verde
-- [ ] `./gradlew :bootstrap:bootRun` sobe com H2 + Swagger; `run-prod.sh` funciona com o novo caminho do jar
-- [ ] Nenhum `io.jsonwebtoken`, `jakarta.persistence` ou template HTML dentro de `application/`
-- [ ] README e AUDITORIA.md atualizados
+- [x] `settings.gradle.kts` = `core, application, adapter-rest, adapter-persistence, adapter-messaging, bootstrap`
+- [x] `./gradlew :application:dependencies` e `:core:dependencies` sem qualquer artefato Spring/Jakarta
+- [x] Konsist verde no `./gradlew check` (e falhando quando violado de propósito — verificado manualmente no PR 8)
+- [x] Smoke E2E (PR 0) verde
+- [x] `./gradlew :bootstrap:bootRun` sobe com H2; signup real via curl retorna 201 (Swagger/H2-console continuam atrás de auth — comportamento pré-existente, não alterado nesta fase); `run-prod.sh` aponta para `bootstrap/build/libs/petcare.jar`
+- [x] Nenhum `io.jsonwebtoken`, `jakarta.persistence` ou template HTML dentro de `application/`
+- [x] README e AUDITORIA.md atualizados
+
+**Status: Fase 1 concluída (2026-07-03).** Todos os 10 PRs (0–9) implementados e
+commitados sequencialmente, build e `check` verdes a cada etapa. 45 testes
+passando (usecase+application: 19, adapter-rest: 9, adapter-persistence: 14,
+bootstrap: 3, incluindo o smoke E2E e os 7 testes de arquitetura Konsist).

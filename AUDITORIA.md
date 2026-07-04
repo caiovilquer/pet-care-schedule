@@ -31,6 +31,12 @@ Data: 2025-02-14
 
 ## Overengineering
 - Estrutura em multiplos modulos e mapeadores ainda adiciona complexidade para o tamanho atual do dominio.
+  **Atualizado 2026-07-03 (Fase 1):** o toolchain MapStruct/kapt foi removido (nunca teve
+  nenhum mapper gerado, so custava tempo de build); os modulos `usecase` e `application`
+  foram fundidos. A contagem de modulos subiu de 4 para 6, mas agora cada um delimita uma
+  fronteira real (driving/driven adapter por tecnologia), verificada por testes de
+  arquitetura (Konsist) em vez de convencao — ver `PLANO-FASE-1.md`. Overengineering
+  remanescente, se houver, deve ser reavaliado a luz dessa nova estrutura, nao da antiga.
 
 ## Testes e cobertura (gaps)
 - Faltam testes de integracao para o cache de `passwordChangedAt` e invalidação de JWT.
