@@ -18,7 +18,6 @@ dependencyManagement {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":usecase"))
     implementation(project(":application"))
 
     implementation("org.springframework.security:spring-security-crypto")

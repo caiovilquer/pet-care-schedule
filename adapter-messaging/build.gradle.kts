@@ -18,7 +18,7 @@ dependencyManagement {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":usecase"))
+    implementation(project(":application"))
 
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 

@@ -9,9 +9,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPor
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
-import org.springframework.stereotype.Service
 
-@Service
 class TutorAppService(
     private val tutorRepo: TutorRepositoryPort,
     private val passwordHash: PasswordHashPort

@@ -11,9 +11,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPo
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
-import org.springframework.stereotype.Service
 
-@Service
 class PetAppService(
     private val petRepo: PetRepositoryPort,
     private val tutorRepo: TutorRepositoryPort

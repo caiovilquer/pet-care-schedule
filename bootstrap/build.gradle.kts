@@ -22,7 +22,6 @@ springBoot {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":usecase"))
     implementation(project(":application"))
     implementation(project(":adapter-rest"))
     implementation(project(":adapter-persistence"))

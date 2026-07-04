@@ -7,8 +7,6 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetNo
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.PasswordResetUseCase
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -17,14 +15,13 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Base64
 
-@Service
 class PasswordResetService(
     private val tutors: TutorRepositoryPort,
     private val tokens: PasswordResetTokenPort,
     private val notifier: PasswordResetNotifierPort,
     private val passwordHash: PasswordHashPort,
     private val clock: Clock = Clock.systemUTC(),
-    @param:Value("\${app.reset.ttl-minutes:30}") private val ttlMinutes: Long,
+    private val ttlMinutes: Long = 30,
 ) : PasswordResetUseCase {
 
     override fun requestReset(email: Email) {

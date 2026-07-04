@@ -1,9 +1,9 @@
 package dev.vilquer.petcarescheduler.application.adapter.input
 
 import dev.vilquer.petcarescheduler.application.adapter.input.rest.ApiExceptionHandler
+import dev.vilquer.petcarescheduler.application.exception.InvalidCredentialsException
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
@@ -26,7 +26,7 @@ class ExceptionHandlerTest {
 
         @GetMapping("/bad")
         fun badCredentials(): String {
-            throw BadCredentialsException("bad creds")
+            throw InvalidCredentialsException("bad creds")
         }
     }
 

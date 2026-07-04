@@ -2,13 +2,11 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.exception.RateLimitException
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.RateLimitStorePort
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.stereotype.Service
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 
-@ConfigurationProperties("app.security.rate-limit")
+// Binding a partir de application.yml (app.security.rate-limit) é feito no bootstrap.
 data class RateLimitProperties(
     val login: RateLimitConfig = RateLimitConfig(),
     val passwordReset: RateLimitConfig = RateLimitConfig()
@@ -21,7 +19,6 @@ data class RateLimitConfig(
 
 enum class RateLimitAction { LOGIN, PASSWORD_RESET }
 
-@Service
 class RateLimiterService(
     private val props: RateLimitProperties,
     private val store: RateLimitStorePort,

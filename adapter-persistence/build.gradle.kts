@@ -19,7 +19,7 @@ dependencyManagement {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":usecase"))
+    implementation(project(":application"))
 
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     // Spring Data precisa de kotlin-reflect para introspectar repositórios Kotlin

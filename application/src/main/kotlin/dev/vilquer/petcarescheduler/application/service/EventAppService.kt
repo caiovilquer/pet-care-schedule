@@ -11,9 +11,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.EventDetailResult
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
 import dev.vilquer.petcarescheduler.usecase.result.EventsPageResult
-import org.springframework.stereotype.Service
 
-@Service
 class EventAppService(
     private val eventRepo: EventRepositoryPort,
     private val petRepo: PetRepositoryPort,
