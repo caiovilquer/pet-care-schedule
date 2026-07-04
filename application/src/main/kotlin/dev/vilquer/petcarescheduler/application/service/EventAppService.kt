@@ -26,7 +26,8 @@ class EventAppService(
     ToggleEventUseCase,
     ListEventsUseCase,
     ListPetEventsUseCase,
-    GetEventUseCase
+    GetEventUseCase,
+    SendDailyRemindersUseCase
 
 {
     override fun execute(cmd: RegisterEventCommand, tutorId: TutorId): EventRegisteredResult {
@@ -103,7 +104,7 @@ class EventAppService(
         eventRepo.findByIdAndTutor(id, tutorId)?.toDetailResult()
             ?: throw IllegalArgumentException("Event ${id.value} not found")
 
-    fun sendRemindersForToday() {
+    override fun sendRemindersForToday() {
         val now = clock.now()
         val start = now.toLocalDate().atStartOfDay()
         val end = start.plusDays(1)
