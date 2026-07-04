@@ -1,4 +1,4 @@
-package dev.vilquer.petcarescheduler.application.security
+package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

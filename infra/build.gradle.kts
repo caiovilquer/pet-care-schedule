@@ -41,6 +41,11 @@ dependencies {
     runtimeOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    // TestRestTemplate cai para o HttpURLConnection da JDK sem um client HTTP
+    // dedicado no classpath; esse client lança HttpRetryException em qualquer
+    // resposta 401 recebida com corpo em modo streaming (bug/limitação da JDK,
+    // não do código de produção — confirmado batendo direto com curl).
+    testImplementation("org.apache.httpcomponents.client5:httpclient5")
 }
 
 tasks.test {

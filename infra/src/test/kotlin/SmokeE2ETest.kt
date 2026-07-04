@@ -140,4 +140,26 @@ class SmokeE2ETest {
         )
         assertEquals(0, petsAfter.body!!["items"].size(), "pets after delete: ${petsAfter.body}")
     }
+
+    @Test
+    fun `login rate limit blocks after repeated failed attempts`() {
+        // signup próprio para não competir por janela de rate limit com o outro teste
+        rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Bea","lastName":null,"email":"bea.smoke@example.com","rawPassword":"correct-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+
+        fun wrongLogin() = HttpEntity("""{"email":"bea.smoke@example.com","password":"wrong-pwd"}""", jsonHeaders())
+        // default: maxAttempts=5 na janela; a 6a tentativa deve ser bloqueada
+        repeat(5) {
+            val attempt = rest.postForEntity("/api/v1/auth/login", wrongLogin(), JsonNode::class.java)
+            assertEquals(HttpStatus.UNAUTHORIZED, attempt.statusCode, "attempt $it: ${attempt.body}")
+        }
+        val blocked = rest.postForEntity("/api/v1/auth/login", wrongLogin(), JsonNode::class.java)
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, blocked.statusCode, "blocked: ${blocked.body}")
+    }
 }

@@ -1,5 +1,6 @@
-package dev.vilquer.petcarescheduler.application.security
+package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository
 
+import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.RateLimitAttempt
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
