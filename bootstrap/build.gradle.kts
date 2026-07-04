@@ -46,6 +46,9 @@ dependencies {
     // resposta 401 recebida com corpo em modo streaming (bug/limitação da JDK,
     // não do código de produção — confirmado batendo direto com curl).
     testImplementation("org.apache.httpcomponents.client5:httpclient5")
+
+    // Testes de arquitetura (fronteira hexagonal por módulo)
+    testImplementation("com.lemonappdev:konsist:0.17.3")
 }
 
 tasks.test {
