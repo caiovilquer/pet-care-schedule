@@ -15,9 +15,9 @@ class PetJpa {
     lateinit var name: String
 
     @Column(nullable = false)
-    lateinit var specie: String
+    lateinit var species: String
 
-    var race: String? = null
+    var breed: String? = null
 
     @Column(name = "birthdate")
     var birthdate: LocalDate? = null

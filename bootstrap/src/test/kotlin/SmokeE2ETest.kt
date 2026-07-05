@@ -78,7 +78,7 @@ class SmokeE2ETest {
         val petCreated = rest.postForEntity(
             "/api/v1/pets",
             HttpEntity(
-                """{"name":"Rex","specie":"Dog","race":"SRD","birthdate":"2020-01-01"}""",
+                """{"name":"Rex","species":"Dog","breed":"SRD","birthdate":"2020-01-01"}""",
                 jsonHeaders(token),
             ),
             JsonNode::class.java,

@@ -50,8 +50,8 @@ class PetAppServiceTest {
     @Test
     fun `updatePet modifies existing pet`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val saved = petRepo.save(Pet(name="Rex", specie="Dog", race="mix", birthdate=LocalDate.now(), tutorId=tutor.id!!))
-        val cmd = UpdatePetCommand(saved.id!!, name="Bidu", race=null, birthdate=null)
+        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed="mix", birthdate=LocalDate.now(), tutorId=tutor.id!!))
+        val cmd = UpdatePetCommand(saved.id!!, name="Bidu", breed=null, birthdate=null)
         val detail = service.execute(cmd, tutor.id!!)
         assertEquals("Bidu", detail.name)
     }
@@ -59,7 +59,7 @@ class PetAppServiceTest {
     @Test
     fun `listPets returns paginated result`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        petRepo.save(Pet(name="P1", specie="Dog", race=null, birthdate=LocalDate.now(), photoUrl = null, tutorId=tutor.id!!))
+        petRepo.save(Pet(name="P1", species="Dog", breed=null, birthdate=LocalDate.now(), photoUrl = null, tutorId=tutor.id!!))
         val page = service.list(tutor.id!!, 0, 10)
         assertEquals(1, page.total)
         assertEquals(1, page.items.size)
@@ -68,7 +68,7 @@ class PetAppServiceTest {
     @Test
     fun `deletePet removes pet`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val saved = petRepo.save(Pet(name="Rex", specie="Dog", race=null, birthdate=LocalDate.now(), tutorId=tutor.id!!))
+        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed=null, birthdate=LocalDate.now(), tutorId=tutor.id!!))
         service.execute(DeletePetCommand(saved.id!!), tutor.id!!)
         assertNull(petRepo.findById(saved.id!!))
     }
@@ -76,7 +76,7 @@ class PetAppServiceTest {
     @Test
     fun `getPet returns detail`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val saved = petRepo.save(Pet(name="Rex", specie="Dog", race=null, birthdate=LocalDate.now(), tutorId=tutor.id!!))
+        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed=null, birthdate=LocalDate.now(), tutorId=tutor.id!!))
         val detail = service.get(saved.id!!, tutor.id!!)
         assertEquals(saved.id, detail.id)
     }

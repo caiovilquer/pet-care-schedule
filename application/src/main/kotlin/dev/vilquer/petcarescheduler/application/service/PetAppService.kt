@@ -29,8 +29,8 @@ class PetAppService(
 
         val pet = Pet(
             name = cmd.name,
-            specie = cmd.specie,
-            race = cmd.race,
+            species = cmd.species,
+            breed = cmd.breed,
             birthdate = cmd.birthdate,
             photoUrl = cmd.photoUrl,
             tutorId = tutor.id!!
@@ -52,7 +52,7 @@ class PetAppService(
             ?: throw NotFoundException("Pet ${cmd.petId.value} not found")
         val updated = existing.copy(
             name = cmd.name ?: existing.name,
-            race = cmd.race ?: existing.race,
+            breed = cmd.breed ?: existing.breed,
             birthdate = cmd.birthdate ?: existing.birthdate,
             photoUrl = cmd.photoUrl ?: existing.photoUrl
         )

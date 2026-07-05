@@ -11,8 +11,8 @@ class ResultMappingTest {
     private fun Pet.toDetailResult(): PetDetailResult = PetDetailResult(
         id = id!!,
         name = name,
-        specie = specie,
-        race = race,
+        species = species,
+        breed = breed,
         birthdate = birthdate!!,
         photoUrl = photoUrl,
         events = events.map { e ->
@@ -32,7 +32,7 @@ class ResultMappingTest {
         phoneNumber = phoneNumber.toString(),
         avatar = avatar,
         pets = pets.map { p ->
-            TutorDetailResult.PetInfo(p.id!!, p.name, p.specie, p.photoUrl)
+            TutorDetailResult.PetInfo(p.id!!, p.name, p.species, p.photoUrl)
         }
     )
 
@@ -41,8 +41,8 @@ class ResultMappingTest {
         val pet = Pet(
             id = PetId(1L),
             name = "Luna",
-            specie = "Cat",
-            race = "SRD",
+            species = "Cat",
+            breed = "SRD",
             birthdate = LocalDate.of(2022, 1, 1),
             photoUrl = "https://example.com/pets/luna.png",
             tutorId = TutorId(2L),
@@ -79,8 +79,8 @@ class ResultMappingTest {
                 Pet(
                     id = PetId(9L),
                     name = "Bidu",
-                    specie = "Dog",
-                    race = null,
+                    species = "Dog",
+                    breed = null,
                     birthdate = LocalDate.of(2020, 5, 4),
                     photoUrl = "https://example.com/pets/bidu.png",
                     tutorId = TutorId(5L)

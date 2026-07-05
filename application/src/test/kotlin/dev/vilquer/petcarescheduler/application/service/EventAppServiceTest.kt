@@ -32,7 +32,7 @@ class EventAppServiceTest {
 
     @Test
     fun `registerEvent persists event without notifying immediately`() {
-        val pet = petRepo.save(Pet(id = PetId(1), name="rex", specie="dog", race=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
+        val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val cmd = RegisterEventCommand(pet.id!!, EventType.SERVICE, "bath", LocalDateTime.of(2025,7,2,9,0))
 
         val result: EventRegisteredResult = service.execute(cmd, tutorId)
@@ -58,7 +58,7 @@ class EventAppServiceTest {
 
     @Test
     fun `deleteEvent removes event`() {
-        val pet = petRepo.save(Pet(id = PetId(1), name="rex", specie="dog", race=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
+        val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val ev = eventRepo.save(Event(type=EventType.DIARY, description=null, dateStart=LocalDateTime.now(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
         service.execute(DeleteEventCommand(ev.id!!), tutorId)
         assertNull(eventRepo.findById(ev.id!!))
@@ -66,7 +66,7 @@ class EventAppServiceTest {
 
     @Test
     fun `sendRemindersForToday notifies only today's pending events`() {
-        val pet = petRepo.save(Pet(id = PetId(1), name="rex", specie="dog", race=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
+        val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val today = clock.fixed.toLocalDate()
         eventRepo.save(Event(type=EventType.SERVICE, description=null, dateStart=today.atStartOfDay(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
         eventRepo.save(Event(type=EventType.SERVICE, description=null, dateStart=today.minusDays(1).atStartOfDay(), recurrence=null, status=Status.PENDING, petId=pet.id!!))

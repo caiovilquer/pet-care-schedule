@@ -12,15 +12,15 @@ class CommandsTest {
     fun `create pet command holds provided values`() {
         val cmd = CreatePetCommand(
             name = "Bidu",
-            specie = "Dog",
-            race = "Mixed",
+            species = "Dog",
+            breed = "Mixed",
             birthdate = LocalDate.of(2020, 5, 4),
             photoUrl = "https://example.com/pets/bidu.png",
             tutorId = TutorId(5L)
         )
         assertEquals("Bidu", cmd.name)
-        assertEquals("Dog", cmd.specie)
-        assertEquals("Mixed", cmd.race)
+        assertEquals("Dog", cmd.species)
+        assertEquals("Mixed", cmd.breed)
         assertEquals(LocalDate.of(2020, 5, 4), cmd.birthdate)
         assertEquals("https://example.com/pets/bidu.png", cmd.photoUrl)
         assertEquals(TutorId(5L), cmd.tutorId)

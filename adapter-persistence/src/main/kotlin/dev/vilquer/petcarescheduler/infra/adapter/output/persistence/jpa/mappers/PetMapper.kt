@@ -24,8 +24,8 @@ object PetMapper {
         return Pet(
             id = petId,
             name = jpa.name,
-            specie = jpa.specie,
-            race = jpa.race,
+            species = jpa.species,
+            breed = jpa.breed,
             birthdate = jpa.birthdate,
             photoUrl = jpa.photoUrl,
             tutorId = jpa.tutorId?.let { TutorId(it) },
@@ -74,8 +74,8 @@ object PetMapper {
         with(domain) {
             jpa.id = id?.value
             jpa.name = name
-            jpa.specie = specie
-            jpa.race = race
+            jpa.species = species
+            jpa.breed = breed
             jpa.birthdate = birthdate
             jpa.photoUrl = photoUrl
 

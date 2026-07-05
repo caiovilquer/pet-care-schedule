@@ -46,8 +46,8 @@ class TutorMapperTest {
             with(pets[0]) {
                 assertEquals(PetId(PET_ID), id)
                 assertEquals("Luna", name)
-                assertEquals("Gato", specie)
-                assertEquals("Siames", race)
+                assertEquals("Gato", species)
+                assertEquals("Siames", breed)
                 assertEquals(SAMPLE_BIRTHDATE, birthdate)
                 assertEquals("https://example.com/pets/luna.jpg", photoUrl)
                 assertEquals(TutorId(TUTOR_ID), tutorId)
@@ -78,8 +78,8 @@ class TutorMapperTest {
             with(pets.first()) {
                 assertNull(id)
                 assertEquals("Rex", name)
-                assertEquals("Cachorro", specie)
-                assertEquals("Labrador", race)
+                assertEquals("Cachorro", species)
+                assertEquals("Labrador", breed)
                 assertEquals(LocalDate.of(2018, 2, 1), birthdate)
                 assertEquals("https://example.com/pets/rex.jpg", photoUrl)
             }
@@ -118,7 +118,7 @@ class TutorMapperTest {
             val addedPet = pets.find { it.id == null }
             assertNotNull(addedPet)
             assertEquals("Nina", addedPet?.name)
-            assertEquals("Gato", addedPet?.specie)
+            assertEquals("Gato", addedPet?.species)
             assertEquals("https://example.com/pets/nina.jpg", addedPet?.photoUrl)
         }
     }
@@ -138,8 +138,8 @@ class TutorMapperTest {
         val petJpa = PetJpa().apply {
             id = PET_ID
             name = "Luna"
-            specie = "Gato"
-            race = "Siames"
+            species = "Gato"
+            breed = "Siames"
             birthdate = SAMPLE_BIRTHDATE
             photoUrl = "https://example.com/pets/luna.jpg"
         }
@@ -161,8 +161,8 @@ class TutorMapperTest {
                 Pet(
                     id = null,
                     name = "Rex",
-                    specie = "Cachorro",
-                    race = "Labrador",
+                    species = "Cachorro",
+                    breed = "Labrador",
                     birthdate = LocalDate.of(2018, 2, 1),
                     photoUrl = "https://example.com/pets/rex.jpg",
                     tutorId = TutorId(10)
@@ -183,8 +183,8 @@ class TutorMapperTest {
             pets.add(PetJpa().apply {
                 id = 50
                 name = "Bola"
-                specie = "Papagaio"
-                race = null
+                species = "Papagaio"
+                breed = null
                 birthdate = LocalDate.of(2017, 3, 3)
                 photoUrl = "https://example.com/pets/bola.jpg"
             })
@@ -204,8 +204,8 @@ class TutorMapperTest {
                 Pet(
                     id = PetId(50),
                     name = "Bola Nova",
-                    specie = "Papagaio",
-                    race = null,
+                    species = "Papagaio",
+                    breed = null,
                     birthdate = LocalDate.of(2017, 3, 3),
                     photoUrl = "https://example.com/pets/bola-new.jpg",
                     tutorId = TutorId(5)
@@ -213,8 +213,8 @@ class TutorMapperTest {
                 Pet(
                     id = null,
                     name = "Nina",
-                    specie = "Gato",
-                    race = "SRD",
+                    species = "Gato",
+                    breed = "SRD",
                     birthdate = LocalDate.of(2020, 12, 12),
                     photoUrl = "https://example.com/pets/nina.jpg",
                     tutorId = TutorId(5)

@@ -60,8 +60,8 @@ class PetMapperTest {
         // Verify base pet properties
         assertEquals(jpa.id, domain.id?.value, "Pet ID should be correctly mapped")
         assertEquals(jpa.name, domain.name, "Pet name should be correctly mapped")
-        assertEquals(jpa.specie, domain.specie, "Pet species should be correctly mapped")
-        assertEquals(jpa.race, domain.race, "Pet race should be correctly mapped")
+        assertEquals(jpa.species, domain.species, "Pet species should be correctly mapped")
+        assertEquals(jpa.breed, domain.breed, "Pet breed should be correctly mapped")
         assertEquals(jpa.birthdate, domain.birthdate, "Pet birthdate should be correctly mapped")
         assertEquals(jpa.photoUrl, domain.photoUrl, "Pet photo URL should be correctly mapped")
         assertEquals(jpa.tutorId, domain.tutorId?.value, "Pet tutor ID should be correctly mapped")
@@ -110,8 +110,8 @@ class PetMapperTest {
         // Verify base pet properties
         assertEquals(domain.id?.value, jpa.id, "Pet ID should be correctly mapped")
         assertEquals(domain.name, jpa.name, "Pet name should be correctly mapped")
-        assertEquals(domain.specie, jpa.specie, "Pet species should be correctly mapped")
-        assertEquals(domain.race, jpa.race, "Pet race should be correctly mapped")
+        assertEquals(domain.species, jpa.species, "Pet species should be correctly mapped")
+        assertEquals(domain.breed, jpa.breed, "Pet breed should be correctly mapped")
         assertEquals(domain.birthdate, jpa.birthdate, "Pet birthdate should be correctly mapped")
         assertEquals(domain.photoUrl, jpa.photoUrl, "Pet photo URL should be correctly mapped")
         assertEquals(domain.tutorId?.value, jpa.tutorId, "Pet tutor ID should be correctly mapped")
@@ -159,8 +159,8 @@ class PetMapperTest {
     private fun assertJpaEquals(expected: PetJpa, actual: PetJpa) {
         assertEquals(expected.id, actual.id, "Pet ID should match")
         assertEquals(expected.name, actual.name, "Pet name should match")
-        assertEquals(expected.specie, actual.specie, "Pet species should match")
-        assertEquals(expected.race, actual.race, "Pet race should match")
+        assertEquals(expected.species, actual.species, "Pet species should match")
+        assertEquals(expected.breed, actual.breed, "Pet breed should match")
         assertEquals(expected.birthdate, actual.birthdate, "Pet birthdate should match")
         assertEquals(expected.photoUrl, actual.photoUrl, "Pet photo URL should match")
         assertEquals(expected.tutorId, actual.tutorId, "Pet tutor ID should match")
@@ -191,8 +191,8 @@ class PetMapperTest {
         val petJpa = PetJpa().apply {
             id = 42L
             name = "Bidu"
-            specie = "Cachorro"
-            race = "SRD"
+            species = "Cachorro"
+            breed = "SRD"
             birthdate = LocalDate.of(2020, 1, 15)
             photoUrl = "https://example.com/pets/bidu.jpg"
             tutorId = 7L
@@ -257,8 +257,8 @@ class PetMapperTest {
         return Pet(
             id = petId,
             name = "Bidu",
-            specie = "Cachorro",
-            race = "SRD",
+            species = "Cachorro",
+            breed = "SRD",
             birthdate = LocalDate.of(2020, 1, 15),
             photoUrl = "https://example.com/pets/bidu.jpg",
             tutorId = tutorId,

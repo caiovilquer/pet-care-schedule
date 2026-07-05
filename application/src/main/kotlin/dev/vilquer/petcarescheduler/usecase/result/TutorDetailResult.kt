@@ -15,7 +15,7 @@ data class TutorDetailResult(
     data class PetInfo(
         val id: PetId,
         val name: String,
-        val specie: String,
+        val species: String,
         val photoUrl: String?
     )
 }

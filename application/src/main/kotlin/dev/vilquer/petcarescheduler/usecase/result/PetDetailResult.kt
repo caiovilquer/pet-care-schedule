@@ -9,8 +9,8 @@ import java.time.LocalDateTime
 data class PetDetailResult(
     val id: PetId,
     val name: String,
-    val specie: String,
-    val race: String?,
+    val species: String,
+    val breed: String?,
     val birthdate: LocalDate,
     val photoUrl: String?,
     val events: List<EventInfo>

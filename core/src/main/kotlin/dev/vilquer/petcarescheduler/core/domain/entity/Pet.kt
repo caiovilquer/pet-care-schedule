@@ -5,8 +5,8 @@ import java.time.LocalDate
 data class Pet(
     val id: PetId? = null,
     val name: String,
-    val specie: String,
-    val race: String?,
+    val species: String,
+    val breed: String?,
     val birthdate: LocalDate?,
     val photoUrl: String? = null,
     val tutorId: TutorId?,

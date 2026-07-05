@@ -40,8 +40,8 @@ class PetRepositoryIntegrationTest {
         val petDom = Pet(
             id = null,
             name = "Rex",
-            specie = "Cachorro",
-            race = "Labrador",
+            species = "Cachorro",
+            breed = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
             photoUrl = "https://example.com/pets/rex.png",
             tutorId = TutorId(tutorJpa.id!!)
@@ -58,8 +58,8 @@ class PetRepositoryIntegrationTest {
         // 5) Asserções
         assertNotNull(fetchedDom.id)
         assertEquals("Rex", fetchedDom.name)
-        assertEquals("Cachorro", fetchedDom.specie)
-        assertEquals("Labrador", fetchedDom.race)
+        assertEquals("Cachorro", fetchedDom.species)
+        assertEquals("Labrador", fetchedDom.breed)
         assertEquals(LocalDate.of(2019, 8, 1), fetchedDom.birthdate)
         assertEquals("https://example.com/pets/rex.png", fetchedDom.photoUrl)
         assertEquals(TutorId(tutorJpa.id!!), fetchedDom.tutorId)
@@ -80,8 +80,8 @@ class PetRepositoryIntegrationTest {
         val originalDom = Pet(
             id = null,
             name = "Rex",
-            specie = "Cachorro",
-            race = "Labrador",
+            species = "Cachorro",
+            breed = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
             photoUrl = "https://example.com/pets/rex.png",
             tutorId = TutorId(tutorJpa.id!!)
@@ -93,7 +93,7 @@ class PetRepositoryIntegrationTest {
         val updatedDom = originalDom.copy(
             id = PetId(savedJpa.id!!),
             name = "Bolt",
-            race = "Golden",
+            breed = "Golden",
             photoUrl = "https://example.com/pets/bolt.png"
         )
         val updatedJpa = petRepoJpa.save(PetMapper.toJpa(updatedDom, existing = savedJpa))
@@ -103,8 +103,8 @@ class PetRepositoryIntegrationTest {
         val fetchedDom = PetMapper.toDomain(fetchedJpa)
 
         assertEquals(updatedDom.name, fetchedDom.name)
-        assertEquals(updatedDom.race, fetchedDom.race)
-        assertEquals(updatedDom.specie, fetchedDom.specie)
+        assertEquals(updatedDom.breed, fetchedDom.breed)
+        assertEquals(updatedDom.species, fetchedDom.species)
         assertEquals(updatedDom.photoUrl, fetchedDom.photoUrl)
     }
 
@@ -122,8 +122,8 @@ class PetRepositoryIntegrationTest {
         val petDom = Pet(
             id = null,
             name = "Rex",
-            specie = "Cachorro",
-            race = "Labrador",
+            species = "Cachorro",
+            breed = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
             photoUrl = "https://example.com/pets/rex.png",
             tutorId = TutorId(tutorJpa.id!!)

@@ -61,8 +61,8 @@ class PetControllerTest {
 
         val req = PetDtoMapper.CreateRequest(
             name      = "Rex",
-            specie    = "Dog",
-            race      = null,
+            species   = "Dog",
+            breed     = null,
             birthdate = LocalDate.of(2020, 1, 1),
             photoUrl  = null
         )

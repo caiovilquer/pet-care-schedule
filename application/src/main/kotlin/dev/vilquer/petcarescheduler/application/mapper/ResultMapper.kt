@@ -4,13 +4,13 @@ import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.usecase.result.*
 
 fun Pet.toSummary(): PetSummary =
-    PetSummary(id = id!!, name = name, specie = specie, photoUrl = photoUrl)
+    PetSummary(id = id!!, name = name, species = species, photoUrl = photoUrl)
 
 fun Pet.toDetailResult(): PetDetailResult = PetDetailResult(
     id = id!!,
     name = name,
-    specie = specie,
-    race = race,
+    species = species,
+    breed = breed,
     birthdate = birthdate!!,
     photoUrl = photoUrl,
     events = events.map { ev ->
@@ -33,7 +33,7 @@ fun Tutor.toDetailResult(): TutorDetailResult = TutorDetailResult(
         TutorDetailResult.PetInfo(
             id = pet.id!!,
             name = pet.name,
-            specie = pet.specie,
+            species = pet.species,
             photoUrl = pet.photoUrl
         )
     }

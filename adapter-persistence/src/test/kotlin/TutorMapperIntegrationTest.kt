@@ -50,8 +50,8 @@ class TutorMapperIntegrationTest {
                 Pet(
                     id = null,
                     name = "Rex",
-                    specie = "Cachorro",
-                    race = "SRD",
+                    species = "Cachorro",
+                    breed = "SRD",
                     birthdate = LocalDate.of(2020, 5, 10),
                     photoUrl = "https://example.com/pets/rex.png",
                     tutorId = null
@@ -89,8 +89,8 @@ class TutorMapperIntegrationTest {
         val pet = tutor.pets.first()
         assertNotNull(pet.id, "Pet should receive an ID after saving")
         assertEquals("Rex", pet.name)
-        assertEquals("Cachorro", pet.specie)
-        assertEquals("SRD", pet.race)
+        assertEquals("Cachorro", pet.species)
+        assertEquals("SRD", pet.breed)
         assertEquals(LocalDate.of(2020, 5, 10), pet.birthdate)
         assertEquals("https://example.com/pets/rex.png", pet.photoUrl)
 

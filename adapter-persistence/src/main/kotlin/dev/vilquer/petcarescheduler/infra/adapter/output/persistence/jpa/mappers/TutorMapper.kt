@@ -32,8 +32,8 @@ object TutorMapper {
                 Pet(
                     id = petJpa.id?.let { PetId(it) },
                     name = petJpa.name,
-                    specie = petJpa.specie,
-                    race = petJpa.race,
+                    species = petJpa.species,
+                    breed = petJpa.breed,
                     birthdate = petJpa.birthdate,
                     photoUrl = petJpa.photoUrl,
                     tutorId = tutorId,

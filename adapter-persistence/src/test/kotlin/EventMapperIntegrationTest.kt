@@ -50,8 +50,8 @@ class EventMapperIntegrationTest {
         // Create and save test pet
         val pet = PetJpa().apply {
             name = "Luna"
-            specie = "Gato"
-            race = "Siames"
+            species = "Gato"
+            breed = "Siames"
             birthdate = LocalDate.of(2021, 6, 20)
             tutorId = tutor.id!!
         }

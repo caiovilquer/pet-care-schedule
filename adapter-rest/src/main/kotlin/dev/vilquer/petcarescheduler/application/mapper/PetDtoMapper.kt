@@ -12,14 +12,14 @@ import java.time.LocalDate
 class PetDtoMapper {
     data class CreateRequest(
         @field:NotBlank val name: String,
-        @field:NotBlank val specie: String,
-        val race: String?,
+        @field:NotBlank val species: String,
+        val breed: String?,
         @field:Past val birthdate: LocalDate,
         val photoUrl: String? = null,
     )
     data class UpdateRequest(
         val name: String?,
-        val race: String?,
+        val breed: String?,
         @field:Past val birthdate: LocalDate?,
         val photoUrl: String? = null,
     )
@@ -28,8 +28,8 @@ class PetDtoMapper {
     fun toCreateCommand(dto: CreateRequest, tutorId: TutorId): CreatePetCommand =
         CreatePetCommand(
             name      = dto.name,
-            specie    = dto.specie,
-            race      = dto.race,
+            species   = dto.species,
+            breed     = dto.breed,
             birthdate = dto.birthdate,
             photoUrl  = dto.photoUrl,
             tutorId   = tutorId
@@ -39,7 +39,7 @@ class PetDtoMapper {
         UpdatePetCommand(
             petId      = PetId(id),
             name       = dto.name,
-            race       = dto.race,
+            breed      = dto.breed,
             birthdate = dto.birthdate,
             photoUrl  = dto.photoUrl
         )
