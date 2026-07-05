@@ -57,8 +57,15 @@ class EventAppService(
     override fun execute(cmd: ToggleEventCommand, tutorId: TutorId) {
         val event = eventRepo.findByIdAndTutor(cmd.eventId, tutorId)
             ?: throw NotFoundException("Event ${cmd.eventId.value} not found")
-        if (event.status == Status.PENDING) eventRepo.save(event.markDone())
-        else eventRepo.save(event.markPending())
+        if (event.status == Status.PENDING) {
+            // Desfazer uma conclusão (branch abaixo) não tenta reverter a
+            // próxima ocorrência já criada — ela passa a existir por conta própria.
+            val (completed, next) = event.complete()
+            eventRepo.save(completed)
+            next?.let { eventRepo.save(it) }
+        } else {
+            eventRepo.save(event.markPending())
+        }
     }
 
 

@@ -4,6 +4,8 @@ import dev.vilquer.petcarescheduler.application.*
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.core.domain.entity.*
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Frequency
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import dev.vilquer.petcarescheduler.usecase.command.DeleteEventCommand
 import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
 import dev.vilquer.petcarescheduler.usecase.command.ToggleEventCommand
@@ -54,6 +56,64 @@ class EventAppServiceTest {
         assertThrows(NotFoundException::class.java) {
             service.execute(ToggleEventCommand(EventId(999)), tutorId)
         }
+    }
+
+    @Test
+    fun `toggleEvent generates the next occurrence for a recurring event`() {
+        val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
+        val dateStart = LocalDateTime.of(2025, 7, 1, 10, 0)
+        val ev = eventRepo.save(
+            Event(
+                type = EventType.VACCINE,
+                description = "shot",
+                dateStart = dateStart,
+                recurrence = Recurrence(Frequency.MONTHLY, intervalCount = 1),
+                status = Status.PENDING,
+                petId = pet.id!!
+            )
+        )
+
+        service.execute(ToggleEventCommand(ev.id!!), tutorId)
+
+        val completed = eventRepo.findById(ev.id!!)
+        assertEquals(Status.DONE, completed?.status)
+
+        val nextOccurrence = eventRepo.allEvents().singleOrNull { it.id != ev.id }
+        assertNotNull(nextOccurrence, "a next occurrence should have been created")
+        assertEquals(Status.PENDING, nextOccurrence!!.status)
+        assertEquals(dateStart.plusMonths(1), nextOccurrence.dateStart)
+        assertEquals(1, nextOccurrence.occurrenceCount)
+    }
+
+    @Test
+    fun `toggleEvent creates no next occurrence without recurrence`() {
+        val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
+        val ev = eventRepo.save(Event(type=EventType.DIARY, description=null, dateStart=LocalDateTime.now(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
+
+        service.execute(ToggleEventCommand(ev.id!!), tutorId)
+
+        assertEquals(1, eventRepo.allEvents().size)
+    }
+
+    @Test
+    fun `toggleEvent undo does not remove the already-created next occurrence`() {
+        val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
+        val ev = eventRepo.save(
+            Event(
+                type = EventType.VACCINE,
+                description = "shot",
+                dateStart = LocalDateTime.of(2025, 7, 1, 10, 0),
+                recurrence = Recurrence(Frequency.MONTHLY, intervalCount = 1),
+                status = Status.PENDING,
+                petId = pet.id!!
+            )
+        )
+
+        service.execute(ToggleEventCommand(ev.id!!), tutorId) // PENDING -> DONE (creates next)
+        service.execute(ToggleEventCommand(ev.id!!), tutorId) // DONE -> PENDING (undo)
+
+        assertEquals(Status.PENDING, eventRepo.findById(ev.id!!)?.status)
+        assertEquals(2, eventRepo.allEvents().size, "the next occurrence created earlier must remain")
     }
 
     @Test

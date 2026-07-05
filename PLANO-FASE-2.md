@@ -129,10 +129,15 @@ agregado, e erros HTTP corretos (404 real, não 400 disfarçado).
 
 ## 5. Definition of Done
 
-- [ ] `GET /pets/{id-inexistente}` e equivalentes para tutor/evento respondem 404 (smoke E2E)
-- [ ] `POST /pets` aceita `species`/`breed`; nenhum resquício de `specie`/`race` no código ou no schema
-- [ ] `Tutor`/`Pet` não têm mais `pets`/`events` embutidos; `TutorDetailResult`/`PetDetailResult` continuam corretos via consulta explícita
-- [ ] `core` tem suíte de testes própria cobrindo invariantes e `Event.complete()`
-- [ ] Marcar um evento recorrente como concluído cria a próxima ocorrência quando `Recurrence.hasNext` permite
-- [ ] `./gradlew build` e `./gradlew check` verdes a cada PR
-- [ ] README atualizado onde description de API mudou (species/breed)
+- [x] `GET /pets/{id-inexistente}` e equivalentes para tutor/evento respondem 404 (smoke E2E)
+- [x] `POST /pets` aceita `species`/`breed`; nenhum resquício de `specie`/`race` no código ou no schema
+- [x] `Tutor`/`Pet` não têm mais `pets`/`events` embutidos; `TutorDetailResult`/`PetDetailResult` continuam corretos via consulta explícita
+- [x] `core` tem suíte de testes própria cobrindo invariantes e `Event.complete()` (17 testes: Tutor/Pet/Event/Recurrence)
+- [x] Marcar um evento recorrente como concluído cria a próxima ocorrência quando `Recurrence.hasNext` permite
+- [x] `./gradlew build` e `./gradlew check` verdes a cada PR
+- [x] README atualizado onde description de API mudou (species/breed, recorrência)
+
+**Status: Fase 2 concluída (2026-07-05).** Cinco PRs (2-A a 2-E) implementados
+e commitados sequencialmente, build e `check` verdes a cada etapa. 65 testes
+passando no total (core: 17, application: 27, adapter-rest: 9,
+adapter-persistence: 14, bootstrap: 11).

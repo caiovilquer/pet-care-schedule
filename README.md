@@ -17,8 +17,9 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
 - **Agendamento de eventos**
   - Registro, atualização, listagem e exclusão de eventos por pet ou por tutor.
   - Tipos de evento: `VACCINE`, `MEDICINE`, `DIARY`, `BREED`, `SERVICE`.
-  - Suporte a recorrência (diária, semanal, mensal, anual) e alternância
-    de status *PENDING/DONE*.
+  - Suporte a recorrência (diária, semanal, mensal, anual): concluir um evento
+    recorrente (`PUT /events/{id}/toggle`) gera automaticamente a próxima
+    ocorrência, enquanto houver repetições ou a data final não tiver passado.
 
 - **Lembretes automáticos**
   - Scheduler diário (`@Scheduled`) envia e‑mails para eventos previstos

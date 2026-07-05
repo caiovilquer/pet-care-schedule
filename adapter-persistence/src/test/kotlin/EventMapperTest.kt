@@ -81,6 +81,7 @@ class EventMapperTest {
             dateStart = startDate
             recurrenceEmb = recurrence
             status = Status.PENDING
+            occurrenceCount = 2
             petId = TEST_PET_ID
         }
     }
@@ -100,6 +101,7 @@ class EventMapperTest {
             dateStart = startDate,
             recurrence = recurrence,
             status = Status.DONE,
+            occurrenceCount = 3,
             petId = PetId(TEST_PET_ID)
         )
     }
@@ -134,6 +136,7 @@ class EventMapperTest {
         assertEquals(jpa.description, domain.description, "Description should match")
         assertEquals(jpa.dateStart, domain.dateStart, "Start date should match")
         assertEquals(jpa.status, domain.status, "Status should match")
+        assertEquals(jpa.occurrenceCount, domain.occurrenceCount, "Occurrence count should match")
         assertEquals(jpa.petId?.let { PetId(it) }, domain.petId, "Pet ID should match")
 
         // Check recurrence mapping
@@ -160,6 +163,7 @@ class EventMapperTest {
         assertEquals(domain.description, jpa.description, "Description should match")
         assertEquals(domain.dateStart, jpa.dateStart, "Start date should match")
         assertEquals(domain.status, jpa.status, "Status should match")
+        assertEquals(domain.occurrenceCount, jpa.occurrenceCount, "Occurrence count should match")
         assertEquals(domain.petId?.value, jpa.petId, "Pet ID should match")
 
         // Check recurrence mapping

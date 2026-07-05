@@ -30,6 +30,9 @@ class EventJpa {
     @Column(nullable = false)
     lateinit var status: Status
 
+    @Column(name = "occurrence_count", nullable = false)
+    var occurrenceCount: Int = 0
+
     @Column(name = "pet_id", nullable = true)
     var petId: Long? = null
 
