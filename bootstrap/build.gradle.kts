@@ -39,6 +39,11 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
 
+    // Garante que os schedulers rodem em uma única instância quando houver
+    // mais de uma réplica do bootstrap no ar (ver AUDITORIA.md).
+    implementation("net.javacrumbs.shedlock:shedlock-spring:5.16.0")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0")
+
     runtimeOnly("org.postgresql:postgresql")
     // Perfil dev e testes de integração usam H2 em modo PostgreSQL
     runtimeOnly("com.h2database:h2")

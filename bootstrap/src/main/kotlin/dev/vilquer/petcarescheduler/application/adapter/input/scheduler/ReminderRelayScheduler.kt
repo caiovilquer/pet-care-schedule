@@ -1,6 +1,7 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.scheduler
 
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DispatchPendingRemindersUseCase
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -14,6 +15,7 @@ class ReminderRelayScheduler(
      * o dia seguinte para ser tentado de novo.
      */
     @Scheduled(fixedDelay = 5 * 60 * 1000L, initialDelay = 60 * 1000L)
+    @SchedulerLock(name = "dispatchPendingReminders", lockAtMostFor = "PT4M", lockAtLeastFor = "PT30S")
     fun dispatchPendingReminders() {
         dispatchPendingReminders.dispatchPendingReminders()
     }
