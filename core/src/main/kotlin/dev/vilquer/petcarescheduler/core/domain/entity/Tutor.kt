@@ -12,6 +12,10 @@ data class Tutor(
     val passwordChangedAt: java.time.Instant? = null,
     val phoneNumber: PhoneNumber? = null,
     val avatar: String? = null
-)
+) {
+    init {
+        require(firstName.isNotBlank()) { "firstName must not be blank" }
+    }
+}
 
 @JvmInline value class TutorId(val value: Long)

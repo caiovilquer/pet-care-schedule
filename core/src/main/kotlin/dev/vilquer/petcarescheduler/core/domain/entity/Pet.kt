@@ -10,7 +10,12 @@ data class Pet(
     val birthdate: LocalDate?,
     val photoUrl: String? = null,
     val tutorId: TutorId?
-)
+) {
+    init {
+        require(name.isNotBlank()) { "name must not be blank" }
+        require(species.isNotBlank()) { "species must not be blank" }
+    }
+}
 
 @JvmInline value class PetId(val value: Long)
 
