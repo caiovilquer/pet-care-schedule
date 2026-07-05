@@ -22,8 +22,8 @@ class EventAppServiceTest {
     private val petRepo = InMemoryPetRepo()
     private val eventRepo = InMemoryEventRepo()
     private val clock = FakeClock(ZonedDateTime.of(LocalDateTime.of(2025,7,1,8,0), ZoneId.systemDefault()))
-    private val notifier = FakeNotifier()
-    private val service = EventAppService(eventRepo, petRepo, clock, notifier)
+    private val outbox = FakeReminderOutboxPort()
+    private val service = EventAppService(eventRepo, petRepo, clock, outbox)
     private val tutorId = TutorId(1)
 
     @Test
@@ -43,7 +43,7 @@ class EventAppServiceTest {
         val saved = eventRepo.findById(result.eventId)
         assertEquals(Status.PENDING, saved?.status)
         // notificação é responsabilidade exclusiva do scheduler diário
-        assertEquals(0, notifier.notified.size)
+        assertEquals(0, outbox.allMessages().size)
     }
 
     @Test
@@ -125,17 +125,28 @@ class EventAppServiceTest {
     }
 
     @Test
-    fun `sendRemindersForToday notifies only today's pending events`() {
+    fun `sendRemindersForToday enqueues only today's pending events`() {
         val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val today = clock.fixed.toLocalDate()
-        eventRepo.save(Event(type=EventType.SERVICE, description=null, dateStart=today.atStartOfDay(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
+        val todayPending = eventRepo.save(Event(type=EventType.SERVICE, description=null, dateStart=today.atStartOfDay(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
         eventRepo.save(Event(type=EventType.SERVICE, description=null, dateStart=today.minusDays(1).atStartOfDay(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
         eventRepo.save(Event(type=EventType.SERVICE, description=null, dateStart=today.atStartOfDay(), recurrence=null, status=Status.DONE, petId=pet.id!!))
 
         service.sendRemindersForToday()
 
-        assertEquals(1, notifier.notified.size)
-        assertEquals(Status.PENDING, notifier.notified.first().status)
-        assertEquals(today, notifier.notified.first().dateStart.toLocalDate())
+        assertEquals(1, outbox.allMessages().size)
+        assertEquals(todayPending.id, outbox.allMessages().first().eventId)
+    }
+
+    @Test
+    fun `sendRemindersForToday does not enqueue the same event twice`() {
+        val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
+        val today = clock.fixed.toLocalDate()
+        eventRepo.save(Event(type=EventType.SERVICE, description=null, dateStart=today.atStartOfDay(), recurrence=null, status=Status.PENDING, petId=pet.id!!))
+
+        service.sendRemindersForToday()
+        service.sendRemindersForToday() // varredura roda de novo no mesmo dia
+
+        assertEquals(1, outbox.allMessages().size, "enqueueIfAbsent deve ser idempotente")
     }
 }

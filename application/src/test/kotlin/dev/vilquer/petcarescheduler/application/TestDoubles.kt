@@ -15,7 +15,32 @@ internal class FakeClock(var fixed: ZonedDateTime) : ClockPort {
 
 internal class FakeNotifier : NotificationPort {
     val notified = mutableListOf<Event>()
-    override fun sendEventReminder(target: EventReminderTarget) { notified.add(target.event) }
+    var deliverySucceeds = true
+    override fun sendEventReminder(target: EventReminderTarget): Boolean {
+        notified.add(target.event)
+        return deliverySucceeds
+    }
+}
+
+internal class FakeReminderOutboxPort : ReminderOutboxPort {
+    private val store = LinkedHashMap<Long, ReminderOutboxMessage>()
+    private val sentIds = mutableSetOf<Long>()
+    private var seq = 1L
+    override fun enqueueIfAbsent(message: ReminderOutboxMessage) {
+        if (store.values.any { it.eventId == message.eventId }) return
+        val id = seq++
+        store[id] = message.copy(id = id)
+    }
+    override fun findPendingDelivery(maxAttempts: Int, limit: Int): List<ReminderOutboxMessage> =
+        store.values.filter { it.id !in sentIds && it.attempts < maxAttempts }
+            .sortedBy { it.createdAt }
+            .take(limit)
+    override fun markSent(id: Long) { sentIds.add(id) }
+    override fun incrementAttempts(id: Long) {
+        store[id]?.let { store[id] = it.copy(attempts = it.attempts + 1) }
+    }
+    fun allMessages(): Collection<ReminderOutboxMessage> = store.values
+    fun isSent(id: Long?): Boolean = id != null && id in sentIds
 }
 
 internal class FakePasswordHash : PasswordHashPort {

@@ -2,6 +2,9 @@ package dev.vilquer.petcarescheduler.infra
 
 import com.fasterxml.jackson.databind.JsonNode
 import dev.vilquer.petcarescheduler.PetCareSchedulerApplication
+import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.ReminderOutboxJpaRepository
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DispatchPendingRemindersUseCase
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.SendDailyRemindersUseCase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -14,6 +17,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
+import java.time.ZoneId
 
 /**
  * Rede de segurança da Fase 1: exercita o fluxo completo da API com o contexto
@@ -33,6 +37,15 @@ class SmokeE2ETest {
 
     @Autowired
     lateinit var rest: TestRestTemplate
+
+    @Autowired
+    lateinit var sendDailyReminders: SendDailyRemindersUseCase
+
+    @Autowired
+    lateinit var dispatchPendingReminders: DispatchPendingRemindersUseCase
+
+    @Autowired
+    lateinit var reminderOutboxRepository: ReminderOutboxJpaRepository
 
     private fun jsonHeaders(token: String? = null) = HttpHeaders().apply {
         contentType = MediaType.APPLICATION_JSON
@@ -196,5 +209,65 @@ class SmokeE2ETest {
             HttpMethod.GET, HttpEntity<Void>(jsonHeaders()), Void::class.java,
         )
         assertEquals(HttpStatus.BAD_REQUEST, invalidToken.statusCode)
+    }
+
+    @Test
+    fun `reminder outbox enqueues against the real database and the relay retries on delivery failure`() {
+        val signup = rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Duda","lastName":null,"email":"duda.smoke@example.com","rawPassword":"correct-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, signup.statusCode)
+
+        val login = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"duda.smoke@example.com","password":"correct-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val token = login.body!!["token"].asText()
+
+        val petCreated = rest.postForEntity(
+            "/api/v1/pets",
+            HttpEntity("""{"name":"Toby","species":"Dog","breed":null,"birthdate":"2020-01-01"}""", jsonHeaders(token)),
+            JsonNode::class.java,
+        )
+        val petId = petCreated.body!!["petId"].asLong()
+
+        // dateStart "hoje", no fim do dia, no fuso da aplicação: precisa estar
+        // dentro da janela que o scheduler de detecção varre e ainda satisfazer
+        // @FutureOrPresent no DTO (por isso não usamos meio-dia, que já teria
+        // passado se o teste rodar à tarde).
+        val todayLate = java.time.LocalDate.now(ZoneId.of("America/Sao_Paulo")).atTime(23, 59)
+        val eventCreated = rest.postForEntity(
+            "/api/v1/events",
+            HttpEntity(
+                """{"petId":$petId,"type":"VACCINE","description":"lembrete real","dateStart":"$todayLate"}""",
+                jsonHeaders(token),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, eventCreated.statusCode, "create event: ${eventCreated.body}")
+
+        // Chama os beans diretamente (em vez de esperar o cron) para exercitar
+        // o ReminderOutboxJpaAdapter de verdade, contra o H2, sem fakes.
+        sendDailyReminders.sendRemindersForToday()
+        sendDailyReminders.sendRemindersForToday() // idempotência: não deve duplicar a mensagem
+
+        val enqueued = reminderOutboxRepository.findAll().filter { it.tutorEmail == "duda.smoke@example.com" }
+        assertEquals(1, enqueued.size, "a segunda varredura não deve ter criado uma segunda mensagem")
+        assertEquals(0, enqueued.first().attempts)
+
+        // A API de e-mail não está configurada neste ambiente de teste, então
+        // a entrega falha de verdade — o que comprova que o relay trata falha
+        // como "tentar de novo", não como sucesso silencioso.
+        dispatchPendingReminders.dispatchPendingReminders()
+
+        val afterDispatch = reminderOutboxRepository.findById(enqueued.first().id!!).orElseThrow()
+        assertEquals(1, afterDispatch.attempts, "a tentativa de entrega deve ter sido contabilizada")
+        assertTrue(afterDispatch.sentAt == null, "a API de e-mail indisponível não deve ter sido marcada como enviada")
     }
 }

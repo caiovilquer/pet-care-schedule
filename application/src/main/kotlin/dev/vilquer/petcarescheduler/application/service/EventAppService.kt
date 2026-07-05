@@ -17,7 +17,7 @@ class EventAppService(
     private val eventRepo: EventRepositoryPort,
     private val petRepo: PetRepositoryPort,
     private val clock: ClockPort,
-    private val notifier: NotificationPort
+    private val outbox: ReminderOutboxPort
 ) :
     RegisterEventUseCase,
     DeleteEventUseCase,
@@ -114,7 +114,18 @@ class EventAppService(
         val now = clock.now()
         val start = now.toLocalDate().atStartOfDay()
         val end = start.plusDays(1)
-        eventRepo.findPendingReminders(start, end)
-            .forEach { notifier.sendEventReminder(it) }
+        // Só enfileira: a entrega de fato (com retry) é responsabilidade do
+        // ReminderRelayService, rodando em outro scheduler. Isso evita que
+        // uma API de e-mail lenta trave a varredura diária inteira.
+        eventRepo.findPendingReminders(start, end).forEach { target ->
+            outbox.enqueueIfAbsent(
+                ReminderOutboxMessage(
+                    eventId = target.event.id!!,
+                    tutorEmail = target.tutorEmail,
+                    petName = target.petName,
+                    createdAt = now.toInstant(),
+                )
+            )
+        }
     }
 }

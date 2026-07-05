@@ -30,7 +30,10 @@ class PortInteractionTest {
 
     private class FakeNotification : NotificationPort {
         var notified: Event? = null
-        override fun sendEventReminder(target: EventReminderTarget) { notified = target.event }
+        override fun sendEventReminder(target: EventReminderTarget): Boolean {
+            notified = target.event
+            return true
+        }
     }
 
     private class RegisterEventUseCaseService(

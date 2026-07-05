@@ -12,5 +12,5 @@ class SpringTransactionPort(
 
     private val template = TransactionTemplate(transactionManager)
 
-    override fun <T> execute(block: () -> T): T = template.execute { block() }
+    override fun <T> execute(block: () -> T): T = template.execute { block() }!!
 }

@@ -6,6 +6,7 @@ import dev.vilquer.petcarescheduler.application.service.PasswordResetService
 import dev.vilquer.petcarescheduler.application.service.PetAppService
 import dev.vilquer.petcarescheduler.application.service.RateLimitProperties
 import dev.vilquer.petcarescheduler.application.service.RateLimiterService
+import dev.vilquer.petcarescheduler.application.service.ReminderRelayService
 import dev.vilquer.petcarescheduler.application.service.SecurityMaintenanceService
 import dev.vilquer.petcarescheduler.application.service.TutorAppService
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
@@ -16,6 +17,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetNo
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.RateLimitStorePort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ReminderOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TokenIssuerPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
@@ -45,8 +47,15 @@ class UseCaseWiring {
         eventRepo: EventRepositoryPort,
         petRepo: PetRepositoryPort,
         clock: ClockPort,
+        outbox: ReminderOutboxPort,
+    ) = EventAppService(eventRepo, petRepo, clock, outbox)
+
+    @Bean
+    fun reminderRelayService(
+        outbox: ReminderOutboxPort,
+        eventRepo: EventRepositoryPort,
         notifier: NotificationPort,
-    ) = EventAppService(eventRepo, petRepo, clock, notifier)
+    ) = ReminderRelayService(outbox, eventRepo, notifier)
 
     @Bean
     fun petAppService(

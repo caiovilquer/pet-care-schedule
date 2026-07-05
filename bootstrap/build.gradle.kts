@@ -32,6 +32,9 @@ dependencies {
     // controllers de fato vêm do adapter-rest, mas o compile classpath do
     // próprio bootstrap precisa dos tipos de spring-web.
     implementation("org.springframework.boot:spring-boot-starter-web")
+    // SmokeE2ETest inspeciona ReminderOutboxJpaRepository diretamente para
+    // verificar o outbox contra o banco real, não só com fakes.
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")

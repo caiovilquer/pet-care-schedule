@@ -25,7 +25,7 @@ class EmailNotificationAdapter(
 
     private val log = LoggerFactory.getLogger(EmailNotificationAdapter::class.java)
 
-    override fun sendEventReminder(target: EventReminderTarget) {
+    override fun sendEventReminder(target: EventReminderTarget): Boolean {
         val event = target.event
         val html = renderTemplate(event, target.petName)
         val subject = "Lembrete do PetCare: ${event.type.pt()}"
@@ -38,7 +38,7 @@ class EmailNotificationAdapter(
             "html" to html
         )
 
-        try {
+        return try {
             val status =
                 http.post().uri("/email").bodyValue(payload).retrieve().onStatus({ s -> s.value() >= 400 }) { resp ->
                     resp.bodyToMono(String::class.java).map { body ->
@@ -46,13 +46,16 @@ class EmailNotificationAdapter(
                     }
                 }.toBodilessEntity().map { it.statusCode }.block() ?: HttpStatus.ACCEPTED
 
-            if (status.is2xxSuccessful || status == HttpStatus.ACCEPTED) {
+            val ok = status.is2xxSuccessful || status == HttpStatus.ACCEPTED
+            if (ok) {
                 log.info("Sent mail (API) for event {} to {}", event.id, target.tutorEmail)
             } else {
                 log.error("Mail Send returned status {} for event {}", status.value(), event.id)
             }
+            ok
         } catch (ex: Exception) {
             log.error("Failed to call Mail Send API for event {}", event.id, ex)
+            false
         }
     }
 
