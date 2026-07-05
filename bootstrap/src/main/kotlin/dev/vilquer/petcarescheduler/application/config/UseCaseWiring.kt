@@ -17,6 +17,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTo
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.RateLimitStorePort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TokenIssuerPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.annotation.Bean
@@ -79,9 +80,10 @@ class UseCaseWiring {
         tokens: PasswordResetTokenPort,
         notifier: PasswordResetNotifierPort,
         passwordHash: PasswordHashPort,
+        transactionPort: TransactionPort,
         environment: Environment,
     ) = PasswordResetService(
-        tutors, tokens, notifier, passwordHash,
+        tutors, tokens, notifier, passwordHash, transactionPort,
         ttlMinutes = environment.getProperty("app.reset.ttl-minutes", Long::class.java, 30L),
     )
 

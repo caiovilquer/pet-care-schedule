@@ -5,6 +5,7 @@ import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetNotifierPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.PasswordResetUseCase
 import java.nio.charset.StandardCharsets
@@ -20,6 +21,7 @@ class PasswordResetService(
     private val tokens: PasswordResetTokenPort,
     private val notifier: PasswordResetNotifierPort,
     private val passwordHash: PasswordHashPort,
+    private val transactionPort: TransactionPort,
     private val clock: Clock = Clock.systemUTC(),
     private val ttlMinutes: Long = 30,
 ) : PasswordResetUseCase {
@@ -27,20 +29,26 @@ class PasswordResetService(
     override fun requestReset(email: Email) {
         val tutor = tutors.findByEmail(email) ?: return // resposta neutra
         val now = Instant.now(clock)
-        tokens.invalidateAllForUser(tutor.id ?: throw IllegalStateException("User not found"), now)
+        val userId = tutor.id ?: throw IllegalStateException("User not found")
         val tokenPlain = generateToken()
         val tokenHash = sha256Hex(tokenPlain)
         val ttl = Duration.ofMinutes(ttlMinutes)
         val expires = now.plus(ttl)
 
-        tokens.create(
-            PasswordResetToken(
-                tokenHash = tokenHash,
-                userId = tutor.id ?: throw IllegalStateException("User not found"),
-                expiresAt = expires
+        // Invalidar tokens antigos e criar o novo é uma unidade: uma queda no
+        // meio deixaria o tutor sem nenhum token ativo e sem saber.
+        transactionPort.execute {
+            tokens.invalidateAllForUser(userId, now)
+            tokens.create(
+                PasswordResetToken(
+                    tokenHash = tokenHash,
+                    userId = userId,
+                    expiresAt = expires
+                )
             )
-        )
+        }
 
+        // Fora da transação: chamada de rede não deve segurar conexão de banco aberta.
         notifier.sendResetLink(tutor.email, tokenPlain, ttl)
     }
 
@@ -56,9 +64,15 @@ class PasswordResetService(
         if (t.expiresAt.isBefore(now)) throw IllegalArgumentException("expired_token")
 
         val tutor = tutors.findById(t.userId) ?: throw IllegalStateException("user_not_found")
-        tutors.updatePassword(tutor.id!!, passwordHash.hash(newPassword))
-        tutors.bumpPasswordChangedAt(tutor.id!!, now)
-        tokens.markUsed(t.id, now)
+
+        // Trocar a senha, atualizar passwordChangedAt (invalida JWTs antigos) e
+        // marcar o token usado precisam ser tudo-ou-nada: uma falha no meio
+        // deixaria a senha trocada mas o token ainda "ativo", reutilizável.
+        transactionPort.execute {
+            tutors.updatePassword(tutor.id!!, passwordHash.hash(newPassword))
+            tutors.bumpPasswordChangedAt(tutor.id!!, now)
+            tokens.markUsed(t.id, now)
+        }
     }
 
     private fun generateToken(): String {

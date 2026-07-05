@@ -44,23 +44,33 @@ class MailSenderAdapter(
             "html" to html
         )
 
-        val status = http.post()
-            .uri("/email")
-            .bodyValue(payload)
-            .retrieve()
-            .onStatus({ s -> s.value() >= 400 }) { resp ->
-                resp.bodyToMono(String::class.java).map { body ->
-                    IllegalStateException("MailerSend error ${resp.statusCode().value()}: $body")
+        try {
+            val status = http.post()
+                .uri("/email")
+                .bodyValue(payload)
+                .retrieve()
+                .onStatus({ s -> s.value() >= 400 }) { resp ->
+                    resp.bodyToMono(String::class.java).map { body ->
+                        IllegalStateException("MailerSend error ${resp.statusCode().value()}: $body")
+                    }
                 }
-            }
-            .toBodilessEntity()
-            .map { it.statusCode }
-            .block() ?: HttpStatus.ACCEPTED
+                .toBodilessEntity()
+                .map { it.statusCode }
+                .block() ?: HttpStatus.ACCEPTED
 
-        if (status.is2xxSuccessful || status == HttpStatus.ACCEPTED) {
-            log.info("Password reset email sent to {}", to.value)
-        } else {
-            log.error("MailerSend returned status {} sending reset email to {}", status.value(), to.value)
+            if (status.is2xxSuccessful || status == HttpStatus.ACCEPTED) {
+                log.info("Password reset email sent to {}", to.value)
+            } else {
+                log.error("MailerSend returned status {} sending reset email to {}", status.value(), to.value)
+            }
+        } catch (ex: Exception) {
+            // Uma falha aqui não pode vazar para o request HTTP que disparou o
+            // reset: sem este catch, uma exceção do WebClient escapava até o
+            // dispatcher, que a redespachava para /error — fora da lista
+            // permitAll — e o cliente via um 401 sem relação nenhuma com o que
+            // de fato deu errado (confirmado batendo /forgot com a API de
+            // e-mail indisponível no smoke test).
+            log.error("Failed to call MailerSend API sending reset email to {}", to.value, ex)
         }
     }
 }

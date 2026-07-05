@@ -1,8 +1,13 @@
 package dev.vilquer.petcarescheduler.application
 
 import dev.vilquer.petcarescheduler.core.domain.entity.*
+import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
+import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
+import java.time.Duration
+import java.time.Instant
 import java.time.ZonedDateTime
+import java.util.UUID
 
 internal class FakeClock(var fixed: ZonedDateTime) : ClockPort {
     override fun now(): ZonedDateTime = fixed
@@ -16,6 +21,40 @@ internal class FakeNotifier : NotificationPort {
 internal class FakePasswordHash : PasswordHashPort {
     override fun hash(raw: CharSequence): String = "hashed-$raw"
     override fun matches(raw: CharSequence, hash: String): Boolean = hash(raw) == hash
+}
+
+/** Executa o bloco diretamente, sem transação real — suficiente para testar orquestração. */
+internal class FakeTransactionPort : TransactionPort {
+    override fun <T> execute(block: () -> T): T = block()
+}
+
+internal class InMemoryPasswordResetTokenPort : PasswordResetTokenPort {
+    private val store = LinkedHashMap<UUID, PasswordResetToken>()
+    override fun create(token: PasswordResetToken): PasswordResetToken {
+        store[token.id] = token
+        return token
+    }
+    override fun findActiveByHash(tokenHash: String): PasswordResetToken? =
+        store.values.firstOrNull { it.tokenHash == tokenHash && it.usedAt == null }
+    override fun markUsed(id: UUID, usedAt: Instant) {
+        store[id]?.let { store[id] = it.copy(usedAt = usedAt) }
+    }
+    override fun invalidateAllForUser(userId: TutorId, usedAt: Instant) {
+        store.values.filter { it.userId == userId && it.usedAt == null }
+            .forEach { store[it.id] = it.copy(usedAt = usedAt) }
+    }
+    override fun cleanup(now: Instant) {
+        store.values.filter { it.expiresAt.isBefore(now) }.forEach { store.remove(it.id) }
+    }
+    fun allTokens(): Collection<PasswordResetToken> = store.values
+}
+
+internal class FakePasswordResetNotifier : PasswordResetNotifierPort {
+    data class SentLink(val to: Email, val tokenPlain: String, val ttl: Duration)
+    val sent = mutableListOf<SentLink>()
+    override fun sendResetLink(to: Email, tokenPlain: String, ttl: Duration) {
+        sent.add(SentLink(to, tokenPlain, ttl))
+    }
 }
 
 internal class InMemoryTutorRepo(initial: Map<TutorId, Tutor> = emptyMap()) : TutorRepositoryPort {

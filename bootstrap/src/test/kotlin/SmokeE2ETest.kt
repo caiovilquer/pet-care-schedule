@@ -169,4 +169,32 @@ class SmokeE2ETest {
         val blocked = rest.postForEntity("/api/v1/auth/login", wrongLogin(), JsonNode::class.java)
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, blocked.statusCode, "blocked: ${blocked.body}")
     }
+
+    @Test
+    fun `password reset request runs its atomic transaction without a real SpringTransactionPort wiring gap`() {
+        rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Carla","lastName":null,"email":"carla.smoke@example.com","rawPassword":"correct-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+
+        // O token vai por e-mail (fora do escopo deste teste); o que importa
+        // aqui é que a transação real (invalidar + criar token) não estoure
+        // por falta do bean de PlatformTransactionManager/TransactionTemplate.
+        val forgot = rest.postForEntity(
+            "/api/v1/auth/password/forgot",
+            HttpEntity("""{"email":"carla.smoke@example.com"}""", jsonHeaders()),
+            Void::class.java,
+        )
+        assertEquals(HttpStatus.ACCEPTED, forgot.statusCode)
+
+        val invalidToken = rest.exchange(
+            "/api/v1/auth/password/reset/validate?token=not-a-real-token",
+            HttpMethod.GET, HttpEntity<Void>(jsonHeaders()), Void::class.java,
+        )
+        assertEquals(HttpStatus.BAD_REQUEST, invalidToken.statusCode)
+    }
 }
