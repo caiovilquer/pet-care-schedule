@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
 import dev.vilquer.petcarescheduler.application.exception.ConflictException
+import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
@@ -37,7 +38,7 @@ class TutorAppService(
 
     override fun execute(cmd: UpdateTutorCommand): TutorDetailResult {
         val existing = tutorRepo.findById(cmd.tutorId)
-            ?: throw IllegalArgumentException("Tutor ${cmd.tutorId.value} not found")
+            ?: throw NotFoundException("Tutor ${cmd.tutorId.value} not found")
         val updated = existing.copy(
             firstName = cmd.firstName ?: existing.firstName,
             lastName = cmd.lastName ?: existing.lastName,
@@ -54,5 +55,5 @@ class TutorAppService(
 
     override fun get(id: TutorId): TutorDetailResult =
         tutorRepo.findById(id)?.toDetailResult()
-            ?: throw IllegalArgumentException("Tutor ${id.value} not found")
+            ?: throw NotFoundException("Tutor ${id.value} not found")
 }

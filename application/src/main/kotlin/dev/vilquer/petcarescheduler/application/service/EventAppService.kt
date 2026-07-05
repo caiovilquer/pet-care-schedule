@@ -1,6 +1,7 @@
 package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
+import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
 import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.*
@@ -55,7 +56,7 @@ class EventAppService(
 
     override fun execute(cmd: ToggleEventCommand, tutorId: TutorId) {
         val event = eventRepo.findByIdAndTutor(cmd.eventId, tutorId)
-            ?: throw IllegalArgumentException("Event ${cmd.eventId.value} not found")
+            ?: throw NotFoundException("Event ${cmd.eventId.value} not found")
         if (event.status == Status.PENDING) eventRepo.save(event.markDone())
         else eventRepo.save(event.markPending())
     }
@@ -65,7 +66,7 @@ class EventAppService(
         if (!eventRepo.existsForTutor(cmd.eventId, tutorId))
             throw ForbiddenException("Não pode alterar evento de outro tutor")
         val existing = eventRepo.findByIdAndTutor(cmd.eventId, tutorId)
-            ?: throw IllegalArgumentException("Event ${cmd.eventId.value} not found")
+            ?: throw NotFoundException("Event ${cmd.eventId.value} not found")
 
         val updatedRecurrence =
             if (cmd.frequency != null || cmd.intervalCount != null || cmd.repetitions != null || cmd.finalDate != null) {
@@ -100,7 +101,7 @@ class EventAppService(
 
     override fun get(id: EventId, tutorId: TutorId): EventDetailResult =
         eventRepo.findByIdAndTutor(id, tutorId)?.toDetailResult()
-            ?: throw IllegalArgumentException("Event ${id.value} not found")
+            ?: throw NotFoundException("Event ${id.value} not found")
 
     override fun sendRemindersForToday() {
         val now = clock.now()

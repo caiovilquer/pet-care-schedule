@@ -1,6 +1,7 @@
 package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
+import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
 import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
@@ -24,7 +25,7 @@ class PetAppService(
 
     override fun execute(cmd: CreatePetCommand): PetCreatedResult {
         val tutor = tutorRepo.findById(cmd.tutorId)
-            ?: throw IllegalArgumentException("Tutor ${cmd.tutorId.value} not found")
+            ?: throw NotFoundException("Tutor ${cmd.tutorId.value} not found")
 
         val pet = Pet(
             name = cmd.name,
@@ -48,7 +49,7 @@ class PetAppService(
         if (!petRepo.existsForTutor(cmd.petId, tutorId))
             throw ForbiddenException("Não pode alterar pet de outro tutor")
         val existing = petRepo.findByIdAndTutor(cmd.petId, tutorId)
-            ?: throw IllegalArgumentException("Pet ${cmd.petId.value} not found")
+            ?: throw NotFoundException("Pet ${cmd.petId.value} not found")
         val updated = existing.copy(
             name = cmd.name ?: existing.name,
             race = cmd.race ?: existing.race,
@@ -67,5 +68,5 @@ class PetAppService(
 
     override fun get(id: PetId, tutorId: TutorId): PetDetailResult =
         petRepo.findByIdAndTutor(id, tutorId)?.toDetailResult()
-            ?: throw IllegalArgumentException("Pet ${id.value} not found")
+            ?: throw NotFoundException("Pet ${id.value} not found")
 }

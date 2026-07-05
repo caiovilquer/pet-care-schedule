@@ -135,6 +135,13 @@ class SmokeE2ETest {
         )
         assertEquals(HttpStatus.NO_CONTENT, delPet.statusCode)
 
+        // --- pet já excluído responde 404 real, não 400 ---
+        val petNotFound = rest.exchange(
+            "/api/v1/pets/$petId", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(token)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.NOT_FOUND, petNotFound.statusCode, "pet not found: ${petNotFound.body}")
+        assertEquals(404, petNotFound.body!!["status"].asInt())
+
         val petsAfter = rest.exchange(
             "/api/v1/pets", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(token)), JsonNode::class.java,
         )

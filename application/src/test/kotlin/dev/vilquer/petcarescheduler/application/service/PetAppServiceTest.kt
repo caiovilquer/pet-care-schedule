@@ -1,6 +1,7 @@
 package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.*
+import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
@@ -17,9 +18,15 @@ class PetAppServiceTest {
     private val service = PetAppService(petRepo, tutorRepo)
 
     @Test
-    fun `createPet should throw when tutor is missing`() {
+    fun `createPet should throw NotFoundException when tutor is missing`() {
         val cmd = CreatePetCommand("Rex", "Dog", null, LocalDate.now(), photoUrl = null, tutorId = TutorId(1))
-        assertThrows(IllegalArgumentException::class.java) { service.execute(cmd) }
+        assertThrows(NotFoundException::class.java) { service.execute(cmd) }
+    }
+
+    @Test
+    fun `getPet throws NotFoundException when pet does not exist`() {
+        val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
+        assertThrows(NotFoundException::class.java) { service.get(PetId(999), tutor.id!!) }
     }
 
     @Test

@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.application.adapter.input.rest
 import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.application.exception.InvalidCredentialsException
+import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.application.exception.RateLimitException
 import jakarta.validation.ConstraintViolationException
 import org.springframework.dao.DataIntegrityViolationException
@@ -53,8 +54,8 @@ class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
     }
 
-    @ExceptionHandler(NoSuchElementException::class)
-    fun handleNotFound(ex: NoSuchElementException): ResponseEntity<ApiError> {
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFound(ex: NotFoundException): ResponseEntity<ApiError> {
         val body = ApiError(404, "Not Found", ex.message ?: "Recurso nao encontrado")
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body)
     }

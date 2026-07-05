@@ -2,9 +2,11 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.*
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
+import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.usecase.command.DeleteEventCommand
 import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
+import dev.vilquer.petcarescheduler.usecase.command.ToggleEventCommand
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -40,6 +42,18 @@ class EventAppServiceTest {
         assertEquals(Status.PENDING, saved?.status)
         // notificação é responsabilidade exclusiva do scheduler diário
         assertEquals(0, notifier.notified.size)
+    }
+
+    @Test
+    fun `getEvent throws NotFoundException when event does not exist`() {
+        assertThrows(NotFoundException::class.java) { service.get(EventId(999), tutorId) }
+    }
+
+    @Test
+    fun `toggleEvent throws NotFoundException when event does not exist`() {
+        assertThrows(NotFoundException::class.java) {
+            service.execute(ToggleEventCommand(EventId(999)), tutorId)
+        }
     }
 
     @Test

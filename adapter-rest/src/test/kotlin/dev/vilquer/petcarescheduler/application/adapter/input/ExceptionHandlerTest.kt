@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.adapter.input
 
 import dev.vilquer.petcarescheduler.application.adapter.input.rest.ApiExceptionHandler
 import dev.vilquer.petcarescheduler.application.exception.InvalidCredentialsException
+import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -21,7 +22,7 @@ class ExceptionHandlerTest {
 
         @GetMapping("/notfound")
         fun notFound(): String {
-            throw NoSuchElementException("missing")
+            throw NotFoundException("missing")
         }
 
         @GetMapping("/bad")
