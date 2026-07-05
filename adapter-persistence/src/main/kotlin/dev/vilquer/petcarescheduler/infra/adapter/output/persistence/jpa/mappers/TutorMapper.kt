@@ -3,7 +3,6 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mapper
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
-import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
 
 /**
@@ -27,34 +26,20 @@ object TutorMapper {
             passwordHash = jpa.passwordHash,
             passwordChangedAt = jpa.passwordChangedAt,
             phoneNumber = jpa.phoneNumber?.let { PhoneNumber.of(it).getOrThrow()},
-            avatar = jpa.avatar,
-            pets = jpa.pets.map { petJpa ->
-                Pet(
-                    id = petJpa.id?.let { PetId(it) },
-                    name = petJpa.name,
-                    species = petJpa.species,
-                    breed = petJpa.breed,
-                    birthdate = petJpa.birthdate,
-                    photoUrl = petJpa.photoUrl,
-                    tutorId = tutorId,
-                    events = petJpa.events.map { e -> e.toDomain() }
-                )
-            }
+            avatar = jpa.avatar
         )
     }
 
     /**
-     * Maps domain entity to JPA entity and can update the original domain entity with generated IDs.
+     * Maps domain entity to JPA entity.
      *
      * @param domain The domain entity to convert
      * @param existing Optional existing JPA entity to update instead of creating a new one
-     * @param updateDomain Whether to update the domain entity with IDs generated after persistence
      * @return The corresponding JPA entity
      */
     fun toJpa(
         domain: Tutor,
-        existing: TutorJpa? = null,
-        updateDomain: Boolean = false
+        existing: TutorJpa? = null
     ): TutorJpa {
         val jpa = existing ?: TutorJpa()
         with(domain) {
@@ -67,53 +52,7 @@ object TutorMapper {
             jpa.phoneNumber = phoneNumber?.e164
             jpa.avatar = avatar
         }
-
-        mapPets(domain, jpa, updateDomain)
         return jpa
-    }
-
-    /**
-     * Helper function to map pet collections.
-     * Can optionally update domain pet IDs based on JPA entities.
-     */
-    private fun mapPets(domain: Tutor, jpa: TutorJpa, updateDomain: Boolean = false) {
-        // Only proceed with mapping events if tutor has an ID or if this is a new pet with no events
-//        if (jpa.id == null && domain.pets.isNotEmpty()) {
-//            return
-//        }
-
-        jpa.pets.clear()
-
-        if (domain.pets.isEmpty()) {
-            return
-        }
-
-        val existingPetsById = if (jpa.id != null) {
-            jpa.pets.associateBy { it.id }
-        } else {
-            emptyMap()
-        }
-
-        // Keep track of domain and JPA pet mappings if we need to update IDs
-        val petMappings = mutableListOf<Pair<Pet, PetJpa>>()
-
-        val petsToAdd = domain.pets.map { pet ->
-            val existingPet = pet.id?.value?.let { existingPetsById[it] }
-            val petJpa = PetMapper.toJpa(pet, existingPet, forceTutorId = jpa.id)
-
-            if (jpa.id != null) {
-                petJpa.tutorId = jpa.id!!
-            }
-
-            // Store the mapping for later ID updates if needed
-            if (updateDomain) {
-                petMappings.add(Pair(pet, petJpa))
-            }
-
-            petJpa
-        }
-
-        jpa.pets.addAll(petsToAdd)
     }
 }
 

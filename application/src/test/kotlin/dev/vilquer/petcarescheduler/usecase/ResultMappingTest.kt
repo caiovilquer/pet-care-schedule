@@ -8,7 +8,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 class ResultMappingTest {
 
-    private fun Pet.toDetailResult(): PetDetailResult = PetDetailResult(
+    private fun Pet.toDetailResult(events: List<Event>): PetDetailResult = PetDetailResult(
         id = id!!,
         name = name,
         species = species,
@@ -24,7 +24,7 @@ class ResultMappingTest {
         }
     )
 
-    private fun Tutor.toDetailResult(): TutorDetailResult = TutorDetailResult(
+    private fun Tutor.toDetailResult(pets: List<Pet>): TutorDetailResult = TutorDetailResult(
         id = id!!,
         firstName = firstName,
         lastName = lastName,
@@ -45,21 +45,21 @@ class ResultMappingTest {
             breed = "SRD",
             birthdate = LocalDate.of(2022, 1, 1),
             photoUrl = "https://example.com/pets/luna.png",
-            tutorId = TutorId(2L),
-            events = listOf(
-                Event(
-                    id = EventId(3L),
-                    type = EventType.VACCINE,
-                    description = null,
-                    dateStart = LocalDateTime.of(2025, 7, 12, 10, 0),
-                    recurrence = null,
-                    status = Status.PENDING,
-                    petId = PetId(1L)
-                )
+            tutorId = TutorId(2L)
+        )
+        val events = listOf(
+            Event(
+                id = EventId(3L),
+                type = EventType.VACCINE,
+                description = null,
+                dateStart = LocalDateTime.of(2025, 7, 12, 10, 0),
+                recurrence = null,
+                status = Status.PENDING,
+                petId = PetId(1L)
             )
         )
 
-        val result = pet.toDetailResult()
+        val result = pet.toDetailResult(events)
         assertEquals(PetId(1L), result.id)
         assertEquals("Luna", result.name)
         assertEquals(EventType.VACCINE, result.events.first().type)
@@ -74,21 +74,21 @@ class ResultMappingTest {
             email = Email.of("ana@ex.com").getOrThrow(),
             passwordHash = "hash",
             phoneNumber = PhoneNumber.of("1111").getOrNull(),
-            avatar = null,
-            pets = listOf(
-                Pet(
-                    id = PetId(9L),
-                    name = "Bidu",
-                    species = "Dog",
-                    breed = null,
-                    birthdate = LocalDate.of(2020, 5, 4),
-                    photoUrl = "https://example.com/pets/bidu.png",
-                    tutorId = TutorId(5L)
-                )
+            avatar = null
+        )
+        val pets = listOf(
+            Pet(
+                id = PetId(9L),
+                name = "Bidu",
+                species = "Dog",
+                breed = null,
+                birthdate = LocalDate.of(2020, 5, 4),
+                photoUrl = "https://example.com/pets/bidu.png",
+                tutorId = TutorId(5L)
             )
         )
 
-        val result = tutor.toDetailResult()
+        val result = tutor.toDetailResult(pets)
         assertEquals(TutorId(5L), result.id)
         assertEquals(1, result.pets.size)
         assertEquals(PetId(9L), result.pets.first().id)

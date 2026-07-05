@@ -33,4 +33,7 @@ class PetRepositoryAdapter(
 
     override fun existsForTutor(id: PetId, tutorId: TutorId): Boolean =
         jpa.existsByIdAndTutorId(id.value, tutorId.value)
+
+    override fun findAllByTutor(tutorId: TutorId): List<Pet> =
+        jpa.findAllByTutorId(tutorId.value).map { it.toDomain() }
 }

@@ -13,7 +13,8 @@ class TutorAppServiceTest {
 
     private val tutorRepo = InMemoryTutorRepo()
     private val passwordHash = FakePasswordHash()
-    private val service = TutorAppService(tutorRepo, passwordHash)
+    private val petRepo = InMemoryPetRepo()
+    private val service = TutorAppService(tutorRepo, passwordHash, petRepo)
 
     @Test
     fun `createTutor persists and returns id`() {

@@ -9,8 +9,7 @@ data class Pet(
     val breed: String?,
     val birthdate: LocalDate?,
     val photoUrl: String? = null,
-    val tutorId: TutorId?,
-    val events: List<Event> = mutableListOf()
+    val tutorId: TutorId?
 )
 
 @JvmInline value class PetId(val value: Long)

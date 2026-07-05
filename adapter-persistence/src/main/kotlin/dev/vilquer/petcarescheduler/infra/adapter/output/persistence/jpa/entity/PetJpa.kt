@@ -28,14 +28,6 @@ class PetJpa {
     @Column(name = "tutor_id", nullable = true)
     var tutorId: Long? = null
 
-
-    @OneToMany(
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true
-    )
-    @JoinColumn(name = "pet_id")
-    var events: MutableList<EventJpa> = mutableListOf()
-
     override fun equals(other: Any?): Boolean =
         this === other || (other is PetJpa && this.id != null && this.id == other.id)
 

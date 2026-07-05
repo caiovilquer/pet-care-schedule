@@ -6,7 +6,9 @@ import dev.vilquer.petcarescheduler.usecase.result.*
 fun Pet.toSummary(): PetSummary =
     PetSummary(id = id!!, name = name, species = species, photoUrl = photoUrl)
 
-fun Pet.toDetailResult(): PetDetailResult = PetDetailResult(
+// Pet e Tutor referenciam seus filhos por ID, não por composição; o read model
+// completo é montado no service a partir de uma consulta explícita ao filho.
+fun Pet.toDetailResult(events: List<Event>): PetDetailResult = PetDetailResult(
     id = id!!,
     name = name,
     species = species,
@@ -22,7 +24,7 @@ fun Pet.toDetailResult(): PetDetailResult = PetDetailResult(
     }
 )
 
-fun Tutor.toDetailResult(): TutorDetailResult = TutorDetailResult(
+fun Tutor.toDetailResult(pets: List<Pet>): TutorDetailResult = TutorDetailResult(
     id = id!!,
     firstName = firstName,
     lastName = lastName,

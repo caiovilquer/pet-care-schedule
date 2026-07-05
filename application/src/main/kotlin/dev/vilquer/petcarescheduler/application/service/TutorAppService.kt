@@ -7,13 +7,15 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
 
 class TutorAppService(
     private val tutorRepo: TutorRepositoryPort,
-    private val passwordHash: PasswordHashPort
+    private val passwordHash: PasswordHashPort,
+    private val petRepo: PetRepositoryPort
 ) :
     CreateTutorUseCase,
     UpdateTutorUseCase,
@@ -46,14 +48,15 @@ class TutorAppService(
             avatar = cmd.avatar ?: existing.avatar
         )
         val saved = tutorRepo.save(updated)
-        return saved.toDetailResult()
+        return saved.toDetailResult(petRepo.findAllByTutor(saved.id!!))
     }
 
     override fun execute(cmd: DeleteTutorCommand) {
         tutorRepo.delete(cmd.tutorId)
     }
 
-    override fun get(id: TutorId): TutorDetailResult =
-        tutorRepo.findById(id)?.toDetailResult()
-            ?: throw NotFoundException("Tutor ${id.value} not found")
+    override fun get(id: TutorId): TutorDetailResult {
+        val tutor = tutorRepo.findById(id) ?: throw NotFoundException("Tutor ${id.value} not found")
+        return tutor.toDetailResult(petRepo.findAllByTutor(id))
+    }
 }

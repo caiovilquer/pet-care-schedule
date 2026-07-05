@@ -65,6 +65,8 @@ internal class InMemoryPetRepo(initial: Map<PetId, Pet> = emptyMap()) : PetRepos
         store[id]?.takeIf { it.tutorId == tutorId }
     override fun existsForTutor(id: PetId, tutorId: TutorId): Boolean =
         store[id]?.tutorId == tutorId
+    override fun findAllByTutor(tutorId: TutorId): List<Pet> =
+        store.values.filter { it.tutorId == tutorId }
 }
 
 internal class InMemoryEventRepo(initial: Map<EventId, Event> = emptyMap()) : EventRepositoryPort {

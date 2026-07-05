@@ -11,8 +11,7 @@ data class Tutor(
     val passwordHash: String,
     val passwordChangedAt: java.time.Instant? = null,
     val phoneNumber: PhoneNumber? = null,
-    val avatar: String? = null,
-    val pets: List<Pet> = mutableListOf()
+    val avatar: String? = null
 )
 
 @JvmInline value class TutorId(val value: Long)

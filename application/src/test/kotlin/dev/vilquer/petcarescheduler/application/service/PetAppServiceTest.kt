@@ -15,7 +15,8 @@ class PetAppServiceTest {
 
     private val petRepo = InMemoryPetRepo()
     private val tutorRepo = InMemoryTutorRepo()
-    private val service = PetAppService(petRepo, tutorRepo)
+    private val eventRepo = InMemoryEventRepo()
+    private val service = PetAppService(petRepo, tutorRepo, eventRepo)
 
     @Test
     fun `createPet should throw NotFoundException when tutor is missing`() {

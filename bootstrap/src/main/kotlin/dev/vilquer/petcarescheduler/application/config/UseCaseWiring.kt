@@ -51,13 +51,15 @@ class UseCaseWiring {
     fun petAppService(
         petRepo: PetRepositoryPort,
         tutorRepo: TutorRepositoryPort,
-    ) = PetAppService(petRepo, tutorRepo)
+        eventRepo: EventRepositoryPort,
+    ) = PetAppService(petRepo, tutorRepo, eventRepo)
 
     @Bean
     fun tutorAppService(
         tutorRepo: TutorRepositoryPort,
         passwordHash: PasswordHashPort,
-    ) = TutorAppService(tutorRepo, passwordHash)
+        petRepo: PetRepositoryPort,
+    ) = TutorAppService(tutorRepo, passwordHash, petRepo)
 
     @Bean
     fun rateLimitProperties(environment: Environment): RateLimitProperties =

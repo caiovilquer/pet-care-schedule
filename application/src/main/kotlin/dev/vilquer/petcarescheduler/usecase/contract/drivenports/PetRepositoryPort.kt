@@ -13,4 +13,7 @@ interface PetRepositoryPort {
     fun countByTutor(tutorId: TutorId): Long
     fun findByIdAndTutor(id: PetId, tutorId: TutorId): Pet?
     fun existsForTutor(id: PetId, tutorId: TutorId): Boolean
+
+    /** Lista completa (sem paginação), usada para montar o read model do detalhe do tutor. */
+    fun findAllByTutor(tutorId: TutorId): List<Pet>
 }

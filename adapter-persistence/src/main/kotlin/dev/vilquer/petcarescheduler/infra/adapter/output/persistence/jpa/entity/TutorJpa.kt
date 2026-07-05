@@ -28,13 +28,6 @@ class TutorJpa {
 
     var avatar: String? = null
 
-    @OneToMany(
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true
-    )
-    @JoinColumn(name = "tutor_id")
-    val pets: MutableList<PetJpa> = mutableListOf()
-
     @Column(name = "password_changed_at")
     var passwordChangedAt: Instant = Instant.now()
 

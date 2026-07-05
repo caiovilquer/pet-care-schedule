@@ -8,6 +8,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.command.*
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
@@ -15,7 +16,8 @@ import dev.vilquer.petcarescheduler.usecase.result.*
 
 class PetAppService(
     private val petRepo: PetRepositoryPort,
-    private val tutorRepo: TutorRepositoryPort
+    private val tutorRepo: TutorRepositoryPort,
+    private val eventRepo: EventRepositoryPort
 ):
     CreatePetUseCase,
     ListPetsUseCase,
@@ -57,7 +59,7 @@ class PetAppService(
             photoUrl = cmd.photoUrl ?: existing.photoUrl
         )
         val saved = petRepo.save(updated)
-        return saved.toDetailResult()
+        return saved.toDetailResult(eventRepo.findByPetId(saved.id!!))
     }
 
     override fun execute(cmd: DeletePetCommand, tutorId: TutorId) {
@@ -66,7 +68,9 @@ class PetAppService(
         petRepo.delete(cmd.petId)
     }
 
-    override fun get(id: PetId, tutorId: TutorId): PetDetailResult =
-        petRepo.findByIdAndTutor(id, tutorId)?.toDetailResult()
+    override fun get(id: PetId, tutorId: TutorId): PetDetailResult {
+        val pet = petRepo.findByIdAndTutor(id, tutorId)
             ?: throw NotFoundException("Pet ${id.value} not found")
+        return pet.toDetailResult(eventRepo.findByPetId(id))
+    }
 }
