@@ -16,7 +16,7 @@ import java.time.Duration
 class MailSenderAdapter(
     @param:Qualifier("mailerSendClient") private val http: WebClient,
     private val props: MailApiProps,
-    @param:Value("\${app.frontend.base-url:https://petcare.vilquer.dev}") private val frontBase: String,
+    @param:Value("\${app.frontend.base-url:https://rotinapet.vilquer.dev}") private val frontBase: String,
 ) : PasswordResetNotifierPort {
 
     private val log = LoggerFactory.getLogger(MailSenderAdapter::class.java)

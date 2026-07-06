@@ -28,7 +28,7 @@ class EmailNotificationAdapter(
     override fun sendEventReminder(target: EventReminderTarget): Boolean {
         val event = target.event
         val html = renderTemplate(event, target.petName)
-        val subject = "Lembrete do PetCare: ${event.type.pt()}"
+        val subject = "Lembrete do RotinaPet: ${event.type.pt()}"
 
         val payload = mapOf(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
@@ -80,7 +80,7 @@ class EmailNotificationAdapter(
 
         val petName = petNameRaw?.let { escapeHtml(it) } ?: "Pet"
         val descricao = event.description?.takeIf { it.isNotBlank() }?.let { escapeHtml(it) } ?: "Sem descrição"
-        val ctaUrl = "https://petcare.vilquer.dev/events"
+        val ctaUrl = "https://rotinapet.vilquer.dev/events"
 
         return """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -88,7 +88,7 @@ class EmailNotificationAdapter(
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lembrete PetCare</title>
+  <title>Lembrete RotinaPet</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f0f0f0;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
@@ -125,7 +125,7 @@ class EmailNotificationAdapter(
               </table>
 
               <p style="margin: 16px 0 0 0; font-family: Arial, Helvetica, sans-serif; color: #777777; font-size: 12px; line-height: 18px;">
-                Você recebeu este lembrete porque cadastrou um evento no PetCare Scheduler.
+                Você recebeu este lembrete porque cadastrou um evento no RotinaPet.
               </p>
 
             </td>

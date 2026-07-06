@@ -1,4 +1,4 @@
-# Pet Care Scheduler
+# RotinaPet
 
 Aplicação full‑stack para controlar cuidados recorrentes com animais de estimação.
 Tutore(s) podem cadastrar seus pets, planejar eventos (vacinas, medicamentos,

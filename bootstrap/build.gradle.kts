@@ -13,7 +13,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 tasks.withType<BootJar>().configureEach {
-    archiveFileName.set("petcare.jar")
+    archiveFileName.set("rotinapet.jar")
 }
 
 springBoot {

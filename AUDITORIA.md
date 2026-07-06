@@ -1,4 +1,4 @@
-# Auditoria do Projeto Pet Care Scheduler (revisada)
+# Auditoria do Projeto RotinaPet (revisada)
 
 Data: 2025-02-14
 

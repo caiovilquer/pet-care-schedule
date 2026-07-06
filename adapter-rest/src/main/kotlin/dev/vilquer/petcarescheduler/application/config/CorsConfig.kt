@@ -12,7 +12,7 @@ class WebCorsConfig {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration().apply {
-            allowedOriginPatterns = listOf("https://petcare.vilquer.dev")
+            allowedOriginPatterns = listOf("https://rotinapet.vilquer.dev")
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf(
                 "Authorization",

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:petcare;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    url: jdbc:h2:mem:rotinapet;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -31,7 +31,7 @@ server:
     key-store-type: PKCS12
 
 jwt:
-  issuer: ${JWT_ISSUER:petcare-api}
+  issuer: ${JWT_ISSUER:rotinapet-api}
   secret: ${JWT_SECRET:dev-only-change-me-please-32-chars}
 
 springdoc:

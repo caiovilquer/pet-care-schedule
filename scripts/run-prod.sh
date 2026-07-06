@@ -11,4 +11,4 @@ fi
 
 export SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-prod}"
 
-exec java ${JAVA_OPTS} -jar "${ROOT_DIR}/bootstrap/build/libs/petcare.jar"
+exec java ${JAVA_OPTS} -jar "${ROOT_DIR}/bootstrap/build/libs/rotinapet.jar"

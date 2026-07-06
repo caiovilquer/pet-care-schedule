@@ -11,7 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient
 data class MailApiProps(
     var apiKey: String = "",
     var from: String = "",
-    var fromName: String = "PetCare Scheduler",
+    var fromName: String = "RotinaPet",
     var baseUrl: String = ""
 )
 
