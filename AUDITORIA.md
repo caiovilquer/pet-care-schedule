@@ -46,5 +46,18 @@ Data: 2025-02-14
 ## Recomendacoes priorizadas
 1) Avaliar cache externo (ex.: Redis) para `passwordChangedAt` em producao.
 2) Adicionar backoff progressivo e/ou bloqueio temporario para rate limiting.
-3) Garantir apenas uma instancia executando limpeza (leader election ou lock distribuidos).
+3) ~~Garantir apenas uma instancia executando limpeza (leader election ou lock distribuidos).~~
+   **Resolvido na Fase 3 (2026-07-05):** ShedLock (`shedlock-provider-jdbc-template`, reaproveitando
+   o datasource existente) protege os três schedulers (lembretes, relay de entrega, limpeza de
+   segurança) contra execução concorrente em cluster — ver `PLANO-FASE-3.md`, PR 3-C.
 4) Adicionar testes de integracao para JWT invalidation e scheduler de limpeza.
+
+## Atualização (Fase 4, 2026-07-05)
+Fase de higiene de plataforma, sem mudança de comportamento de negócio: Gradle version catalog
+(fonte única de versão de plugin/dependência), Kotlin 2.0.21, Spring Boot 3.5.16, JDK 21,
+testes de `adapter-persistence` migrados de H2-em-modo-PostgreSQL para Postgres real via
+Testcontainers (as migrações Flyway `postgresql/` passam a ser exercitadas em teste, não só em
+produção), Actuator (`health`/`info`/`metrics`) e correlation ID por requisição. Ver
+`PLANO-FASE-4.md` para o detalhamento completo. Nenhum item novo de achado de segurança ou
+confiabilidade surgiu desta fase — ela fecha lacunas de processo (build, teste, observabilidade),
+não de comportamento.

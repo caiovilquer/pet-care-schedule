@@ -106,11 +106,41 @@ mudança de comportamento de negócio.
 
 ## 5. Definition of Done
 
-- [ ] `libs.versions.toml` é a única fonte de versão de cada dependência/plugin
-- [ ] Kotlin, Spring Boot e toolchain Java atualizados; `./gradlew build` e
+- [x] `libs.versions.toml` é a única fonte de versão de cada dependência/plugin
+      (única exceção documentada: o plugin `foojay-resolver-convention` em
+      `settings.gradle.kts`, que não pode referenciar o catalog antes dele
+      mesmo estar disponível)
+- [x] Kotlin, Spring Boot e toolchain Java atualizados; `./gradlew build` e
       `./gradlew check` verdes
-- [ ] Testes de `adapter-persistence` rodam contra Postgres real via
-      Testcontainers
-- [ ] `/actuator/health` responde; logs de uma mesma requisição
+- [x] Testes de `adapter-persistence` rodam contra Postgres real via
+      Testcontainers (as migrações `postgresql/` passam a ser exercitadas em
+      teste, não só em produção)
+- [x] `/actuator/health` responde; logs de uma mesma requisição
       compartilham o mesmo correlation ID
-- [ ] AUDITORIA.md e README refletem o estado atual
+- [x] AUDITORIA.md e README refletem o estado atual
+
+**Status: Fase 4 concluída (2026-07-05).** Seis PRs (4-A a 4-F) implementados
+e commitados sequencialmente. Descobertas ao longo da execução, não previstas
+no plano original:
+
+- Os três `@DataJpaTest` de `adapter-persistence` não usavam Flyway nem H2 em
+  modo PostgreSQL como a proposta original presumia — rodavam com DDL gerado
+  pelo Hibernate a partir das anotações `@Entity`, contra H2 puro. A pasta
+  `db/migration/postgresql/` nunca tinha sido exercitada por nenhum teste
+  automatizado. A PR 4-D fechou essa lacuna de verdade (Flyway habilitado
+  explicitamente + Testcontainers), não apenas trocou o driver de um teste
+  que já rodava migrações.
+- O bump para o BOM do Spring Boot 3.5 expôs um descompasso de versão entre
+  o `junit-platform-launcher` que o próprio Gradle empacota e o
+  `junit-platform-engine` mais novo resolvido via BOM — corrigido declarando
+  `testRuntimeOnly("org.junit.platform:junit-platform-launcher")` nos módulos
+  com `spring-boot-starter-test` (fix documentado pelo próprio Spring Boot
+  para esse cenário, não workaround improvisado).
+- `Event.markDone()` (core) era código morto — nenhuma referência em todo o
+  repo; `Event.complete()` já fazia a mesma transição inline. Removido na
+  PR 4-C.
+
+Todas as seis PRs verificadas com `./gradlew clean check` (30 tasks, 6
+módulos) e com verificação ao vivo específica de cada uma (bootRun + curl
+para PR 4-B e PR 4-E; `docker ps` confirmando um único container Postgres
+compartilhado para PR 4-D).

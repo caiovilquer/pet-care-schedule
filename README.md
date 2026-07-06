@@ -39,6 +39,13 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
   - OpenAPI/Swagger UI em `/swagger-ui.html`.
   - Console H2 em `/h2-console` para inspeção do banco em memória.
 
+- **Observabilidade**
+  - Spring Boot Actuator: `/actuator/health` (público), `/actuator/info` e
+    `/actuator/metrics` (autenticados, como o resto da API).
+  - Cada requisição recebe um `X-Request-Id` (gerado se o cliente não
+    enviar um), propagado na resposta e no log, para correlacionar todas as
+    linhas de uma mesma requisição sem precisar de tracing distribuído.
+
 ## Arquitetura
 
 Estrutura hexagonal (ports & adapters) em seis módulos. `core` e `application`
@@ -52,7 +59,7 @@ arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
 | **core**                | Entidades (Tutor, Pet, Event) e Value Objects (Email, Phone, etc.). Zero dependências. |
 | **application**         | Ports de entrada/saída, comandos, resultados e os use cases (services). Kotlin puro — sem Spring. |
 | **adapter-rest**        | Controllers REST, DTOs, `ApiExceptionHandler`, Spring Security (JWT, CORS), emissão de token, hash de senha. |
-| **adapter-persistence** | Entidades JPA, repositórios Spring Data, mappers, adapters de persistência e migrações Flyway. |
+| **adapter-persistence** | Entidades JPA, repositórios Spring Data, mappers, adapters de persistência e migrações Flyway. Testes de integração sobem um Postgres real via Testcontainers (requer Docker). |
 | **adapter-messaging**   | Cliente HTTP (WebClient) e adapters de e-mail (MailerSend).              |
 | **bootstrap**           | Ponto de entrada Spring Boot: wiring manual dos use cases (`UseCaseWiring`), schedulers, configuração de ambiente (`application*.yml`, SSL, JVM). |
 
@@ -64,7 +71,10 @@ services não carregam `@Service`/`@Value`/`@ConfigurationProperties`.
 ## Requisitos
 
 - JDK 21+
-- Docker (para MailHog)
+- Kotlin 2.0 / Spring Boot 3.5 (versões centralizadas em `gradle/libs.versions.toml`)
+- Docker (para MailHog e para os testes de `adapter-persistence`, que sobem
+  um Postgres real via Testcontainers — `./gradlew check` falha sem Docker
+  disponível)
 - Gradle Wrapper (`./gradlew`)
 
 ## Executando o projeto
