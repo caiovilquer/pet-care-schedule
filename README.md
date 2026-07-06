@@ -21,13 +21,21 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
     recorrente (`PUT /events/{id}/toggle`) gera automaticamente a próxima
     ocorrência, enquanto houver repetições ou a data final não tiver passado.
 
-- **Lembretes automáticos**
-  - Scheduler diário (`@Scheduled`) envia e‑mails para eventos previstos
-    para o dia atual.
+- **Lembretes automáticos e confiáveis**
+  - Um scheduler diário detecta os eventos previstos para o dia e apenas
+    enfileira o lembrete (outbox); um segundo scheduler, a cada 5 minutos,
+    entrega de fato, com retry automático em caso de falha da API de e‑mail.
+    Um lembrete nunca é enviado duas vezes (idempotência por evento) nem se
+    perde silenciosamente se o processo reiniciar no meio do dia.
   - Servidor SMTP fake (MailHog) para desenvolvimento.
+  - Todos os schedulers (lembretes, entrega, limpeza de segurança) usam
+    ShedLock para rodar em uma única instância quando a aplicação estiver
+    replicada.
 
 - **Segurança e documentação**
   - Spring Security + JWT, senhas com BCrypt.
+  - Redefinição de senha com token de uso único; a troca de senha e a
+    emissão/invalidação de tokens são atômicas (`TransactionPort`).
   - OpenAPI/Swagger UI em `/swagger-ui.html`.
   - Console H2 em `/h2-console` para inspeção do banco em memória.
 

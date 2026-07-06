@@ -111,13 +111,33 @@ e-mail falhar, e schedulers que rodariam duplicados num cluster.
 
 ## 5. Definition of Done
 
-- [ ] `PasswordResetService.reset()` e a dupla escrita de token em
-      `requestReset()` rodam dentro de uma transação
-- [ ] Lembrete de evento nunca enviado duas vezes (`UNIQUE(event_id)`) nem
-      perdido silenciosamente (relay reprocessa falhas)
-- [ ] Detecção diária não bloqueia mais numa chamada de rede síncrona por
-      lembrete
-- [ ] `@SchedulerLock` protege os três schedulers contra execução
-      concorrente em cluster
-- [ ] `./gradlew build` e `./gradlew check` verdes a cada PR
-- [ ] README e este plano atualizados
+- [x] `PasswordResetService.reset()` e a dupla escrita de token em
+      `requestReset()` rodam dentro de uma transação (`TransactionPort` +
+      `SpringTransactionPort`, verificado ao vivo via smoke test contra o
+      `PlatformTransactionManager` real, não só com fakes)
+- [x] Lembrete de evento nunca enviado duas vezes (`UNIQUE(event_id)`) nem
+      perdido silenciosamente (relay reprocessa falhas) — verificado ao vivo
+      contra o H2 real: duas varreduras no mesmo dia não duplicam a
+      mensagem, e uma falha real de entrega (API de e-mail indisponível no
+      ambiente de teste) incrementa `attempts` sem marcar como enviada
+- [x] Detecção diária não bloqueia mais numa chamada de rede síncrona por
+      lembrete (`sendRemindersForToday` só enfileira; `ReminderRelayService`
+      entrega em um scheduler separado)
+- [x] `@SchedulerLock` protege os três schedulers contra execução
+      concorrente em cluster — aplicação subida de verdade (`bootRun`) sem
+      erro de wiring do `LockProvider`/tabela `shedlock`
+- [x] "CQRS leve nas leituras" confirmado como já satisfeito pela Fase 2
+      (PR 2-C): `listByTutor`/`listEvents` usam projeções (`toSummary()`)
+      sem grafo aninhado; nenhum código novo necessário nesta frente
+- [x] `./gradlew build` e `./gradlew check` verdes a cada PR
+- [x] README e este plano atualizados
+
+**Status: Fase 3 concluída (2026-07-05).** Quatro PRs (3-A a 3-D)
+implementados e commitados sequencialmente. 91 testes passando no total
+(core: 17, application: 38, adapter-rest: 9, adapter-persistence: 14,
+bootstrap: 13), incluindo dois bugs reais encontrados e corrigidos durante
+a verificação ao vivo com o smoke test (não apenas testes com fakes):
+`MailSenderAdapter.sendResetLink` deixava exceção de rede vazar para a
+requisição HTTP (virava 401 sem relação com o problema real), e o próprio
+teste de outbox tinha uma data fixada ao meio-dia que falhava
+`@FutureOrPresent` em execuções à tarde.
