@@ -1,10 +1,10 @@
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
-    kotlin("jvm")
-    kotlin("plugin.spring")
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.dependency.management)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.spring)
 }
 
 kotlin { jvmToolchain(17) }
@@ -41,8 +41,8 @@ dependencies {
 
     // Garante que os schedulers rodem em uma única instância quando houver
     // mais de uma réplica do bootstrap no ar (ver AUDITORIA.md).
-    implementation("net.javacrumbs.shedlock:shedlock-spring:5.16.0")
-    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0")
+    implementation(libs.shedlock.spring)
+    implementation(libs.shedlock.jdbc)
 
     runtimeOnly("org.postgresql:postgresql")
     // Perfil dev e testes de integração usam H2 em modo PostgreSQL
@@ -53,10 +53,10 @@ dependencies {
     // dedicado no classpath; esse client lança HttpRetryException em qualquer
     // resposta 401 recebida com corpo em modo streaming (bug/limitação da JDK,
     // não do código de produção — confirmado batendo direto com curl).
-    testImplementation("org.apache.httpcomponents.client5:httpclient5")
+    testImplementation(libs.httpclient5)
 
     // Testes de arquitetura (fronteira hexagonal por módulo)
-    testImplementation("com.lemonappdev:konsist:0.17.3")
+    testImplementation(libs.konsist)
 }
 
 tasks.test {
