@@ -13,7 +13,6 @@ data class Event(
     val occurrenceCount: Int = 0,
     val petId: PetId?
 ) {
-    fun markDone() = copy(status = Status.DONE)
     fun markPending() = copy(status = Status.PENDING)
 
     /**

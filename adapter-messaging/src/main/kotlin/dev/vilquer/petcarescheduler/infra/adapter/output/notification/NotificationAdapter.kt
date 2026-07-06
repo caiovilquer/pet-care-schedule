@@ -61,7 +61,7 @@ class EmailNotificationAdapter(
 
     // ===== apresentação =====
 
-    private val PTBR = Locale("pt", "BR")
+    private val PTBR: Locale = Locale.of("pt", "BR")
     private val DEFAULTZONE = parseZoneId(timezone)
     private val DATEFMT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE, dd/MM/yyyy 'às' HH:mm", PTBR)
 
