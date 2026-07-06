@@ -20,11 +20,11 @@ allprojects {
 subprojects {
     plugins.withType<JavaPlugin> {
         extensions.configure(JavaPluginExtension::class.java) {
-            toolchain { languageVersion.set(JavaLanguageVersion.of(17)) }
+            toolchain { languageVersion.set(JavaLanguageVersion.of(21)) }
         }
         tasks.withType(JavaCompile::class.java).configureEach {
-            sourceCompatibility = "17"
-            targetCompatibility = "17"
+            sourceCompatibility = "21"
+            targetCompatibility = "21"
         }
     }
 }

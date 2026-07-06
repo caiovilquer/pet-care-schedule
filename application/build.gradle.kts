@@ -2,9 +2,9 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     `java-library`
 }
-kotlin { jvmToolchain(17) }
+kotlin { jvmToolchain(21) }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions { jvmTarget = "21" }
 }
 
 dependencies {

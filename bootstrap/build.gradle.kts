@@ -7,9 +7,9 @@ plugins {
     alias(libs.plugins.kotlin.spring)
 }
 
-kotlin { jvmToolchain(17) }
+kotlin { jvmToolchain(21) }
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions { jvmTarget = "21" }
 }
 
 tasks.withType<BootJar>().configureEach {
@@ -54,6 +54,10 @@ dependencies {
     // resposta 401 recebida com corpo em modo streaming (bug/limitação da JDK,
     // não do código de produção — confirmado batendo direto com curl).
     testImplementation(libs.httpclient5)
+    // Gradle empacota seu próprio junit-platform-launcher, que fica desalinhado
+    // com o junit-platform-engine mais novo trazido pelo BOM do Spring Boot;
+    // declarar a versão do BOM explicitamente resolve o conflito.
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // Testes de arquitetura (fronteira hexagonal por módulo)
     testImplementation(libs.konsist)
