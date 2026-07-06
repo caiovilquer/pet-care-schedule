@@ -1,5 +1,6 @@
 package petcarescheduler.infra.test
 
+import dev.vilquer.petcarescheduler.infra.AbstractPostgresIntegrationTest
 import dev.vilquer.petcarescheduler.infra.PersistenceTestApplication
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.TutorMapper
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.TutorJpaRepository
@@ -9,12 +10,14 @@ import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.test.context.ContextConfiguration
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = [PersistenceTestApplication::class])
-class TutorMapperIntegrationTest {
+class TutorMapperIntegrationTest : AbstractPostgresIntegrationTest() {
 
     @Autowired
     private lateinit var tutorRepository: TutorJpaRepository

@@ -28,11 +28,18 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testRuntimeOnly("com.h2database:h2")
     // Gradle empacota seu próprio junit-platform-launcher, que fica desalinhado
     // com o junit-platform-engine mais novo trazido pelo BOM do Spring Boot;
     // declarar a versão do BOM explicitamente resolve o conflito.
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Postgres real via Testcontainers, no lugar do H2 em modo PostgreSQL:
+    // as mesmas migrações Flyway (common + postgresql) usadas em produção
+    // passam a ser exercitadas nos testes, não só a variante h2/.
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.flywaydb:flyway-core")
+    testImplementation("org.flywaydb:flyway-database-postgresql")
+    testRuntimeOnly("org.postgresql:postgresql")
 }
 
 tasks.test {
