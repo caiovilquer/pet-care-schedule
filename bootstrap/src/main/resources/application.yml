@@ -4,3 +4,20 @@ spring:
   flyway:
     # migrações comuns + variantes por banco ({vendor} -> postgresql | h2)
     locations: classpath:db/migration/common,classpath:db/migration/{vendor}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # só o necessário para liveness/readiness de infra e scraping de
+        # métricas; env/beans/heapdump vazam detalhe interno sem consumidor
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  pattern:
+    # %X{correlationId}: injetado pelo CorrelationIdFilter, permite
+    # correlacionar todas as linhas de log de uma mesma requisição.
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId}] %logger{36} - %msg%n"

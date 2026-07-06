@@ -40,7 +40,8 @@ class SecurityConfig {
                         "/api/v1/auth/**",
                         "/api/v1/auth/password/forgot",
                         "/api/v1/auth/password/reset",
-                        "/api/v1/auth/password/reset/validate"
+                        "/api/v1/auth/password/reset/validate",
+                        "/actuator/health"
                     ).permitAll()
                     .anyRequest().authenticated()
             }
