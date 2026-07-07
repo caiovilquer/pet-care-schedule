@@ -50,4 +50,12 @@ app:
     jwt-cache:
       invalidation-skew: ${JWT_INVALIDATION_SKEW:PT2M}
       password-changed-at-check-enabled: ${JWT_PASSWORD_CHANGED_AT_CHECK_ENABLED:true}
+    refresh:
+      ttl: ${REFRESH_TTL:P30D}
+      cookie:
+        name: ${REFRESH_COOKIE_NAME:refresh_token}
+        domain: ${REFRESH_COOKIE_DOMAIN:}
+        path: /api/v1/auth
+        same-site: Lax
+        secure: ${REFRESH_COOKIE_SECURE:true}
   timezone: ${APP_TIMEZONE:America/Sao_Paulo}

@@ -17,6 +17,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetNo
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.RateLimitStorePort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.RefreshTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ReminderOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TokenIssuerPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
@@ -25,6 +26,7 @@ import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import java.time.Duration
 
 /**
  * O módulo `application` é Kotlin puro (sem Spring): os services não carregam
@@ -40,7 +42,15 @@ class UseCaseWiring {
         tutorRepo: TutorRepositoryPort,
         passwordHash: PasswordHashPort,
         tokenIssuer: TokenIssuerPort,
-    ) = AuthAppService(tutorRepo, passwordHash, tokenIssuer)
+        refreshTokens: RefreshTokenPort,
+        transactionPort: TransactionPort,
+        environment: Environment,
+    ) = AuthAppService(
+        tutorRepo, passwordHash, tokenIssuer, refreshTokens, transactionPort,
+        refreshTtl = Binder.get(environment)
+            .bind("app.security.refresh.ttl", Duration::class.java)
+            .orElse(Duration.ofDays(30)),
+    )
 
     @Bean
     fun eventAppService(
@@ -100,5 +110,6 @@ class UseCaseWiring {
     fun securityMaintenanceService(
         rateLimiter: RateLimiterService,
         resetTokens: PasswordResetTokenPort,
-    ) = SecurityMaintenanceService(rateLimiter, resetTokens)
+        refreshTokens: RefreshTokenPort,
+    ) = SecurityMaintenanceService(rateLimiter, resetTokens, refreshTokens)
 }

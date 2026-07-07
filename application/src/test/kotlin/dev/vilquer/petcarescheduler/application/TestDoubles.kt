@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application
 
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
+import dev.vilquer.petcarescheduler.core.domain.session.RefreshToken
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
 import java.time.Duration
@@ -72,6 +73,31 @@ internal class InMemoryPasswordResetTokenPort : PasswordResetTokenPort {
         store.values.filter { it.expiresAt.isBefore(now) }.forEach { store.remove(it.id) }
     }
     fun allTokens(): Collection<PasswordResetToken> = store.values
+}
+
+internal class InMemoryRefreshTokenPort : RefreshTokenPort {
+    private val store = LinkedHashMap<UUID, RefreshToken>()
+    override fun create(token: RefreshToken): RefreshToken {
+        store[token.id] = token
+        return token
+    }
+    override fun findByHash(tokenHash: String): RefreshToken? =
+        store.values.firstOrNull { it.tokenHash == tokenHash }
+    override fun markRotated(id: UUID, replacedBy: UUID, at: Instant) {
+        store[id]?.let { store[id] = it.copy(usedAt = at, replacedBy = replacedBy) }
+    }
+    override fun revokeFamily(familyId: UUID, at: Instant) {
+        store.values.filter { it.familyId == familyId && it.revokedAt == null }
+            .forEach { store[it.id] = it.copy(revokedAt = at) }
+    }
+    override fun revokeAllForUser(userId: TutorId, at: Instant) {
+        store.values.filter { it.userId == userId && it.revokedAt == null }
+            .forEach { store[it.id] = it.copy(revokedAt = at) }
+    }
+    override fun cleanup(now: Instant) {
+        store.values.filter { it.expiresAt.isBefore(now) }.forEach { store.remove(it.id) }
+    }
+    fun allTokens(): Collection<RefreshToken> = store.values
 }
 
 internal class FakePasswordResetNotifier : PasswordResetNotifierPort {

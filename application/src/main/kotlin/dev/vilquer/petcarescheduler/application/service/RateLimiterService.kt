@@ -9,7 +9,8 @@ import java.time.Instant
 // Binding a partir de application.yml (app.security.rate-limit) é feito no bootstrap.
 data class RateLimitProperties(
     val login: RateLimitConfig = RateLimitConfig(),
-    val passwordReset: RateLimitConfig = RateLimitConfig()
+    val passwordReset: RateLimitConfig = RateLimitConfig(),
+    val tokenRefresh: RateLimitConfig = RateLimitConfig()
 )
 
 data class RateLimitConfig(
@@ -17,7 +18,7 @@ data class RateLimitConfig(
     val window: Duration = Duration.ofMinutes(15)
 )
 
-enum class RateLimitAction { LOGIN, PASSWORD_RESET }
+enum class RateLimitAction { LOGIN, PASSWORD_RESET, TOKEN_REFRESH }
 
 class RateLimiterService(
     private val props: RateLimitProperties,
@@ -28,6 +29,7 @@ class RateLimiterService(
         val limit = when (action) {
             RateLimitAction.LOGIN -> props.login
             RateLimitAction.PASSWORD_RESET -> props.passwordReset
+            RateLimitAction.TOKEN_REFRESH -> props.tokenRefresh
         }
         val id = "${action.name}:${key}"
         val count = store.registerAttempt(id, clock.instant(), limit.window)
@@ -37,7 +39,7 @@ class RateLimiterService(
     }
 
     fun cleanup() {
-        val maxWindow = maxOf(props.login.window, props.passwordReset.window)
+        val maxWindow = maxOf(props.login.window, props.passwordReset.window, props.tokenRefresh.window)
         store.deleteOlderThan(clock.instant().minus(maxWindow))
     }
 }

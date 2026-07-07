@@ -27,7 +27,7 @@ class WebCorsConfig {
                 "Access-Control-Request-Headers"
             )
             exposedHeaders = listOf("Location", "Authorization", "Content-Disposition")
-            allowCredentials = false
+            allowCredentials = true
             maxAge = 3600
         }
 

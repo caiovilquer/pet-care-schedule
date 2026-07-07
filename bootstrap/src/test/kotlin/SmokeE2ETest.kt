@@ -52,6 +52,16 @@ class SmokeE2ETest {
         token?.let { setBearerAuth(it) }
     }
 
+    private fun refreshCookieValue(response: org.springframework.http.ResponseEntity<*>): String {
+        val setCookie = response.headers["Set-Cookie"]?.firstOrNull { it.startsWith("refresh_token=") }
+            ?: error("no refresh_token cookie in response: ${response.headers}")
+        return setCookie.substringAfter("refresh_token=").substringBefore(";")
+    }
+
+    private fun cookieHeaders(cookieValue: String) = HttpHeaders().apply {
+        set("Cookie", "refresh_token=$cookieValue")
+    }
+
     @Test
     fun `full journey - signup, login, pet, event, toggle, delete`() {
         // --- signup ---
@@ -269,5 +279,89 @@ class SmokeE2ETest {
         val afterDispatch = reminderOutboxRepository.findById(enqueued.first().id!!).orElseThrow()
         assertEquals(1, afterDispatch.attempts, "a tentativa de entrega deve ter sido contabilizada")
         assertTrue(afterDispatch.sentAt == null, "a API de e-mail indisponível não deve ter sido marcada como enviada")
+    }
+
+    @Test
+    fun `refresh token rotation, reuse detection and logout`() {
+        rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Fefe","lastName":null,"email":"fefe.smoke@example.com","rawPassword":"correct-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+
+        val login = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"fefe.smoke@example.com","password":"correct-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, login.statusCode)
+        val firstRefreshCookie = refreshCookieValue(login)
+
+        // --- refresh rotaciona: novo access + novo cookie ---
+        val refreshed = rest.postForEntity(
+            "/api/v1/auth/refresh", HttpEntity<Void>(cookieHeaders(firstRefreshCookie)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, refreshed.statusCode, "refresh: ${refreshed.body}")
+        val newAccessToken = refreshed.body!!["token"].asText()
+        assertTrue(newAccessToken.isNotBlank())
+        val secondRefreshCookie = refreshCookieValue(refreshed)
+        assertTrue(secondRefreshCookie != firstRefreshCookie, "refresh deve rotacionar o cookie")
+
+        // --- o novo access token funciona numa rota protegida ---
+        val me = rest.exchange(
+            "/api/v1/tutors/me", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(newAccessToken)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, me.statusCode, "me: ${me.body}")
+
+        // --- reapresentar o cookie antigo (já rotacionado) é reuso: revoga a família inteira ---
+        val reuse = rest.postForEntity(
+            "/api/v1/auth/refresh", HttpEntity<Void>(cookieHeaders(firstRefreshCookie)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.UNAUTHORIZED, reuse.statusCode, "reuse: ${reuse.body}")
+
+        // --- e a família inteira morreu: o cookie rotacionado (válido) também não serve mais ---
+        val deadFamily = rest.postForEntity(
+            "/api/v1/auth/refresh", HttpEntity<Void>(cookieHeaders(secondRefreshCookie)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.UNAUTHORIZED, deadFamily.statusCode, "dead family: ${deadFamily.body}")
+
+        // --- logout revoga o cookie atual ---
+        val login2 = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"fefe.smoke@example.com","password":"correct-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val cookieToLogout = refreshCookieValue(login2)
+        val logout = rest.postForEntity(
+            "/api/v1/auth/logout", HttpEntity<Void>(cookieHeaders(cookieToLogout)), Void::class.java,
+        )
+        assertEquals(HttpStatus.NO_CONTENT, logout.statusCode)
+        val refreshAfterLogout = rest.postForEntity(
+            "/api/v1/auth/refresh", HttpEntity<Void>(cookieHeaders(cookieToLogout)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.UNAUTHORIZED, refreshAfterLogout.statusCode)
+
+        // --- logout-all exige autenticação por access token ---
+        val logoutAllAnonymous = rest.postForEntity("/api/v1/auth/logout-all", HttpEntity<Void>(jsonHeaders()), Void::class.java)
+        assertEquals(HttpStatus.UNAUTHORIZED, logoutAllAnonymous.statusCode)
+
+        val login3 = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"fefe.smoke@example.com","password":"correct-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val accessToken3 = login3.body!!["token"].asText()
+        val cookie3 = refreshCookieValue(login3)
+        val logoutAll = rest.postForEntity(
+            "/api/v1/auth/logout-all", HttpEntity<Void>(jsonHeaders(accessToken3)), Void::class.java,
+        )
+        assertEquals(HttpStatus.NO_CONTENT, logoutAll.statusCode)
+        val refreshAfterLogoutAll = rest.postForEntity(
+            "/api/v1/auth/refresh", HttpEntity<Void>(cookieHeaders(cookie3)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.UNAUTHORIZED, refreshAfterLogoutAll.statusCode)
     }
 }
