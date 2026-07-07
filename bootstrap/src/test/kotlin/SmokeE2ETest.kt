@@ -18,6 +18,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import java.time.ZoneId
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 
 /**
  * Rede de segurança da Fase 1: exercita o fluxo completo da API com o contexto
@@ -191,6 +193,35 @@ class SmokeE2ETest {
         }
         val blocked = rest.postForEntity("/api/v1/auth/login", wrongLogin(), JsonNode::class.java)
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, blocked.statusCode, "blocked: ${blocked.body}")
+    }
+
+    @Test
+    fun `concurrent login attempts do not return conflict`() {
+        rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Dan","lastName":null,"email":"dan.smoke@example.com","rawPassword":"correct-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+
+        val loginBody = HttpEntity("""{"email":"dan.smoke@example.com","password":"wrong-pwd"}""", jsonHeaders())
+        val pool = Executors.newFixedThreadPool(10)
+        try {
+            val statuses = (1..10).map {
+                CompletableFuture.supplyAsync({
+                    rest.postForEntity("/api/v1/auth/login", loginBody, JsonNode::class.java).statusCode
+                }, pool)
+            }.map { it.get() }
+
+            assertTrue(
+                statuses.none { it == HttpStatus.CONFLICT },
+                "login concorrente não deve retornar 409: $statuses",
+            )
+        } finally {
+            pool.shutdownNow()
+        }
     }
 
     @Test

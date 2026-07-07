@@ -8,6 +8,7 @@ import dev.vilquer.petcarescheduler.application.exception.RateLimitException
 import dev.vilquer.petcarescheduler.application.exception.UpstreamServiceException
 import jakarta.validation.ConstraintViolationException
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -69,6 +70,10 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleIntegrity(ex: DataIntegrityViolationException): ResponseEntity<ApiError> {
+        if (isRateLimitIntegrityViolation(ex)) {
+            val body = ApiError(503, "Service Unavailable", "Tente novamente em instantes")
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body)
+        }
         val message = when (val cause = ex.rootCause) {
             is java.sql.SQLException -> {
                 if (cause.sqlState == "23505") "Registro duplicado"
@@ -78,6 +83,12 @@ class ApiExceptionHandler {
         }
         val body = ApiError(409, "Conflict", message)
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body)
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException::class)
+    fun handleOptimisticLock(ex: OptimisticLockingFailureException): ResponseEntity<ApiError> {
+        val body = ApiError(503, "Service Unavailable", "Tente novamente em instantes")
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body)
     }
 
     @ExceptionHandler(ConflictException::class)
@@ -101,5 +112,17 @@ class ApiExceptionHandler {
     fun handleUpstream(ex: UpstreamServiceException): ResponseEntity<ApiError> {
         val body = ApiError(502, "Bad Gateway", ex.message ?: "Falha ao consultar serviço externo")
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body)
+    }
+
+    private fun isRateLimitIntegrityViolation(ex: DataIntegrityViolationException): Boolean {
+        val text = buildString {
+            var current: Throwable? = ex
+            while (current != null) {
+                append(current.message.orEmpty())
+                append(' ')
+                current = current.cause
+            }
+        }
+        return text.contains("rate_limit_attempt", ignoreCase = true)
     }
 }
