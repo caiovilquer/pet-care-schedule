@@ -74,6 +74,6 @@ app:
         name: ${REFRESH_COOKIE_NAME:refresh_token}
         domain: ${REFRESH_COOKIE_DOMAIN:}
         path: /api/v1/auth
-        same-site: Lax
+        same-site: ${REFRESH_COOKIE_SAME_SITE:None}
         secure: ${REFRESH_COOKIE_SECURE:true}
   timezone: ${APP_TIMEZONE:America/Sao_Paulo}
