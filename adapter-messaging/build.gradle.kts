@@ -20,7 +20,14 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":application"))
 
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    // Só o cliente HTTP síncrono (RestClient) — o starter-webflux anterior
+    // arrastava Netty+Reactor inteiros para duas chamadas bloqueantes de
+    // e-mail, custando dezenas de MB de memória em idle. spring-context,
+    // spring-boot e slf4j vinham transitivos do starter e agora são diretos.
+    implementation("org.springframework:spring-web")
+    implementation("org.springframework:spring-context")
+    implementation("org.springframework.boot:spring-boot")
+    implementation("org.slf4j:slf4j-api")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

@@ -3,6 +3,12 @@ server:
   address: 0.0.0.0
   ssl:
     enabled: false
+  tomcat:
+    threads:
+      # padrão é 200 max / 10 min-spare; para o tráfego atual, manter 10
+      # threads paradas só consome stack/arena à toa
+      max: ${TOMCAT_MAX_THREADS:25}
+      min-spare: ${TOMCAT_MIN_SPARE_THREADS:2}
 
 jwt:
       issuer: ${JWT_ISSUER}
@@ -27,6 +33,10 @@ spring:
     password: ${PGPASSWORD}
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
+      # sem minimum-idle o Hikari mantém o pool sempre cheio (10 conexões
+      # abertas em idle, cada uma custando memória aqui e no Postgres);
+      # com ele, conexões ociosas são fechadas após idle-timeout (10 min)
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
   jpa:
     hibernate:
       ddl-auto: validate

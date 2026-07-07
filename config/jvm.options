@@ -1,9 +1,21 @@
--Xms256m
+# Flags pensados para menor RSS em idle (VPS cobrada por consumo).
+# Medição local (perfil dev, JDK 21): ~460 MB com os flags antigos
+# (-Xms256m + G1HeapRegionSize=16M) -> ~310-330 MB com estes.
+
+# Teto de heap; SEM -Xms: o G1 nunca devolve memória abaixo do Xms,
+# então fixar 256m mantinha 256 MB comprometidos com ~50 MB usados.
 -Xmx512m
 -XX:+UseG1GC
 -XX:MaxGCPauseMillis=200
--XX:+UnlockDiagnosticVMOptions
--XX:G1SummarizeRSetStatsPeriod=1
--XX:G1HeapRegionSize=16M
--XX:InitiatingHeapOccupancyPercent=35
--Dspring.jit.mode=auto
+
+# Faixa de folga do heap: encolhe o heap comprometido até sobrar só
+# 10-30% acima do usado, devolvendo o resto ao SO.
+-XX:MinHeapFreeRatio=10
+-XX:MaxHeapFreeRatio=30
+
+# Sem tráfego não há GC e o heap nunca encolhe; este flag dispara um ciclo
+# concorrente a cada 5 min de inatividade para devolver memória em idle.
+-XX:G1PeriodicGCInterval=300000
+
+# Melhor morrer e ser reiniciado pelo supervisor do que agonizar em GC loop.
+-XX:+ExitOnOutOfMemoryError
