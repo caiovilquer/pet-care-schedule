@@ -28,6 +28,10 @@ dependencies {
     implementation("org.springframework:spring-context")
     implementation("org.springframework.boot:spring-boot")
     implementation("org.slf4j:slf4j-api")
+    // Parsing do JSON (snake_case) da API legada do Google via JsonNode,
+    // isolado do ObjectMapper Jackson global da aplicação (que serializa a
+    // API REST em camelCase) — evita acoplar as duas convenções de naming.
+    implementation("com.fasterxml.jackson.core:jackson-databind")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

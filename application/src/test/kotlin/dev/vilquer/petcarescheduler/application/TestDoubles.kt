@@ -4,7 +4,13 @@ import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
 import dev.vilquer.petcarescheduler.core.domain.session.RefreshToken
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.usecase.command.PlaceCategory
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
+import dev.vilquer.petcarescheduler.usecase.result.GeoLocation
+import dev.vilquer.petcarescheduler.usecase.result.PlaceDetails
+import dev.vilquer.petcarescheduler.usecase.result.PlacePhoto
+import dev.vilquer.petcarescheduler.usecase.result.PlaceReview
+import dev.vilquer.petcarescheduler.usecase.result.PlaceSummary
 import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -186,4 +192,36 @@ internal class InMemoryEventRepo(initial: Map<EventId, Event> = emptyMap()) : Ev
         }.map { EventReminderTarget(it, "test@example.com", null) }
 
     fun allEvents(): Collection<Event> = store.values
+}
+
+/** Sem TTL real: sempre executa o loader — suficiente para testar orquestração. */
+internal class FakePlacesCachePort : PlacesCachePort {
+    override fun <T> getOrCompute(key: String, ttlSeconds: Long, loader: () -> T): T = loader()
+}
+
+internal class FakeGeocodingPort(private val result: GeoLocation?) : GeocodingPort {
+    var calls = 0
+    override fun geocode(zipCode: String): GeoLocation? {
+        calls++
+        return result
+    }
+}
+
+internal class FakePlacesPort(
+    private val nearby: List<PlaceSummary> = emptyList(),
+    private val detail: PlaceDetails? = null,
+    private val reviewList: List<PlaceReview> = emptyList(),
+    private val photo: PlacePhoto = PlacePhoto(ByteArray(0), "image/jpeg")
+) : PlacesPort {
+    var nearbyCalls = 0
+    var lastCategory: PlaceCategory? = null
+
+    override fun searchNearby(latitude: Double, longitude: Double, radiusMeters: Int, category: PlaceCategory): List<PlaceSummary> {
+        nearbyCalls++
+        lastCategory = category
+        return nearby
+    }
+    override fun details(placeId: String): PlaceDetails? = detail
+    override fun reviews(placeId: String): List<PlaceReview> = reviewList
+    override fun fetchPhoto(photoReference: String, maxWidth: Int): PlacePhoto = photo
 }

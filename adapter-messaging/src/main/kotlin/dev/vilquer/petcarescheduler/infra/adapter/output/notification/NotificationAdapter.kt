@@ -9,6 +9,7 @@ import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.client.RestClient
 import java.time.ZoneId
@@ -17,7 +18,9 @@ import java.util.Locale
 
 @Component
 class EmailNotificationAdapter(
-    private val http: RestClient,
+    // Qualificado explicitamente: desde a adição do googlePlacesClient, há
+    // dois beans RestClient no contexto.
+    @param:Qualifier("mailerSendClient") private val http: RestClient,
     private val props: MailApiProps,
     @param:Value("\${app.timezone:America/Sao_Paulo}") private val timezone: String
 ) : NotificationPort {

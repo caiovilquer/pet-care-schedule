@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.config
 
 import dev.vilquer.petcarescheduler.application.service.AuthAppService
 import dev.vilquer.petcarescheduler.application.service.EventAppService
+import dev.vilquer.petcarescheduler.application.service.LocationAppService
 import dev.vilquer.petcarescheduler.application.service.PasswordResetService
 import dev.vilquer.petcarescheduler.application.service.PetAppService
 import dev.vilquer.petcarescheduler.application.service.RateLimitProperties
@@ -11,11 +12,14 @@ import dev.vilquer.petcarescheduler.application.service.SecurityMaintenanceServi
 import dev.vilquer.petcarescheduler.application.service.TutorAppService
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.GeocodingPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetNotifierPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PlacesCachePort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PlacesPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.RateLimitStorePort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.RefreshTokenPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ReminderOutboxPort
@@ -112,4 +116,11 @@ class UseCaseWiring {
         resetTokens: PasswordResetTokenPort,
         refreshTokens: RefreshTokenPort,
     ) = SecurityMaintenanceService(rateLimiter, resetTokens, refreshTokens)
+
+    @Bean
+    fun locationAppService(
+        geocoding: GeocodingPort,
+        places: PlacesPort,
+        cache: PlacesCachePort,
+    ) = LocationAppService(geocoding, places, cache)
 }

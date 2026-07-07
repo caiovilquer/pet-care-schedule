@@ -5,6 +5,7 @@ import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.application.exception.InvalidCredentialsException
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.application.exception.RateLimitException
+import dev.vilquer.petcarescheduler.application.exception.UpstreamServiceException
 import jakarta.validation.ConstraintViolationException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
@@ -94,5 +95,11 @@ class ApiExceptionHandler {
     fun handleRateLimit(ex: RateLimitException): ResponseEntity<ApiError> {
         val body = ApiError(429, "Too Many Requests", ex.message ?: "Limite de tentativas excedido")
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body)
+    }
+
+    @ExceptionHandler(UpstreamServiceException::class)
+    fun handleUpstream(ex: UpstreamServiceException): ResponseEntity<ApiError> {
+        val body = ApiError(502, "Bad Gateway", ex.message ?: "Falha ao consultar serviço externo")
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body)
     }
 }

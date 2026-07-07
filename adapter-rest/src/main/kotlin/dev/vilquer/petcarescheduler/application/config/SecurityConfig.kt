@@ -43,7 +43,14 @@ class SecurityConfig {
                         "/api/v1/auth/password/forgot",
                         "/api/v1/auth/password/reset",
                         "/api/v1/auth/password/reset/validate",
-                        "/actuator/health"
+                        "/actuator/health",
+                        // Exceção deliberada dentro de /api/v1/locations/**: uma tag <img>
+                        // não anexa o header Authorization do interceptor Angular, então
+                        // esse endpoint não pode exigir JWT. O custo real (busca/geocoding/
+                        // details) continua atrás de autenticação — aqui só trafegam bytes
+                        // de foto, e o photo_reference só é obtido chamando os endpoints
+                        // autenticados primeiro.
+                        "/api/v1/locations/photo"
                     ).permitAll()
                     .anyRequest().authenticated()
             }

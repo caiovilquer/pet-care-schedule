@@ -44,6 +44,12 @@ springdoc:
 app:
   mail:
     from: ${MAIL_FROM}
+  google:
+    # Sem valor default: as buscas de localização simplesmente falham em dev
+    # sem uma chave real (não bloqueia o resto do desenvolvimento local).
+    api-key: ${GOOGLE_API_KEY:}
+    language: pt-BR
+    region: BR
   security:
     jwt-cache:
       invalidation-skew: ${JWT_INVALIDATION_SKEW:PT2M}

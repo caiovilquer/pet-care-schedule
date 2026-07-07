@@ -68,6 +68,7 @@ class ArchitectureTest {
         "dev.vilquer.petcarescheduler.application.mapper.EventDtoMapper",
         "dev.vilquer.petcarescheduler.application.mapper.PetDtoMapper",
         "dev.vilquer.petcarescheduler.application.mapper.TutorDtoMapper",
+        "dev.vilquer.petcarescheduler.application.mapper.LocationDtoMapper",
     )
     private val persistenceOnlyPackages = listOf(
         "dev.vilquer.petcarescheduler.infra.adapter.output.persistence",
@@ -77,6 +78,8 @@ class ArchitectureTest {
     private val messagingOnlyPackages = listOf(
         "dev.vilquer.petcarescheduler.infra.adapter.output.mail",
         "dev.vilquer.petcarescheduler.infra.adapter.output.notification",
+        "dev.vilquer.petcarescheduler.infra.adapter.output.places",
+        "dev.vilquer.petcarescheduler.infra.adapter.output.cache",
         "dev.vilquer.petcarescheduler.infra.config",
     )
 

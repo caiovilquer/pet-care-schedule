@@ -54,6 +54,14 @@ app:
     from-name: RotinaPet
     base-url: ${MAIL_URL}
     api-key: ${MAIL_KEY}
+  google:
+    # Chave de servidor (Web Services), restrita por IP no Google Cloud
+    # Console — nunca é enviada ao frontend. Não confundir com a chave do
+    # Maps JavaScript usada no browser para renderizar o mapa (essa é
+    # restrita por HTTP referrer e configurada só no frontend).
+    api-key: ${GOOGLE_API_KEY}
+    language: pt-BR
+    region: BR
   frontend:
     base-url: https://rotinapet.vilquer.dev
   security:
