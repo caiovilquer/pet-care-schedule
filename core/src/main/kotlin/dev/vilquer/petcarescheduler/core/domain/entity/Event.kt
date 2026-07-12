@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 
 data class Event(
     val id: EventId? = null,
+    val version: Long? = null,
     val type: EventType,
     val description: String?,
     val dateStart: LocalDateTime,

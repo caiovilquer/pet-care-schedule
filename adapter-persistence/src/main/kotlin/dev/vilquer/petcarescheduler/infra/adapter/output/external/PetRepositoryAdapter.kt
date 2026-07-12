@@ -23,7 +23,7 @@ class PetRepositoryAdapter(
         jpa.deleteById(id.value)
 
     override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Pet> =
-        jpa.findAllByTutorId(tutorId.value, PageRequest.of(page, size)).content.map { it.toDomain() }
+        jpa.findAllByTutorIdOrderByNameAscIdAsc(tutorId.value, PageRequest.of(page, size)).content.map { it.toDomain() }
 
     override fun countByTutor(tutorId: TutorId): Long =
         jpa.countByTutorId(tutorId.value)
@@ -35,5 +35,5 @@ class PetRepositoryAdapter(
         jpa.existsByIdAndTutorId(id.value, tutorId.value)
 
     override fun findAllByTutor(tutorId: TutorId): List<Pet> =
-        jpa.findAllByTutorId(tutorId.value).map { it.toDomain() }
+        jpa.findAllByTutorIdOrderByNameAscIdAsc(tutorId.value).map { it.toDomain() }
 }

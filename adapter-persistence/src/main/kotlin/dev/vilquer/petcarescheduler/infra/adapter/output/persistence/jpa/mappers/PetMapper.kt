@@ -20,11 +20,13 @@ object PetMapper {
 
         return Pet(
             id = petId,
+            version = jpa.version,
             name = jpa.name,
             species = jpa.species,
             breed = jpa.breed,
             birthdate = jpa.birthdate,
             photoUrl = jpa.photoUrl,
+            photoAssetId = jpa.photoAssetId,
             tutorId = jpa.tutorId?.let { TutorId(it) }
         )
     }
@@ -40,11 +42,13 @@ object PetMapper {
         val jpa = existing ?: PetJpa()
         with(domain) {
             jpa.id = id?.value
+            jpa.version = version
             jpa.name = name
             jpa.species = species
             jpa.breed = breed
             jpa.birthdate = birthdate
             jpa.photoUrl = photoUrl
+            jpa.photoAssetId = photoAssetId
             jpa.tutorId = tutorId?.value
         }
         return jpa

@@ -1,11 +1,11 @@
 package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
+import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
 import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.*
-import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
@@ -17,7 +17,8 @@ class EventAppService(
     private val eventRepo: EventRepositoryPort,
     private val petRepo: PetRepositoryPort,
     private val clock: ClockPort,
-    private val outbox: ReminderOutboxPort
+    private val outbox: ReminderOutboxPort,
+    private val transaction: TransactionPort,
 ) :
     RegisterEventUseCase,
     DeleteEventUseCase,
@@ -55,16 +56,21 @@ class EventAppService(
     }
 
     override fun execute(cmd: ToggleEventCommand, tutorId: TutorId) {
-        val event = eventRepo.findByIdAndTutor(cmd.eventId, tutorId)
-            ?: throw NotFoundException("Event ${cmd.eventId.value} not found")
-        if (event.status == Status.PENDING) {
-            // Desfazer uma conclusão (branch abaixo) não tenta reverter a
-            // próxima ocorrência já criada — ela passa a existir por conta própria.
-            val (completed, next) = event.complete()
-            eventRepo.save(completed)
-            next?.let { eventRepo.save(it) }
-        } else {
-            eventRepo.save(event.markPending())
+        transaction.execute {
+            val event = eventRepo.findByIdAndTutor(cmd.eventId, tutorId)
+                ?: throw NotFoundException("Event ${cmd.eventId.value} not found")
+            if (event.status == Status.PENDING) {
+                val (completed, next) = event.complete()
+                eventRepo.save(completed)
+                next?.let { eventRepo.save(it) }
+            } else {
+                if (event.recurrence != null) {
+                    throw ConflictException(
+                        "Cuidados recorrentes concluídos não podem ser reabertos porque a próxima ocorrência já foi criada"
+                    )
+                }
+                eventRepo.save(event.markPending())
+            }
         }
     }
 
@@ -75,26 +81,22 @@ class EventAppService(
         val existing = eventRepo.findByIdAndTutor(cmd.eventId, tutorId)
             ?: throw NotFoundException("Event ${cmd.eventId.value} not found")
 
-        val updatedRecurrence =
-            if (cmd.frequency != null || cmd.intervalCount != null || cmd.repetitions != null || cmd.finalDate != null) {
-                val base = existing.recurrence ?: Recurrence()
-                base.copy(
-                    frequency = cmd.frequency ?: base.frequency,
-                    intervalCount = cmd.intervalCount ?: base.intervalCount,
-                    repetitions = cmd.repetitions ?: base.repetitions,
-                    finalDate = cmd.finalDate ?: base.finalDate,
-                )
-            } else existing.recurrence
         val updated = existing.copy(
-            type = cmd.type ?: existing.type,
-            description = cmd.description ?: existing.description,
-            recurrence = updatedRecurrence,
-            dateStart = cmd.dateStart ?: existing.dateStart
+            type = cmd.type,
+            description = cmd.description.trim(),
+            recurrence = cmd.recurrence,
+            dateStart = cmd.dateStart
         )
-        val saved = eventRepo.save(updated)
-        return saved.toDetailResult()
+        return transaction.execute {
+            if (existing.dateStart != updated.dateStart) {
+                outbox.resetForEvent(cmd.eventId)
+            }
+            eventRepo.save(updated).toDetailResult()
+        }
     }
     override fun list(tutorId: TutorId, page: Int, size: Int): EventsPageResult {
+        require(page >= 0) { "page deve ser maior ou igual a zero" }
+        require(size in 1..100) { "size deve estar entre 1 e 100" }
         val items = eventRepo.listByTutor(tutorId, page, size).map { it.toSummary() }
         val total = eventRepo.countByTutor(tutorId)
         return EventsPageResult(items, total, page, size)

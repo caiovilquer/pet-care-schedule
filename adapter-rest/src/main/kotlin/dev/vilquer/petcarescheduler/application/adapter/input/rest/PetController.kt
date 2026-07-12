@@ -9,12 +9,16 @@ import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.springframework.http.*
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
+import org.springframework.validation.annotation.Validated
 
 @RestController
 @RequestMapping("/api/v1/pets")
+@Validated
 class PetController(
     private val mapper: PetDtoMapper,
     private val createPet: CreatePetUseCase,
@@ -37,8 +41,8 @@ class PetController(
     @GetMapping
     fun list(
         @AuthenticationPrincipal jwt: CurrentJwt,
-        @RequestParam page: Int = 0,
-        @RequestParam size: Int = 20
+        @RequestParam @Min(0) page: Int = 0,
+        @RequestParam @Min(1) @Max(100) size: Int = 20
     ): PetsPageResult {
         val tutorId = TutorId(jwt.tutorId())
         return listPets.list(tutorId, page, size)

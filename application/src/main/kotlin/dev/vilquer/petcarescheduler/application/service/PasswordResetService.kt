@@ -58,6 +58,7 @@ class PasswordResetService(
     }
 
     override fun reset(token: String, newPassword: String) {
+        require(newPassword.length in 8..72) { "password_length_invalid" }
         val now = Instant.now(clock)
         val t = tokens.findActiveByHash(sha256Hex(token))
             ?: throw IllegalArgumentException("invalid_token")
@@ -82,6 +83,6 @@ class PasswordResetService(
     }
     private fun sha256Hex(s: String): String {
         val dig = MessageDigest.getInstance("SHA-256").digest(s.toByteArray(StandardCharsets.UTF_8))
-        return buildString(dig.size * 2) { dig.forEach { append("%02x".format(it)) } }
+        return buildString(dig.size * 2) { dig.forEach { append("%02x".format(it.toInt() and 0xff)) } }
     }
 }

@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 
 @Repository
 interface EventJpaRepository : JpaRepository<EventJpa, Long> {
-    fun findAllByPetId(petId: Long): List<EventJpa>
+    fun findAllByPetIdOrderByDateStartAscIdAsc(petId: Long): List<EventJpa>
 
     @Query(
         """
@@ -21,6 +21,7 @@ interface EventJpaRepository : JpaRepository<EventJpa, Long> {
           from EventJpa e
           join PetJpa   p on p.id = e.petId
          where p.tutorId = :tutorId
+         order by e.dateStart asc, e.id asc
     """
     )
     fun findAllByTutorId(
@@ -63,6 +64,26 @@ interface EventJpaRepository : JpaRepository<EventJpa, Long> {
     """
     )
     fun countByTutorId(@Param("tutorId") tutorId: Long): Long
+
+    @Query(
+        """
+        select e
+          from EventJpa e
+          join PetJpa p on p.id = e.petId
+         where p.tutorId = :tutorId
+           and e.status = :status
+           and e.dateStart >= :start
+           and e.dateStart <= :end
+         order by e.dateStart asc, e.id asc
+        """
+    )
+    fun findUpcomingByTutorId(
+        @Param("tutorId") tutorId: Long,
+        @Param("status") status: Status,
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime,
+        pageable: Pageable,
+    ): List<EventJpa>
 
     @Query(
         """

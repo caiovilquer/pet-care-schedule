@@ -2,7 +2,7 @@ package petcarescheduler.infra.test
 
 import dev.vilquer.petcarescheduler.infra.AbstractPostgresIntegrationTest
 import dev.vilquer.petcarescheduler.infra.PersistenceTestApplication
-import dev.vilquer.petcarescheduler.infra.adapter.output.external.RateLimitStoreJpaAdapter
+import dev.vilquer.petcarescheduler.infra.adapter.output.external.RateLimitStoreJdbcAdapter
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.RateLimitAttemptRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -11,6 +11,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ContextConfiguration
+import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -19,11 +21,12 @@ import java.util.concurrent.Executors
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = [PersistenceTestApplication::class])
-@Import(RateLimitStoreJpaAdapter::class)
-class RateLimitStoreJpaAdapterIntegrationTest : AbstractPostgresIntegrationTest() {
+@Import(RateLimitStoreJdbcAdapter::class)
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+class RateLimitStoreJdbcAdapterIntegrationTest : AbstractPostgresIntegrationTest() {
 
     @Autowired
-    private lateinit var store: RateLimitStoreJpaAdapter
+    private lateinit var store: RateLimitStoreJdbcAdapter
 
     @Autowired
     private lateinit var repo: RateLimitAttemptRepository

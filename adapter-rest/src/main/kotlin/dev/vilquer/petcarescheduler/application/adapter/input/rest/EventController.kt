@@ -13,12 +13,16 @@ import dev.vilquer.petcarescheduler.usecase.result.EventDetailResult
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
 import dev.vilquer.petcarescheduler.usecase.result.EventsPageResult
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.springframework.http.*
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
+import org.springframework.validation.annotation.Validated
 
 @RestController
 @RequestMapping("/api/v1/events")
+@Validated
 class EventController(
     private val registerEvent: RegisterEventUseCase,
     private val deleteEvent: DeleteEventUseCase,
@@ -65,8 +69,8 @@ class EventController(
     @GetMapping
     fun list(
         @AuthenticationPrincipal jwt: CurrentJwt,
-        @RequestParam page: Int = 0,
-        @RequestParam size: Int = 20
+        @RequestParam @Min(0) page: Int = 0,
+        @RequestParam @Min(1) @Max(100) size: Int = 20
     ): EventsPageResult {
         val tutorId = TutorId(jwt.tutorId())
         return listEvents.list(tutorId, page, size)

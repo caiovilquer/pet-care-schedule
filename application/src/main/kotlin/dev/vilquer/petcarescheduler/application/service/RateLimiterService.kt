@@ -10,7 +10,8 @@ import java.time.Instant
 data class RateLimitProperties(
     val login: RateLimitConfig = RateLimitConfig(),
     val passwordReset: RateLimitConfig = RateLimitConfig(),
-    val tokenRefresh: RateLimitConfig = RateLimitConfig()
+    val tokenRefresh: RateLimitConfig = RateLimitConfig(),
+    val mediaUpload: RateLimitConfig = RateLimitConfig(maxAttempts = 20, window = Duration.ofHours(1)),
 )
 
 data class RateLimitConfig(
@@ -18,7 +19,7 @@ data class RateLimitConfig(
     val window: Duration = Duration.ofMinutes(15)
 )
 
-enum class RateLimitAction { LOGIN, PASSWORD_RESET, TOKEN_REFRESH }
+enum class RateLimitAction { LOGIN, PASSWORD_RESET, TOKEN_REFRESH, MEDIA_UPLOAD }
 
 class RateLimiterService(
     private val props: RateLimitProperties,
@@ -30,6 +31,7 @@ class RateLimiterService(
             RateLimitAction.LOGIN -> props.login
             RateLimitAction.PASSWORD_RESET -> props.passwordReset
             RateLimitAction.TOKEN_REFRESH -> props.tokenRefresh
+            RateLimitAction.MEDIA_UPLOAD -> props.mediaUpload
         }
         val id = "${action.name}:${key}"
         val count = store.registerAttempt(id, clock.instant(), limit.window)
@@ -38,8 +40,12 @@ class RateLimiterService(
         }
     }
 
+    fun reset(action: RateLimitAction, key: String) {
+        store.delete("${action.name}:$key")
+    }
+
     fun cleanup() {
-        val maxWindow = maxOf(props.login.window, props.passwordReset.window, props.tokenRefresh.window)
+        val maxWindow = maxOf(props.login.window, props.passwordReset.window, props.tokenRefresh.window, props.mediaUpload.window)
         store.deleteOlderThan(clock.instant().minus(maxWindow))
     }
 }

@@ -14,6 +14,12 @@ interface EventRepositoryPort {
 
     fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Event>
     fun countByTutor(tutorId: TutorId): Long
+    fun findUpcomingByTutor(
+        tutorId: TutorId,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        limit: Int,
+    ): List<Event>
     fun findByIdAndTutor(id: EventId, tutorId: TutorId): Event?
     fun existsForTutor(id: EventId, tutorId: TutorId): Boolean
     fun findPendingReminders(start: LocalDateTime, end: LocalDateTime): List<EventReminderTarget>

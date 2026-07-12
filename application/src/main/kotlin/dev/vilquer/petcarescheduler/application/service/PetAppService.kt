@@ -30,9 +30,9 @@ class PetAppService(
             ?: throw NotFoundException("Tutor ${cmd.tutorId.value} not found")
 
         val pet = Pet(
-            name = cmd.name,
-            species = cmd.species,
-            breed = cmd.breed,
+            name = cmd.name.trim(),
+            species = cmd.species.trim(),
+            breed = cmd.breed?.trim()?.takeIf { it.isNotEmpty() },
             birthdate = cmd.birthdate,
             photoUrl = cmd.photoUrl,
             tutorId = tutor.id!!
@@ -42,6 +42,8 @@ class PetAppService(
     }
 
     override fun list(tutorId: TutorId, page: Int, size: Int): PetsPageResult {
+        require(page >= 0) { "page deve ser maior ou igual a zero" }
+        require(size in 1..100) { "size deve estar entre 1 e 100" }
         val items = petRepo.listByTutor(tutorId, page, size).map { it.toSummary() }
         val total = petRepo.countByTutor(tutorId)
         return PetsPageResult(items, total, page, size)
@@ -53,10 +55,10 @@ class PetAppService(
         val existing = petRepo.findByIdAndTutor(cmd.petId, tutorId)
             ?: throw NotFoundException("Pet ${cmd.petId.value} not found")
         val updated = existing.copy(
-            name = cmd.name ?: existing.name,
-            breed = cmd.breed ?: existing.breed,
-            birthdate = cmd.birthdate ?: existing.birthdate,
-            photoUrl = cmd.photoUrl ?: existing.photoUrl
+            name = cmd.name.trim(),
+            breed = cmd.breed?.trim()?.takeIf { it.isNotEmpty() },
+            birthdate = cmd.birthdate,
+            photoUrl = cmd.photoUrl?.trim()?.takeIf { it.isNotEmpty() }
         )
         val saved = petRepo.save(updated)
         return saved.toDetailResult(eventRepo.findByPetId(saved.id!!))

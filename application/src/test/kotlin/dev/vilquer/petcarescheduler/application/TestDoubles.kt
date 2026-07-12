@@ -3,6 +3,8 @@ package dev.vilquer.petcarescheduler.application
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
 import dev.vilquer.petcarescheduler.core.domain.session.RefreshToken
+import dev.vilquer.petcarescheduler.core.domain.media.MediaAsset
+import dev.vilquer.petcarescheduler.core.domain.media.MediaStatus
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.command.PlaceCategory
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
@@ -46,6 +48,9 @@ internal class FakeReminderOutboxPort : ReminderOutboxPort {
     override fun incrementAttempts(id: Long) {
         store[id]?.let { store[id] = it.copy(attempts = it.attempts + 1) }
     }
+    override fun resetForEvent(eventId: EventId) {
+        store.entries.removeIf { it.value.eventId == eventId }
+    }
     fun allMessages(): Collection<ReminderOutboxMessage> = store.values
     fun isSent(id: Long?): Boolean = id != null && id in sentIds
 }
@@ -58,6 +63,41 @@ internal class FakePasswordHash : PasswordHashPort {
 /** Executa o bloco diretamente, sem transação real — suficiente para testar orquestração. */
 internal class FakeTransactionPort : TransactionPort {
     override fun <T> execute(block: () -> T): T = block()
+}
+
+internal class InMemoryMediaAssetRepo : MediaAssetRepositoryPort {
+    private val store = LinkedHashMap<UUID, MediaAsset>()
+    override fun save(asset: MediaAsset): MediaAsset = asset.also { store[it.id] = it }
+    override fun findById(id: UUID): MediaAsset? = store[id]
+    override fun delete(id: UUID) { store.remove(id) }
+    override fun findCleanupCandidates(pendingBefore: Instant, limit: Int): List<MediaAsset> =
+        store.values.filter {
+            it.status == MediaStatus.PENDING_DELETE ||
+                (it.status == MediaStatus.PENDING && it.createdAt.isBefore(pendingBefore))
+        }.take(limit)
+    override fun markPetAssetsForDeletion(petId: PetId) = Unit
+    override fun markTutorAssetsForDeletion(tutorId: TutorId) = Unit
+    fun all(): Collection<MediaAsset> = store.values
+}
+
+internal class FakeObjectStorage : ObjectStoragePort {
+    val objects = LinkedHashMap<String, ByteArray>()
+    val deleted = mutableListOf<String>()
+    var failDeletes = false
+    override fun presignUpload(key: String, contentType: String, checksumSha256: String, expiresIn: Duration) =
+        PresignedUpload("https://storage.example/$key?signature=test", mapOf("content-type" to contentType))
+    override fun readObject(key: String, maxBytes: Long): ByteArray =
+        objects[key]?.takeIf { it.size <= maxBytes } ?: error("object_not_found")
+    override fun promote(sourceKey: String, destinationKey: String, contentType: String) {
+        objects[destinationKey] = objects.remove(sourceKey) ?: error("object_not_found")
+    }
+    override fun delete(key: String) {
+        if (failDeletes) error("storage_unavailable")
+        objects.remove(key)
+        deleted += key
+    }
+    override fun presignDownload(key: String, expiresIn: Duration): String =
+        "https://storage.example/$key?signature=download"
 }
 
 internal class InMemoryPasswordResetTokenPort : PasswordResetTokenPort {
@@ -165,7 +205,10 @@ internal class InMemoryPetRepo(initial: Map<PetId, Pet> = emptyMap()) : PetRepos
         store.values.filter { it.tutorId == tutorId }
 }
 
-internal class InMemoryEventRepo(initial: Map<EventId, Event> = emptyMap()) : EventRepositoryPort {
+internal class InMemoryEventRepo(
+    initial: Map<EventId, Event> = emptyMap(),
+    private val countsByTutor: Map<TutorId, Long> = emptyMap(),
+) : EventRepositoryPort {
     private val store = LinkedHashMap<EventId, Event>().apply { putAll(initial) }
     private var seq = (store.keys.map { it.value }.maxOrNull() ?: 0L) + 1
     override fun save(event: Event): Event {
@@ -182,7 +225,15 @@ internal class InMemoryEventRepo(initial: Map<EventId, Event> = emptyMap()) : Ev
     }
     override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Event> =
         emptyList()
-    override fun countByTutor(tutorId: TutorId): Long = 0
+    override fun countByTutor(tutorId: TutorId): Long = countsByTutor[tutorId] ?: 0
+    override fun findUpcomingByTutor(
+        tutorId: TutorId,
+        start: java.time.LocalDateTime,
+        end: java.time.LocalDateTime,
+        limit: Int,
+    ): List<Event> = store.values.filter {
+        it.status == Status.PENDING && !it.dateStart.isBefore(start) && !it.dateStart.isAfter(end)
+    }.sortedBy { it.dateStart }.take(limit)
     override fun findByIdAndTutor(id: EventId, tutorId: TutorId): Event? = store[id]
     override fun existsForTutor(id: EventId, tutorId: TutorId): Boolean = store.containsKey(id)
     override fun findPendingReminders(start: java.time.LocalDateTime, end: java.time.LocalDateTime):

@@ -99,14 +99,14 @@ class LocationAppServiceTest {
     }
 
     @Test
-    fun `search caps results at 5`() {
-        val many = (1..10).map { place(placeId = "p$it") }
+    fun `search caps results at 20`() {
+        val many = (1..25).map { place(placeId = "p$it") }
         val places = FakePlacesPort(nearby = many)
         val service = LocationAppService(FakeGeocodingPort(saoPaulo), places, FakePlacesCachePort())
 
         val result = service.search(query())
 
-        assertEquals(5, result.total)
+        assertEquals(20, result.total)
     }
 
     @Test
@@ -123,7 +123,7 @@ class LocationAppServiceTest {
     }
 
     @Test
-    fun `search infers grooming service for petshops from Google types`() {
+    fun `search does not claim grooming without authoritative provider data`() {
         val groomer = place(types = listOf("pet_store", "pet_groomer"))
         val places = FakePlacesPort(nearby = listOf(groomer))
         val service = LocationAppService(FakeGeocodingPort(saoPaulo), places, FakePlacesCachePort())
@@ -131,13 +131,13 @@ class LocationAppServiceTest {
         val result = service.search(query(category = PlaceCategory.PETSHOP))
 
         val item = result.locations[0]
-        assertEquals(true, item.hasGrooming)
-        assertTrue(item.services.contains("grooming"))
+        assertNull(item.hasGrooming)
+        assertFalse(item.services.contains("grooming"))
         assertNull(item.hasEmergency)
     }
 
     @Test
-    fun `search infers veterinary emergency from name keyword`() {
+    fun `search does not claim emergency service from a place name`() {
         val emergencyVet = place(name = "Hospital Veterinário 24h")
         val places = FakePlacesPort(nearby = listOf(emergencyVet))
         val service = LocationAppService(FakeGeocodingPort(saoPaulo), places, FakePlacesCachePort())
@@ -145,8 +145,8 @@ class LocationAppServiceTest {
         val result = service.search(query(category = PlaceCategory.VETERINARY))
 
         val item = result.locations[0]
-        assertEquals(true, item.hasEmergency)
-        assertTrue(item.services.contains("emergency"))
+        assertNull(item.hasEmergency)
+        assertFalse(item.services.contains("emergency"))
         assertNull(item.hasGrooming)
     }
 

@@ -22,12 +22,13 @@ class TutorAppService(
     DeleteTutorUseCase,
     GetTutorUseCase {
     override fun execute(cmd: CreateTutorCommand): TutorCreatedResult {
+        require(cmd.rawPassword.length in 8..72) { "A senha deve ter entre 8 e 72 caracteres" }
         tutorRepo.findByEmail(cmd.email)?.let {
             throw ConflictException("E-mail ${cmd.email.value} already exists")
         }
         val tutor = Tutor(
-            firstName = cmd.firstName,
-            lastName = cmd.lastName,
+            firstName = cmd.firstName.trim(),
+            lastName = cmd.lastName?.trim()?.takeIf { it.isNotEmpty() },
             email = cmd.email,
             passwordHash = passwordHash.hash(cmd.rawPassword),
             passwordChangedAt = java.time.Instant.now(),
@@ -42,10 +43,10 @@ class TutorAppService(
         val existing = tutorRepo.findById(cmd.tutorId)
             ?: throw NotFoundException("Tutor ${cmd.tutorId.value} not found")
         val updated = existing.copy(
-            firstName = cmd.firstName ?: existing.firstName,
-            lastName = cmd.lastName ?: existing.lastName,
-            phoneNumber = cmd.phoneNumber ?: existing.phoneNumber,
-            avatar = cmd.avatar ?: existing.avatar
+            firstName = cmd.firstName.trim(),
+            lastName = cmd.lastName?.trim()?.takeIf { it.isNotEmpty() },
+            phoneNumber = cmd.phoneNumber,
+            avatar = cmd.avatar?.trim()?.takeIf { it.isNotEmpty() }
         )
         val saved = tutorRepo.save(updated)
         return saved.toDetailResult(petRepo.findAllByTutor(saved.id!!))

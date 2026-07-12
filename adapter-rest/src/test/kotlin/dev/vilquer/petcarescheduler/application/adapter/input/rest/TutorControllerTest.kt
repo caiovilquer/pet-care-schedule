@@ -55,7 +55,7 @@ class TutorControllerTest {
             firstName   = "Ana",
             lastName    = null,
             email       = "a@e.com",
-            rawPassword = "pwd",
+            rawPassword = "password123",
             phoneNumber = PhoneNumber.of("+5511998765432").getOrNull(),
             avatar      = null
         )

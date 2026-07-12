@@ -27,7 +27,7 @@ data class Recurrence(
 
         if (repetitions != null && executeCount >= repetitions) return false
 
-        if (finalDate != null && !lastDate.isBefore(finalDate)) return false
+        if (finalDate != null && lastDate.isAfter(finalDate)) return false
 
         return true
     }

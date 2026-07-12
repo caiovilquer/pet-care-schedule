@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity
 
 import jakarta.persistence.*
 import java.time.LocalDate
+import java.util.UUID
 
 @Entity
 @Table(name = "pet")
@@ -10,6 +11,9 @@ class PetJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null
+
+    @Version
+    var version: Long? = null
 
     @Column(nullable = false)
     lateinit var name: String
@@ -25,7 +29,10 @@ class PetJpa {
     @Column(name = "photo_url")
     var photoUrl: String? = null
 
-    @Column(name = "tutor_id", nullable = true)
+    @Column(name = "photo_asset_id")
+    var photoAssetId: UUID? = null
+
+    @Column(name = "tutor_id", nullable = false)
     var tutorId: Long? = null
 
     override fun equals(other: Any?): Boolean =

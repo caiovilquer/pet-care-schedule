@@ -10,6 +10,7 @@ import dev.vilquer.petcarescheduler.usecase.command.UpdateEventCommand
 import jakarta.validation.constraints.FutureOrPresent
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Positive
+import jakarta.validation.constraints.Size
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
@@ -18,8 +19,8 @@ class EventDtoMapper {
 
     data class RegisterRequest(
         @field:Positive val petId: Long,
-        @field:NotBlank val type: String,          // "VACCINE", "BATH"…
-        @field:NotBlank val description: String,
+        val type: EventType,
+        @field:NotBlank @field:Size(max = 255) val description: String,
         /** ISO-8601 (ex.: 2025-07-01T09:00:00Z) */
         @field:FutureOrPresent val dateStart: LocalDateTime,
         val frequency: Frequency?,
@@ -28,11 +29,11 @@ class EventDtoMapper {
         @field:FutureOrPresent val finalDate: LocalDateTime? = null
     )
     data class UpdateRequest(
-        val description: String? = null,
-        @field:FutureOrPresent val dateStart: LocalDateTime? = null,
+        @field:NotBlank @field:Size(max = 255) val description: String,
+        @field:FutureOrPresent val dateStart: LocalDateTime,
         val frequency: Frequency? = null,
-        val type: EventType? = null,
-        @field:Positive val intervalCount: Long? = null,
+        val type: EventType,
+        @field:Positive val intervalCount: Long = 1,
         @field:Positive val repetitions: Int? = null,
         @field:FutureOrPresent val finalDate: LocalDateTime? = null
     )
@@ -40,7 +41,7 @@ class EventDtoMapper {
     fun toRegisterCommand(dto: RegisterRequest): RegisterEventCommand =
         RegisterEventCommand(
             petId      = PetId(dto.petId),
-            type       = EventType.valueOf(dto.type.uppercase()),
+            type       = dto.type,
             description= dto.description,
             dateStart  = dto.dateStart,
             recurrence = if (dto.frequency != null) Recurrence(dto.frequency, dto.intervalCount,dto.repetitions, dto.finalDate) else null
@@ -51,9 +52,8 @@ class EventDtoMapper {
             dateStart     = dto.dateStart,
             type          = dto.type,
             description   = dto.description,
-            frequency     = dto.frequency,
-            intervalCount = dto.intervalCount,
-            repetitions   = dto.repetitions,
-            finalDate     = dto.finalDate,
+            recurrence    = dto.frequency?.let {
+                Recurrence(it, dto.intervalCount, dto.repetitions, dto.finalDate)
+            },
         )
 }

@@ -50,7 +50,8 @@ class SecurityConfig {
                         // details) continua atrás de autenticação — aqui só trafegam bytes
                         // de foto, e o photo_reference só é obtido chamando os endpoints
                         // autenticados primeiro.
-                        "/api/v1/locations/photo"
+                        "/api/v1/locations/photo",
+                        "/api/v1/media/*/content"
                     ).permitAll()
                     .anyRequest().authenticated()
             }

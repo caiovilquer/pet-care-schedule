@@ -94,8 +94,15 @@ class PasswordResetServiceTest {
         assertNotEquals(tutor.passwordChangedAt, tutorRepo.findById(tutor.id!!)?.passwordChangedAt)
     }
 
+    @Test
+    fun `reset rejects passwords outside the supported length`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            service.reset("any-token", "short")
+        }
+    }
+
     private fun sha256(s: String): String {
         val dig = java.security.MessageDigest.getInstance("SHA-256").digest(s.toByteArray(Charsets.UTF_8))
-        return buildString(dig.size * 2) { dig.forEach { append("%02x".format(it)) } }
+        return buildString(dig.size * 2) { dig.forEach { append("%02x".format(it.toInt() and 0xff)) } }
     }
 }

@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.*
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
+import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Frequency
@@ -23,7 +24,7 @@ class EventAppServiceTest {
     private val eventRepo = InMemoryEventRepo()
     private val clock = FakeClock(ZonedDateTime.of(LocalDateTime.of(2025,7,1,8,0), ZoneId.systemDefault()))
     private val outbox = FakeReminderOutboxPort()
-    private val service = EventAppService(eventRepo, petRepo, clock, outbox)
+    private val service = EventAppService(eventRepo, petRepo, clock, outbox, FakeTransactionPort())
     private val tutorId = TutorId(1)
 
     @Test
@@ -96,7 +97,7 @@ class EventAppServiceTest {
     }
 
     @Test
-    fun `toggleEvent undo does not remove the already-created next occurrence`() {
+    fun `toggleEvent rejects reopening recurring occurrence to avoid duplicates`() {
         val pet = petRepo.save(Pet(id = PetId(1), name="rex", species="dog", breed=null, birthdate= LocalDate.now(), tutorId = TutorId(1)))
         val ev = eventRepo.save(
             Event(
@@ -110,9 +111,11 @@ class EventAppServiceTest {
         )
 
         service.execute(ToggleEventCommand(ev.id!!), tutorId) // PENDING -> DONE (creates next)
-        service.execute(ToggleEventCommand(ev.id!!), tutorId) // DONE -> PENDING (undo)
+        assertThrows(ConflictException::class.java) {
+            service.execute(ToggleEventCommand(ev.id!!), tutorId)
+        }
 
-        assertEquals(Status.PENDING, eventRepo.findById(ev.id!!)?.status)
+        assertEquals(Status.DONE, eventRepo.findById(ev.id!!)?.status)
         assertEquals(2, eventRepo.allEvents().size, "the next occurrence created earlier must remain")
     }
 

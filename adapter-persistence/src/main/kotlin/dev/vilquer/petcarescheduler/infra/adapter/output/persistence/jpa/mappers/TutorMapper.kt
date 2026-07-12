@@ -20,13 +20,15 @@ object TutorMapper {
             TutorId(jpa.id ?: throw IllegalStateException("Id cannot be null when mapping TutorJpa to domain"))
         return Tutor(
             id = tutorId,
+            version = jpa.version,
             firstName = jpa.firstName,
             lastName = jpa.lastName,
             email = Email.of(jpa.email).getOrThrow(),
             passwordHash = jpa.passwordHash,
             passwordChangedAt = jpa.passwordChangedAt,
             phoneNumber = jpa.phoneNumber?.let { PhoneNumber.of(it).getOrThrow()},
-            avatar = jpa.avatar
+            avatar = jpa.avatar,
+            avatarAssetId = jpa.avatarAssetId,
         )
     }
 
@@ -44,6 +46,7 @@ object TutorMapper {
         val jpa = existing ?: TutorJpa()
         with(domain) {
             jpa.id = id?.value
+            jpa.version = version
             jpa.firstName = firstName
             jpa.lastName = lastName
             jpa.email = email.value
@@ -51,6 +54,7 @@ object TutorMapper {
             jpa.passwordChangedAt = passwordChangedAt ?: jpa.passwordChangedAt
             jpa.phoneNumber = phoneNumber?.e164
             jpa.avatar = avatar
+            jpa.avatarAssetId = avatarAssetId
         }
         return jpa
     }

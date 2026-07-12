@@ -140,22 +140,11 @@ class LocationAppService(
         val city = addressParts.getOrNull(2) ?: ""
         val state = Regex("([A-Z]{2})").find(addressParts.lastOrNull() ?: "")?.groupValues?.get(1) ?: ""
 
-        val hasGrooming = inferFromTypes(summary.types, GROOMING_TYPES)
-        val hasDaycare = inferFromTypes(summary.types, DAYCARE_TYPES)
-        val hasHotel = inferFromTypes(summary.types, HOTEL_TYPES)
-        val hasVaccination = inferFromTypes(summary.types, VACCINATION_TYPES)
-        val hasEmergency = EMERGENCY_KEYWORDS.any { summary.name.lowercase().contains(it) }
-
         val isPetshop = category == PlaceCategory.PETSHOP
-        val services = mutableListOf(if (isPetshop) "petshop" else "veterinary")
-        if (isPetshop) {
-            if (hasGrooming) services.add("grooming")
-            if (hasDaycare) services.add("daycare")
-            if (hasHotel) services.add("hotel")
-            if (hasVaccination) services.add("vaccination")
-        } else if (hasEmergency) {
-            services.add("emergency")
-        }
+        // Nearby Search não confirma serviços específicos. Expor inferências
+        // como "emergência 24h", cirurgia ou hotel é perigoso; a listagem só
+        // publica os dados efetivamente retornados pelo Google.
+        val services = listOf(if (isPetshop) "petshop" else "veterinary")
 
         return LocationItem(
             id = summary.placeId,
@@ -177,35 +166,25 @@ class LocationAppService(
             type = if (isPetshop) "petshop" else "veterinary",
             photos = summary.photoReference?.let { listOf(it) } ?: emptyList(),
             website = null,
-            hasGrooming = if (isPetshop) hasGrooming else null,
-            hasDaycare = if (isPetshop) hasDaycare else null,
-            hasHotel = if (isPetshop) hasHotel else null,
-            hasVaccination = if (isPetshop) hasVaccination else null,
-            hasEmergency = if (isPetshop) null else hasEmergency,
-            hasLaboratory = if (isPetshop) null else false,
-            hasSurgery = if (isPetshop) null else false,
-            hasRadiology = if (isPetshop) null else false,
+            hasGrooming = null,
+            hasDaycare = null,
+            hasHotel = null,
+            hasVaccination = null,
+            hasEmergency = null,
+            hasLaboratory = null,
+            hasSurgery = null,
+            hasRadiology = null,
             specialties = emptyList()
         )
     }
 
-    private fun inferFromTypes(types: List<String>, keywords: List<String>): Boolean =
-        types.any { type -> keywords.any { keyword -> type.contains(keyword, ignoreCase = true) } }
-
     companion object {
-        private const val MAX_RESULTS = 5
+        private const val MAX_RESULTS = 20
         private const val GEOCODE_TTL_SECONDS = 24 * 60 * 60L
         private const val NEARBY_TTL_SECONDS = 2 * 60 * 60L
         private const val DETAILS_TTL_SECONDS = 12 * 60 * 60L
         private const val REVIEWS_TTL_SECONDS = 6 * 60 * 60L
         private const val PHOTO_TTL_SECONDS = 7 * 24 * 60 * 60L
-
-        private val GROOMING_TYPES = listOf("pet_groomer", "pet grooming")
-        private val DAYCARE_TYPES = listOf("pet_store", "pet boarding")
-        private val HOTEL_TYPES = listOf("pet boarding", "pet hotel")
-        private val VACCINATION_TYPES = listOf("veterinary_care", "pet_store")
-        private val EMERGENCY_KEYWORDS =
-            listOf("24h", "24 horas", "emergencia", "emergência", "urgencia", "urgência", "hospital")
 
         private val CLOSED_DAY = DaySchedule(isOpen = false)
         private val EMPTY_WEEK =

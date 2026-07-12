@@ -10,5 +10,7 @@ interface RateLimitStorePort {
      */
     fun registerAttempt(key: String, now: Instant, window: Duration): Int
 
+    fun delete(key: String)
+
     fun deleteOlderThan(cutoff: Instant): Int
 }

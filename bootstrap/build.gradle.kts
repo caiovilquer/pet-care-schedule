@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":adapter-rest"))
     implementation(project(":adapter-persistence"))
     implementation(project(":adapter-messaging"))
+    implementation(project(":adapter-storage"))
 
     implementation("org.springframework.boot:spring-boot-starter")
     // SmokeE2ETest fala HTTP diretamente (TestRestTemplate/HttpEntity); os

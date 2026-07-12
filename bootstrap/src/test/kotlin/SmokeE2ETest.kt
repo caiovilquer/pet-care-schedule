@@ -139,6 +139,15 @@ class SmokeE2ETest {
         assertEquals(1, events.body!!["items"].size(), "events: ${events.body}")
         assertEquals("PENDING", events.body!!["items"][0]["status"].asText())
 
+        // --- dashboard agregado evita N+1 no frontend ---
+        val dashboard = rest.exchange(
+            "/api/v1/dashboard", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(token)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, dashboard.statusCode, "dashboard: ${dashboard.body}")
+        assertEquals(1, dashboard.body!!["totalPets"].asInt())
+        assertEquals(1, dashboard.body!!["totalEvents"].asInt())
+        assertEquals("ana.smoke@example.com", dashboard.body!!["email"].asText())
+
         // --- toggle para DONE ---
         val toggle = rest.exchange(
             "/api/v1/events/$eventId/toggle", HttpMethod.PUT,

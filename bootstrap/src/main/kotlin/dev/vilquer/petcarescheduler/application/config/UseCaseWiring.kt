@@ -2,7 +2,9 @@ package dev.vilquer.petcarescheduler.application.config
 
 import dev.vilquer.petcarescheduler.application.service.AuthAppService
 import dev.vilquer.petcarescheduler.application.service.EventAppService
+import dev.vilquer.petcarescheduler.application.service.DashboardAppService
 import dev.vilquer.petcarescheduler.application.service.LocationAppService
+import dev.vilquer.petcarescheduler.application.service.MediaAppService
 import dev.vilquer.petcarescheduler.application.service.PasswordResetService
 import dev.vilquer.petcarescheduler.application.service.PetAppService
 import dev.vilquer.petcarescheduler.application.service.RateLimitProperties
@@ -14,6 +16,8 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.GeocodingPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.MediaAssetRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ObjectStoragePort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetNotifierPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordResetTokenPort
@@ -62,7 +66,25 @@ class UseCaseWiring {
         petRepo: PetRepositoryPort,
         clock: ClockPort,
         outbox: ReminderOutboxPort,
-    ) = EventAppService(eventRepo, petRepo, clock, outbox)
+        transactionPort: TransactionPort,
+    ) = EventAppService(eventRepo, petRepo, clock, outbox, transactionPort)
+
+    @Bean
+    fun dashboardAppService(
+        tutorRepo: TutorRepositoryPort,
+        petRepo: PetRepositoryPort,
+        eventRepo: EventRepositoryPort,
+        clock: ClockPort,
+    ) = DashboardAppService(tutorRepo, petRepo, eventRepo, clock)
+
+    @Bean
+    fun mediaAppService(
+        media: MediaAssetRepositoryPort,
+        storage: ObjectStoragePort,
+        pets: PetRepositoryPort,
+        tutors: TutorRepositoryPort,
+        transaction: TransactionPort,
+    ) = MediaAppService(media, storage, pets, tutors, transaction)
 
     @Bean
     fun reminderRelayService(

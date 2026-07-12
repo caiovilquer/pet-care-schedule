@@ -17,6 +17,7 @@ object EventMapper {
      */
     fun toDomain(jpa: EventJpa): Event = Event(
         id = jpa.id?.let(::EventId),
+        version = jpa.version,
         type = jpa.type,
         description = jpa.description,
         dateStart = jpa.dateStart,
@@ -44,6 +45,7 @@ object EventMapper {
     private fun mapDomainToJpa(domain: Event, jpa: EventJpa): EventJpa {
         with(domain) {
             jpa.id = id?.value
+            jpa.version = version
             jpa.type = type
             jpa.description = description
             jpa.dateStart = dateStart

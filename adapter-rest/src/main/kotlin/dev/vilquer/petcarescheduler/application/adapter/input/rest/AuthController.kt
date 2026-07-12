@@ -23,6 +23,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.util.WebUtils
 import jakarta.servlet.http.HttpServletRequest
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -34,19 +36,21 @@ class AuthController(
 ) {
     @PostMapping("/login")
     fun login(@Valid @RequestBody dto: LoginDto, request: HttpServletRequest): ResponseEntity<TokenDto> {
-        val key = rateLimitKey("login", request, dto.email)
+        val key = rateLimitKey(request, dto.email.trim().lowercase())
         rateLimiter.check(RateLimitAction.LOGIN, key)
         val tokens = authService.authenticate(dto.toCmd())
+        rateLimiter.reset(RateLimitAction.LOGIN, key)
         return respondWithTokens(tokens)
     }
 
     @PostMapping("/refresh")
     fun refresh(request: HttpServletRequest): ResponseEntity<TokenDto> {
-        val key = rateLimitKey("refresh", request, "anonymous")
-        rateLimiter.check(RateLimitAction.TOKEN_REFRESH, key)
         val raw = readRefreshCookie(request)
             ?: throw InvalidCredentialsException("Missing refresh token")
+        val key = rateLimitKey(request, fingerprint(raw))
+        rateLimiter.check(RateLimitAction.TOKEN_REFRESH, key)
         val tokens = sessionService.refresh(raw, request.getHeader(HttpHeaders.USER_AGENT))
+        rateLimiter.reset(RateLimitAction.TOKEN_REFRESH, key)
         return respondWithTokens(tokens)
     }
 
@@ -114,8 +118,14 @@ class AuthController(
         @JsonProperty("token_type") val tokenTypeCompat: String = tokenType
     )
 
-    private fun rateLimitKey(action: String, request: HttpServletRequest, email: String): String {
+    private fun rateLimitKey(request: HttpServletRequest, identifier: String): String {
         val ip = request.remoteAddr ?: "unknown"
-        return "$action:$ip:${email.trim().lowercase()}"
+        return "$ip:$identifier"
     }
+
+    private fun fingerprint(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(StandardCharsets.UTF_8))
+            .take(12)
+            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
 }

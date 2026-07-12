@@ -8,6 +8,7 @@ shedlock = "5.16.0"
 konsist = "0.17.3"
 junitJupiter = "5.11.3"
 mockitoKotlin = "5.3.1"
+awsSdk = "2.47.5"
 
 [libraries]
 jjwt-api = { module = "io.jsonwebtoken:jjwt-api", version.ref = "jjwt" }
@@ -21,6 +22,8 @@ junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", vers
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 # Sem versão: gerenciada pelo BOM do Spring Boot (io.spring.dependency-management)
 httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5" }
+aws-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awsSdk" }
+aws-url-connection-client = { module = "software.amazon.awssdk:url-connection-client", version.ref = "awsSdk" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

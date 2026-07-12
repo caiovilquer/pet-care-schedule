@@ -1,6 +1,7 @@
 server:
   port: ${PORT:8080}
   address: 0.0.0.0
+  forward-headers-strategy: framework
   ssl:
     enabled: false
   tomcat:
@@ -49,6 +50,16 @@ spring:
     enabled: true
 
 app:
+  storage:
+    enabled: ${OBJECT_STORAGE_ENABLED:false}
+    endpoint: ${OBJECT_STORAGE_ENDPOINT:${ENDPOINT:${BUCKET_ENDPOINT:${AWS_ENDPOINT_URL:}}}}
+    region: ${OBJECT_STORAGE_REGION:${REGION:${BUCKET_REGION:${AWS_DEFAULT_REGION:auto}}}}
+    bucket: ${OBJECT_STORAGE_BUCKET:${BUCKET:${BUCKET_NAME:${AWS_S3_BUCKET_NAME:}}}}
+    access-key: ${OBJECT_STORAGE_ACCESS_KEY:${ACCESS_KEY_ID:${BUCKET_ACCESS_KEY_ID:${AWS_ACCESS_KEY_ID:}}}}
+    secret-key: ${OBJECT_STORAGE_SECRET_KEY:${SECRET_ACCESS_KEY:${BUCKET_SECRET_ACCESS_KEY:${AWS_SECRET_ACCESS_KEY:}}}}
+    path-style: ${OBJECT_STORAGE_PATH_STYLE:false}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://rotinapet.vilquer.dev}
   mail:
     from: ${MAIL_FROM}
     from-name: RotinaPet

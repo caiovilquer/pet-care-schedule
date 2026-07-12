@@ -14,6 +14,9 @@ class EventJpa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null
 
+    @Version
+    var version: Long? = null
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     lateinit var type: EventType
@@ -33,7 +36,7 @@ class EventJpa {
     @Column(name = "occurrence_count", nullable = false)
     var occurrenceCount: Int = 0
 
-    @Column(name = "pet_id", nullable = true)
+    @Column(name = "pet_id", nullable = false)
     var petId: Long? = null
 
     override fun equals(other: Any?): Boolean =

@@ -5,7 +5,7 @@ import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 
 data class UpdateTutorCommand(
     val tutorId: TutorId,
-    val firstName: String? = null,
+    val firstName: String,
     val lastName: String? = null,
     val phoneNumber: PhoneNumber? = null,
     val avatar: String? = null

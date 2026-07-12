@@ -22,6 +22,12 @@ class PortInteractionTest {
         override fun delete(id: EventId) {}
         override fun listByTutor(tutorId: TutorId, page: Int, size: Int): List<Event> = emptyList()
         override fun countByTutor(tutorId: TutorId): Long = 0
+        override fun findUpcomingByTutor(
+            tutorId: TutorId,
+            start: LocalDateTime,
+            end: LocalDateTime,
+            limit: Int,
+        ): List<Event> = emptyList()
         override fun findByIdAndTutor(id: EventId, tutorId: TutorId): Event? = findById(id)
         override fun existsForTutor(id: EventId, tutorId: TutorId): Boolean = received?.id == id
         override fun findPendingReminders(start: LocalDateTime, end: LocalDateTime): List<EventReminderTarget> =

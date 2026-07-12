@@ -2,17 +2,19 @@ package dev.vilquer.petcarescheduler.application.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.springframework.web.cors.CorsConfigurationSource
 
 @Configuration
+@EnableConfigurationProperties(CorsProperties::class)
 class WebCorsConfig {
 
     @Bean
-    fun corsConfigurationSource(): CorsConfigurationSource {
+    fun corsConfigurationSource(properties: CorsProperties): CorsConfigurationSource {
         val config = CorsConfiguration().apply {
-            allowedOriginPatterns = listOf("https://rotinapet.vilquer.dev")
+            allowedOrigins = properties.allowedOrigins
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf(
                 "Authorization",

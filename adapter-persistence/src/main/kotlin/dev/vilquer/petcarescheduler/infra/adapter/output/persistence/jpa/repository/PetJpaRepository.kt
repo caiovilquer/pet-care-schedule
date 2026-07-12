@@ -8,8 +8,8 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface PetJpaRepository: JpaRepository<PetJpa, Long> {
-    fun findAllByTutorId(tutorId: Long, pageable: Pageable): Page<PetJpa>
-    fun findAllByTutorId(tutorId: Long): List<PetJpa>
+    fun findAllByTutorIdOrderByNameAscIdAsc(tutorId: Long, pageable: Pageable): Page<PetJpa>
+    fun findAllByTutorIdOrderByNameAscIdAsc(tutorId: Long): List<PetJpa>
     fun findByIdAndTutorId(id: Long, tutorId: Long): PetJpa?
     fun existsByIdAndTutorId(id: Long, tutorId: Long): Boolean
     fun countByTutorId(tutorId: Long): Long

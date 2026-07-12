@@ -12,5 +12,12 @@ class SpringTransactionPort(
 
     private val template = TransactionTemplate(transactionManager)
 
-    override fun <T> execute(block: () -> T): T = template.execute { block() }!!
+    override fun <T> execute(block: () -> T): T {
+        var result: Any? = null
+        template.executeWithoutResult {
+            result = block()
+        }
+        @Suppress("UNCHECKED_CAST")
+        return result as T
+    }
 }

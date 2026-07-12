@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.validation.annotation.Validated
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import java.time.Duration
 
 /**
@@ -24,6 +27,7 @@ import java.time.Duration
  */
 @RestController
 @RequestMapping("/api/v1/locations")
+@Validated
 class LocationController(
     private val mapper: LocationDtoMapper,
     private val searchLocations: SearchLocationsUseCase,
@@ -61,7 +65,7 @@ class LocationController(
     @GetMapping("/photo")
     fun photo(
         @RequestParam ref: String,
-        @RequestParam(defaultValue = "800") maxWidth: Int
+        @RequestParam(defaultValue = "800") @Min(100) @Max(1600) maxWidth: Int
     ): ResponseEntity<ByteArray> {
         val photo = getPlacePhoto.getPhoto(ref, maxWidth)
         return ResponseEntity.ok()

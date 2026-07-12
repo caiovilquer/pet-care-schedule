@@ -87,8 +87,8 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(OptimisticLockingFailureException::class)
     fun handleOptimisticLock(ex: OptimisticLockingFailureException): ResponseEntity<ApiError> {
-        val body = ApiError(503, "Service Unavailable", "Tente novamente em instantes")
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body)
+        val body = ApiError(409, "Conflict", "Este registro foi alterado em outro lugar. Atualize a página e tente novamente")
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body)
     }
 
     @ExceptionHandler(ConflictException::class)

@@ -28,7 +28,7 @@ class EventRepositoryAdapter(
         jpa.findById(id.value).orElse(null)?.toDomain()
 
     override fun findByPetId(petId: PetId): List<Event> =
-        jpa.findAllByPetId(petId.value).map { it.toDomain() }
+        jpa.findAllByPetIdOrderByDateStartAscIdAsc(petId.value).map { it.toDomain() }
 
     override fun delete(id: EventId) {
         jpa.deleteById(id.value)
@@ -38,6 +38,19 @@ class EventRepositoryAdapter(
 
     override fun countByTutor(tutorId: TutorId): Long =
         jpa.countByTutorId(tutorId.value)
+
+    override fun findUpcomingByTutor(
+        tutorId: TutorId,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        limit: Int,
+    ): List<Event> = jpa.findUpcomingByTutorId(
+        tutorId.value,
+        Status.PENDING,
+        start,
+        end,
+        PageRequest.of(0, limit),
+    ).map { it.toDomain() }
 
     override fun findByIdAndTutor(id: EventId, tutorId: TutorId): Event? =
         jpa.findByIdAndTutorId(id.value, tutorId.value)?.toDomain()

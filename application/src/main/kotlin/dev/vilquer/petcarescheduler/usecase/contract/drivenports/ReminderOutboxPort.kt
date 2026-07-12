@@ -21,4 +21,7 @@ interface ReminderOutboxPort {
 
     fun markSent(id: Long)
     fun incrementAttempts(id: Long)
+
+    /** Remove o lembrete anterior quando a ocorrência muda de data. */
+    fun resetForEvent(eventId: EventId)
 }

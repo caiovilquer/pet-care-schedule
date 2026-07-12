@@ -21,3 +21,15 @@ logging:
     # %X{correlationId}: injetado pelo CorrelationIdFilter, permite
     # correlacionar todas as linhas de log de uma mesma requisição.
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+app:
+  storage:
+    enabled: ${OBJECT_STORAGE_ENABLED:false}
+    endpoint: ${OBJECT_STORAGE_ENDPOINT:${ENDPOINT:${BUCKET_ENDPOINT:${AWS_ENDPOINT_URL:}}}}
+    region: ${OBJECT_STORAGE_REGION:${REGION:${BUCKET_REGION:${AWS_DEFAULT_REGION:auto}}}}
+    bucket: ${OBJECT_STORAGE_BUCKET:${BUCKET:${BUCKET_NAME:${AWS_S3_BUCKET_NAME:}}}}
+    access-key: ${OBJECT_STORAGE_ACCESS_KEY:${ACCESS_KEY_ID:${BUCKET_ACCESS_KEY_ID:${AWS_ACCESS_KEY_ID:}}}}
+    secret-key: ${OBJECT_STORAGE_SECRET_KEY:${SECRET_ACCESS_KEY:${BUCKET_SECRET_ACCESS_KEY:${AWS_SECRET_ACCESS_KEY:}}}}
+    path-style: ${OBJECT_STORAGE_PATH_STYLE:false}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

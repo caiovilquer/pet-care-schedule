@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity
 
 import jakarta.persistence.*
 import java.time.Instant
+import java.util.UUID
 
 @Entity
 @Table(name = "tutor")
@@ -11,6 +12,9 @@ class TutorJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null
+
+    @Version
+    var version: Long? = null
 
     @Column(nullable = false)
     lateinit var firstName: String
@@ -27,6 +31,9 @@ class TutorJpa {
     var phoneNumber: String? = null
 
     var avatar: String? = null
+
+    @Column(name = "avatar_asset_id")
+    var avatarAssetId: UUID? = null
 
     @Column(name = "password_changed_at")
     var passwordChangedAt: Instant = Instant.now()

@@ -60,4 +60,8 @@ class ReminderOutboxJpaAdapter(
         entity.attempts += 1
         jpa.save(entity)
     }
+
+    override fun resetForEvent(eventId: EventId) {
+        jpa.deleteByEventId(eventId.value)
+    }
 }

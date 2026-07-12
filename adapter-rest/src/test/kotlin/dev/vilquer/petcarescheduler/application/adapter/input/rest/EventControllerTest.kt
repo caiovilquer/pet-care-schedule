@@ -4,6 +4,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.vilquer.petcarescheduler.application.mapper.EventDtoMapper
 import dev.vilquer.petcarescheduler.core.domain.entity.EventId
+import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
@@ -62,7 +63,7 @@ class EventControllerTest {
         setJwtPrincipal()
         val req = EventDtoMapper.RegisterRequest(
             petId       = 1,
-            type        = "SERVICE",
+            type        = EventType.SERVICE,
             description = "desc",
             // precisa ser futuro por causa do @FutureOrPresent do DTO
             dateStart   = LocalDateTime.now().plusDays(1).withNano(0),

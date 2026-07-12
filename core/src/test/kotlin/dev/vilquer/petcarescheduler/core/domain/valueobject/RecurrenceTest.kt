@@ -48,11 +48,11 @@ class RecurrenceTest {
     }
 
     @Test
-    fun `hasNext becomes false once lastDate reaches or passes finalDate`() {
+    fun `hasNext includes finalDate and becomes false after it`() {
         val finalDate = start.plusDays(10)
         val recurrence = Recurrence(Frequency.DAILY, finalDate = finalDate)
         assertTrue(recurrence.hasNext(executeCount = 1, lastDate = finalDate.minusDays(1)))
-        assertFalse(recurrence.hasNext(executeCount = 1, lastDate = finalDate))
+        assertTrue(recurrence.hasNext(executeCount = 1, lastDate = finalDate))
         assertFalse(recurrence.hasNext(executeCount = 1, lastDate = finalDate.plusDays(1)))
     }
 }

@@ -13,6 +13,8 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
 - **Gestão de pets**
   - CRUD completo de animais ligados a um tutor.
   - Paginação de listas e filtro por tutor.
+  - Fotos de pets e avatar do tutor em object storage privado, com upload
+    direto, validação de conteúdo e limpeza automática de órfãos.
 
 - **Agendamento de eventos**
   - Registro, atualização, listagem e exclusão de eventos por pet ou por tutor.
@@ -48,7 +50,7 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
 
 ## Arquitetura
 
-Estrutura hexagonal (ports & adapters) em seis módulos. `core` e `application`
+Estrutura hexagonal (ports & adapters) em sete módulos. `core` e `application`
 são Kotlin puro — nenhuma dependência de Spring, Jakarta ou qualquer
 framework — e essa fronteira é verificada em tempo de teste (testes de
 arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
@@ -61,12 +63,16 @@ arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
 | **adapter-rest**        | Controllers REST, DTOs, `ApiExceptionHandler`, Spring Security (JWT, CORS), emissão de token, hash de senha. |
 | **adapter-persistence** | Entidades JPA, repositórios Spring Data, mappers, adapters de persistência e migrações Flyway. Testes de integração sobem um Postgres real via Testcontainers (requer Docker). |
 | **adapter-messaging**   | Cliente HTTP (WebClient) e adapters de e-mail (MailerSend).              |
+| **adapter-storage**     | Adaptador S3 compatível com Railway Buckets e Cloudflare R2; URLs pré-assinadas curtas para leitura e escrita. |
 | **bootstrap**           | Ponto de entrada Spring Boot: wiring manual dos use cases (`UseCaseWiring`), schedulers, configuração de ambiente (`application*.yml`, SSL, JVM). |
 
 `core` e `application` não conhecem nenhum dos três adapters nem o
 `bootstrap`; os adapters não se importam entre si; todo o grafo de beans dos
 use cases é montado explicitamente em `UseCaseWiring` (bootstrap), já que os
 services não carregam `@Service`/`@Value`/`@ConfigurationProperties`.
+
+A configuração segura do bucket e do CORS está em
+[`docs/object-storage.md`](docs/object-storage.md).
 
 ## Requisitos
 

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ReminderOutboxJpaRepository : JpaRepository<ReminderOutboxJpa, Long> {
     fun existsByEventId(eventId: Long): Boolean
+    fun deleteByEventId(eventId: Long)
 
     @Query(
         """

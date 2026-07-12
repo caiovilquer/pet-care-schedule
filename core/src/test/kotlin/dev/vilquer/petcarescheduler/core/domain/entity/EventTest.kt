@@ -64,10 +64,11 @@ class EventTest {
     }
 
     @Test
-    fun `complete stops generating occurrences once finalDate has passed`() {
+    fun `complete generates an occurrence exactly on the inclusive finalDate`() {
         val recurrence = Recurrence(Frequency.DAILY, finalDate = start.plusDays(1))
         val (_, next) = event(recurrence).complete()
 
-        assertNull(next, "next occurrence would fall exactly on finalDate")
+        assertNotNull(next, "finalDate is inclusive")
+        assertEquals(start.plusDays(1), next!!.dateStart)
     }
 }

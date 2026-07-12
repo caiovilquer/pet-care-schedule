@@ -5,7 +5,7 @@ import java.time.LocalDate
 
 data class UpdatePetCommand(
     val petId: PetId,
-    val name: String? = null,
+    val name: String,
     val breed: String? = null,
     val birthdate: LocalDate? = null,
     val photoUrl: String? = null

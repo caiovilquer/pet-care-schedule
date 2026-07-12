@@ -18,7 +18,7 @@ class TutorAppServiceTest {
 
     @Test
     fun `createTutor persists and returns id`() {
-        val cmd = CreateTutorCommand("Ana", null, Email.of("ana@ex.com").getOrThrow(), "pwd", PhoneNumber.of("+5511912345678").getOrNull(), null)
+        val cmd = CreateTutorCommand("Ana", null, Email.of("ana@ex.com").getOrThrow(), "password123", PhoneNumber.of("+5511912345678").getOrNull(), null)
         val result = service.execute(cmd)
         assertNotNull(result.tutorId)
         assertEquals(1, tutorRepo.countAll())

@@ -12,6 +12,8 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.Email as EmailConstraint
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 
 @RestController
 @RequestMapping("/api/v1/auth/password")
@@ -29,7 +31,7 @@ class PasswordResetController(
 
     @PostMapping("/forgot")
     fun forgot(@Valid @RequestBody body: ForgotReq, request: HttpServletRequest): ResponseEntity<Void> {
-        val key = rateLimitKey("reset-forgot", request, body.email)
+        val key = rateLimitKey(request, body.email.trim().lowercase())
         rateLimiter.check(RateLimitAction.PASSWORD_RESET, key)
         passwordReset.requestReset(Email.of(body.email).getOrThrow())
         return ResponseEntity.accepted().build()
@@ -37,7 +39,7 @@ class PasswordResetController(
 
     @GetMapping("/reset/validate")
     fun validate(@RequestParam token: String, request: HttpServletRequest): ResponseEntity<Void> {
-        val key = rateLimitKey("reset-validate", request, null)
+        val key = rateLimitKey(request, fingerprint(token))
         rateLimiter.check(RateLimitAction.PASSWORD_RESET, key)
         return if (passwordReset.validate(token)) ResponseEntity.ok().build()
         else ResponseEntity.badRequest().build()
@@ -45,15 +47,21 @@ class PasswordResetController(
 
     @PostMapping("/reset")
     fun reset(@Valid @RequestBody body: ResetReq, request: HttpServletRequest): ResponseEntity<Void> {
-        val key = rateLimitKey("reset", request, body.token)
+        val key = rateLimitKey(request, fingerprint(body.token))
         rateLimiter.check(RateLimitAction.PASSWORD_RESET, key)
         passwordReset.reset(body.token, body.newPassword)
         return ResponseEntity.ok().build()
     }
 
-    private fun rateLimitKey(action: String, request: HttpServletRequest, identifier: String?): String {
+    private fun rateLimitKey(request: HttpServletRequest, identifier: String?): String {
         val ip = request.remoteAddr ?: "unknown"
         val suffix = identifier?.trim()?.lowercase()
-        return if (suffix.isNullOrBlank()) "$action:$ip" else "$action:$ip:$suffix"
+        return if (suffix.isNullOrBlank()) ip else "$ip:$suffix"
     }
+
+    private fun fingerprint(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(StandardCharsets.UTF_8))
+            .take(12)
+            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
 }
