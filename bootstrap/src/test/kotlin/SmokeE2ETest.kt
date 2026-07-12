@@ -5,6 +5,11 @@ import dev.vilquer.petcarescheduler.PetCareSchedulerApplication
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.ReminderOutboxJpaRepository
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DispatchPendingRemindersUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.SendDailyRemindersUseCase
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.RegisterEventUseCase
+import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
+import dev.vilquer.petcarescheduler.core.domain.entity.EventType
+import dev.vilquer.petcarescheduler.core.domain.entity.PetId
+import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -18,6 +23,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import java.time.ZoneId
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
@@ -49,6 +57,9 @@ class SmokeE2ETest {
     @Autowired
     lateinit var reminderOutboxRepository: ReminderOutboxJpaRepository
 
+    @Autowired
+    lateinit var registerLegacyEvent: RegisterEventUseCase
+
     private fun jsonHeaders(token: String? = null) = HttpHeaders().apply {
         contentType = MediaType.APPLICATION_JSON
         token?.let { setBearerAuth(it) }
@@ -65,7 +76,7 @@ class SmokeE2ETest {
     }
 
     @Test
-    fun `full journey - signup, login, pet, event, toggle, delete`() {
+    fun `full journey - signup, login, pet, care plan, safe completion, undo and delete`() {
         // --- signup ---
         val signup = rest.postForEntity(
             "/api/v1/public/signup",
@@ -119,25 +130,27 @@ class SmokeE2ETest {
         assertEquals(1, pets.body!!["items"].size(), "pets: ${pets.body}")
         assertEquals("Rex", pets.body!!["items"][0]["name"].asText())
 
-        // --- cria evento ---
-        val eventCreated = rest.postForEntity(
-            "/api/v1/events",
+        // --- cria plano recorrente; ocorrências independem da conclusão anterior ---
+        val startAt = LocalDateTime.now(ZoneId.systemDefault()).plusDays(1).truncatedTo(ChronoUnit.MINUTES)
+        val planCreated = rest.postForEntity(
+            "/api/v1/care-plans",
             HttpEntity(
-                """{"petId":$petId,"type":"VACCINE","description":"antirrabica","dateStart":"2099-01-01T10:00:00"}""",
+                """{"petId":$petId,"type":"VACCINE","title":"Antirrábica","instructions":"Levar carteira","startAt":"$startAt","frequency":"DAILY","intervalCount":1,"repetitions":2,"reminderMinutesBefore":30}""",
                 jsonHeaders(token),
             ),
             JsonNode::class.java,
         )
-        assertEquals(HttpStatus.CREATED, eventCreated.statusCode, "create event: ${eventCreated.body}")
-        val eventId = eventCreated.body!!["eventId"].asLong()
+        assertEquals(HttpStatus.CREATED, planCreated.statusCode, "create care plan: ${planCreated.body}")
+        val planId = planCreated.body!!["id"].asText()
 
-        // --- lista eventos do tutor ---
-        val events = rest.exchange(
-            "/api/v1/events", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(token)), JsonNode::class.java,
+        // --- lista duas ocorrências materializadas no horizonte ---
+        val occurrences = rest.exchange(
+            "/api/v1/care-occurrences", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(token)), JsonNode::class.java,
         )
-        assertEquals(HttpStatus.OK, events.statusCode)
-        assertEquals(1, events.body!!["items"].size(), "events: ${events.body}")
-        assertEquals("PENDING", events.body!!["items"][0]["status"].asText())
+        assertEquals(HttpStatus.OK, occurrences.statusCode)
+        assertEquals(2, occurrences.body!!["items"].size(), "occurrences: ${occurrences.body}")
+        assertEquals("SCHEDULED", occurrences.body!!["items"][0]["status"].asText())
+        val occurrenceId = occurrences.body!!["items"][0]["id"].asText()
 
         // --- dashboard agregado evita N+1 no frontend ---
         val dashboard = rest.exchange(
@@ -145,25 +158,85 @@ class SmokeE2ETest {
         )
         assertEquals(HttpStatus.OK, dashboard.statusCode, "dashboard: ${dashboard.body}")
         assertEquals(1, dashboard.body!!["totalPets"].asInt())
-        assertEquals(1, dashboard.body!!["totalEvents"].asInt())
+        assertEquals(2, dashboard.body!!["totalEvents"].asInt())
         assertEquals("ana.smoke@example.com", dashboard.body!!["email"].asText())
 
-        // --- toggle para DONE ---
-        val toggle = rest.exchange(
-            "/api/v1/events/$eventId/toggle", HttpMethod.PUT,
-            HttpEntity<Void>(jsonHeaders(token)), Void::class.java,
+        // --- conclusão idempotente e protegida contra administração em dobro ---
+        val completionRequest = UUID.randomUUID()
+        val complete = rest.postForEntity(
+            "/api/v1/care-occurrences/$occurrenceId/complete",
+            HttpEntity("""{"requestId":"$completionRequest","note":"Aplicada"}""", jsonHeaders(token)),
+            JsonNode::class.java,
         )
-        assertEquals(HttpStatus.OK, toggle.statusCode)
-        val toggled = rest.exchange(
-            "/api/v1/events/$eventId", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(token)), JsonNode::class.java,
+        assertEquals(HttpStatus.OK, complete.statusCode, "complete: ${complete.body}")
+        assertEquals("COMPLETED", complete.body!!["status"].asText())
+        val replay = rest.postForEntity(
+            "/api/v1/care-occurrences/$occurrenceId/complete",
+            HttpEntity("""{"requestId":"$completionRequest","note":"Aplicada"}""", jsonHeaders(token)),
+            JsonNode::class.java,
         )
-        assertEquals("DONE", toggled.body!!["status"].asText(), "toggled: ${toggled.body}")
+        assertEquals(HttpStatus.OK, replay.statusCode)
+        val duplicate = rest.postForEntity(
+            "/api/v1/care-occurrences/$occurrenceId/complete",
+            HttpEntity("""{"requestId":"${UUID.randomUUID()}"}""", jsonHeaders(token)),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CONFLICT, duplicate.statusCode)
 
-        // --- deleta evento e pet ---
-        val delEvent = rest.exchange(
-            "/api/v1/events/$eventId", HttpMethod.DELETE, HttpEntity<Void>(jsonHeaders(token)), Void::class.java,
+        // --- desfazer dentro da janela segura ---
+        val undo = rest.postForEntity(
+            "/api/v1/care-occurrences/$occurrenceId/undo",
+            HttpEntity("""{"requestId":"${UUID.randomUUID()}"}""", jsonHeaders(token)),
+            JsonNode::class.java,
         )
-        assertEquals(HttpStatus.NO_CONTENT, delEvent.statusCode)
+        assertEquals(HttpStatus.OK, undo.statusCode, "undo: ${undo.body}")
+        assertEquals("SCHEDULED", undo.body!!["status"].asText())
+
+        val sameRequestId = UUID.randomUUID()
+        val idempotencyPool = Executors.newFixedThreadPool(2)
+        try {
+            val sameRequestStatuses = (1..2).map {
+                CompletableFuture.supplyAsync({
+                    rest.postForEntity(
+                        "/api/v1/care-occurrences/$occurrenceId/complete",
+                        HttpEntity("""{"requestId":"$sameRequestId"}""", jsonHeaders(token)),
+                        JsonNode::class.java,
+                    ).statusCode
+                }, idempotencyPool)
+            }.map { it.get() }
+            assertTrue(sameRequestStatuses.all { it == HttpStatus.OK }, "a mesma chave deve reproduzir o sucesso: $sameRequestStatuses")
+        } finally {
+            idempotencyPool.shutdownNow()
+        }
+        val secondUndo = rest.postForEntity(
+            "/api/v1/care-occurrences/$occurrenceId/undo",
+            HttpEntity("""{"requestId":"${UUID.randomUUID()}"}""", jsonHeaders(token)),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, secondUndo.statusCode)
+
+        val completionPool = Executors.newFixedThreadPool(2)
+        try {
+            val concurrentStatuses = (1..2).map {
+                CompletableFuture.supplyAsync({
+                    rest.postForEntity(
+                        "/api/v1/care-occurrences/$occurrenceId/complete",
+                        HttpEntity("""{"requestId":"${UUID.randomUUID()}"}""", jsonHeaders(token)),
+                        JsonNode::class.java,
+                    ).statusCode
+                }, completionPool)
+            }.map { it.get() }
+            assertEquals(1, concurrentStatuses.count { it == HttpStatus.OK }, "apenas uma conclusão pode vencer: $concurrentStatuses")
+            assertEquals(1, concurrentStatuses.count { it == HttpStatus.CONFLICT }, "a duplicada deve ser bloqueada: $concurrentStatuses")
+        } finally {
+            completionPool.shutdownNow()
+        }
+
+        // --- encerra plano preservando o que já foi registrado e exclui pet ---
+        val endPlan = rest.exchange(
+            "/api/v1/care-plans/$planId", HttpMethod.DELETE, HttpEntity<Void>(jsonHeaders(token)), Void::class.java,
+        )
+        assertEquals(HttpStatus.NO_CONTENT, endPlan.statusCode)
         val delPet = rest.exchange(
             "/api/v1/pets/$petId", HttpMethod.DELETE, HttpEntity<Void>(jsonHeaders(token)), Void::class.java,
         )
@@ -272,6 +345,7 @@ class SmokeE2ETest {
             JsonNode::class.java,
         )
         assertEquals(HttpStatus.CREATED, signup.statusCode)
+        val tutorId = TutorId(signup.body!!["tutorId"].asLong())
 
         val login = rest.postForEntity(
             "/api/v1/auth/login",
@@ -292,15 +366,11 @@ class SmokeE2ETest {
         // @FutureOrPresent no DTO (por isso não usamos meio-dia, que já teria
         // passado se o teste rodar à tarde).
         val todayLate = java.time.LocalDate.now(ZoneId.of("America/Sao_Paulo")).atTime(23, 59)
-        val eventCreated = rest.postForEntity(
-            "/api/v1/events",
-            HttpEntity(
-                """{"petId":$petId,"type":"VACCINE","description":"lembrete real","dateStart":"$todayLate"}""",
-                jsonHeaders(token),
-            ),
-            JsonNode::class.java,
+        val eventCreated = registerLegacyEvent.execute(
+            RegisterEventCommand(PetId(petId), EventType.VACCINE, "lembrete real", todayLate),
+            tutorId,
         )
-        assertEquals(HttpStatus.CREATED, eventCreated.statusCode, "create event: ${eventCreated.body}")
+        assertTrue(eventCreated.eventId.value > 0)
 
         // Chama os beans diretamente (em vez de esperar o cron) para exercitar
         // o ReminderOutboxJpaAdapter de verdade, contra o H2, sem fakes.

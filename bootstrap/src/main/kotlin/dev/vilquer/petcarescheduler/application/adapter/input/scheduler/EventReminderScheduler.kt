@@ -1,18 +1,15 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.scheduler
 
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.SendDailyRemindersUseCase
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CareScheduleMaintenanceUseCase
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class EventReminderScheduler(
-    private val sendDailyReminders: SendDailyRemindersUseCase
+class CareScheduleScheduler(
+    private val maintenance: CareScheduleMaintenanceUseCase
 ) {
-    /** Every day at 8 o'clock */
-    @Scheduled(cron = "0 0 8 * * *", zone = "\${app.timezone:America/Sao_Paulo}")
-    @SchedulerLock(name = "sendDailyReminders", lockAtMostFor = "PT15M", lockAtLeastFor = "PT1M")
-    fun sendDailyReminders() {
-        sendDailyReminders.sendRemindersForToday()
-    }
+    @Scheduled(cron = "0 */5 * * * *", zone = "\${app.timezone:America/Sao_Paulo}")
+    @SchedulerLock(name = "materializeCareSchedule", lockAtMostFor = "PT4M", lockAtLeastFor = "PT15S")
+    fun maintainSchedule() = maintenance.materializeAndEnqueueReminders()
 }

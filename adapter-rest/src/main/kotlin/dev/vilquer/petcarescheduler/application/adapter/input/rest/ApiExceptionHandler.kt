@@ -96,6 +96,12 @@ class ApiExceptionHandler {
         val body = ApiError(409, "Conflict", ex.message ?: "Conflito")
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body)
     }
+
+    @ExceptionHandler(LegacyCareWriteGoneException::class)
+    fun handleLegacyCareWriteGone(ex: LegacyCareWriteGoneException): ResponseEntity<ApiError> {
+        val body = ApiError(410, "Gone", ex.message)
+        return ResponseEntity.status(HttpStatus.GONE).body(body)
+    }
     @ExceptionHandler(ForbiddenException::class)
     fun handleForbidden(ex: ForbiddenException): ResponseEntity<ApiError> {
         val body = ApiError(403, "Forbidden", ex.message)

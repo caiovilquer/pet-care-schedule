@@ -11,5 +11,5 @@ data class DashboardOverviewResult(
     val totalPets: Long,
     val totalEvents: Long,
     val pets: List<PetSummary>,
-    val upcomingEvents: List<EventSummary>,
+    val upcomingEvents: List<CareOccurrenceResult>,
 )

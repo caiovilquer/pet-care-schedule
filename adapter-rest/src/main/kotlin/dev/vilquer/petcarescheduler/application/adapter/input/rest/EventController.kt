@@ -38,6 +38,7 @@ class EventController(
         @Valid @RequestBody dto: EventDtoMapper.RegisterRequest,
         @AuthenticationPrincipal jwt: CurrentJwt
     ): ResponseEntity<EventRegisteredResult> {
+        legacyWriteGone()
         val tutorId = TutorId(jwt.tutorId())
         val cmd = mapper.toRegisterCommand(dto)
         return ResponseEntity.status(HttpStatus.CREATED).body(registerEvent.execute(cmd, tutorId))
@@ -46,6 +47,7 @@ class EventController(
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long, @AuthenticationPrincipal jwt: CurrentJwt) {
+        legacyWriteGone()
         val tutorId = TutorId(jwt.tutorId())
         deleteEvent.execute(DeleteEventCommand(EventId(id)), tutorId)
     }
@@ -56,12 +58,14 @@ class EventController(
         @Valid @RequestBody dto: EventDtoMapper.UpdateRequest,
         @AuthenticationPrincipal jwt: CurrentJwt
     ): EventDetailResult {
+        legacyWriteGone()
         val tutorId = TutorId(jwt.tutorId())
         return updateEvent.execute(mapper.toUpdateCommand(id, dto), tutorId)
     }
 
     @PutMapping("/{id}/toggle")
     fun done(@PathVariable id: Long, @AuthenticationPrincipal jwt: CurrentJwt) {
+        legacyWriteGone()
         val tutorId = TutorId(jwt.tutorId())
         toggleEvent.execute(ToggleEventCommand(EventId(id)), tutorId)
     }
@@ -90,4 +94,10 @@ class EventController(
         val tutorId = TutorId(jwt.tutorId())
         return getEvent.get(EventId(id), tutorId)
     }
+
+    private fun legacyWriteGone(): Nothing = throw LegacyCareWriteGoneException()
 }
+
+class LegacyCareWriteGoneException : RuntimeException(
+    "O fluxo antigo de eventos foi encerrado. Atualize o aplicativo para usar planos de cuidado e ocorrências.",
+)

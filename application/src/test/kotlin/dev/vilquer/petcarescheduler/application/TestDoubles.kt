@@ -1,6 +1,7 @@
 package dev.vilquer.petcarescheduler.application
 
 import dev.vilquer.petcarescheduler.core.domain.entity.*
+import dev.vilquer.petcarescheduler.core.domain.care.*
 import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
 import dev.vilquer.petcarescheduler.core.domain.session.RefreshToken
 import dev.vilquer.petcarescheduler.core.domain.media.MediaAsset
@@ -24,9 +25,14 @@ internal class FakeClock(var fixed: ZonedDateTime) : ClockPort {
 
 internal class FakeNotifier : NotificationPort {
     val notified = mutableListOf<Event>()
+    val notifiedCare = mutableListOf<CareReminderNotificationTarget>()
     var deliverySucceeds = true
     override fun sendEventReminder(target: EventReminderTarget): Boolean {
         notified.add(target.event)
+        return deliverySucceeds
+    }
+    override fun sendCareReminder(target: CareReminderNotificationTarget): Boolean {
+        notifiedCare += target
         return deliverySucceeds
     }
 }
@@ -243,6 +249,139 @@ internal class InMemoryEventRepo(
         }.map { EventReminderTarget(it, "test@example.com", null) }
 
     fun allEvents(): Collection<Event> = store.values
+}
+
+internal class InMemoryCareOccurrenceRepo(
+    initial: Collection<CareOccurrence> = emptyList(),
+) : CareOccurrenceRepositoryPort {
+    private val store = LinkedHashMap<CareOccurrenceId, CareOccurrence>().apply {
+        initial.forEach { put(it.id, it) }
+    }
+
+    override fun save(occurrence: CareOccurrence): CareOccurrence = occurrence.also { store[it.id] = it }
+
+    override fun saveAllIfAbsent(occurrences: List<CareOccurrence>): Int {
+        var inserted = 0
+        occurrences.forEach {
+            if (store.putIfAbsent(it.id, it) == null) inserted++
+        }
+        return inserted
+    }
+
+    override fun findByIdAndTutor(id: CareOccurrenceId, tutorId: TutorId): CareOccurrence? =
+        store[id]?.takeIf { it.tutorId == tutorId }
+
+    override fun findByIdAndTutorForUpdate(id: CareOccurrenceId, tutorId: TutorId): CareOccurrence? =
+        findByIdAndTutor(id, tutorId)
+
+    override fun search(
+        tutorId: TutorId,
+        filter: CareOccurrenceFilter,
+        page: Int,
+        size: Int,
+    ): List<CareOccurrence> = filtered(tutorId, filter).drop(page * size).take(size)
+
+    override fun count(tutorId: TutorId, filter: CareOccurrenceFilter): Long =
+        filtered(tutorId, filter).size.toLong()
+
+    override fun cancelScheduledFrom(planId: CarePlanId, from: java.time.LocalDateTime, updatedAt: Instant): Int =
+        cancelMatching(updatedAt) { it.planId == planId && !it.dueAt.isBefore(from) }
+
+    override fun cancelAllScheduled(planId: CarePlanId, updatedAt: Instant): Int =
+        cancelMatching(updatedAt) { it.planId == planId }
+
+    override fun findReminderCandidates(
+        from: java.time.LocalDateTime,
+        to: java.time.LocalDateTime,
+        limit: Int,
+    ): List<CareOccurrence> = store.values.asSequence()
+        .filter { it.status == CareOccurrenceStatus.SCHEDULED && !it.dueAt.isBefore(from) && !it.dueAt.isAfter(to) }
+        .sortedBy { it.dueAt }
+        .take(limit)
+        .toList()
+
+    override fun countByTutor(tutorId: TutorId): Long = store.values.count { it.tutorId == tutorId }.toLong()
+
+    override fun findUpcoming(
+        tutorId: TutorId,
+        from: java.time.LocalDateTime,
+        to: java.time.LocalDateTime,
+        limit: Int,
+    ): List<CareOccurrence> = store.values.asSequence()
+        .filter {
+            it.tutorId == tutorId && it.status == CareOccurrenceStatus.SCHEDULED &&
+                !it.dueAt.isBefore(from) && !it.dueAt.isAfter(to)
+        }
+        .sortedBy { it.dueAt }
+        .take(limit)
+        .toList()
+
+    fun all(): Collection<CareOccurrence> = store.values
+
+    private fun filtered(tutorId: TutorId, filter: CareOccurrenceFilter): List<CareOccurrence> =
+        store.values.filter {
+            it.tutorId == tutorId && !it.dueAt.isBefore(filter.from) && !it.dueAt.isAfter(filter.to) &&
+                (filter.petId == null || it.petId == filter.petId) &&
+                (filter.type == null || it.type == filter.type) &&
+                (filter.status == null || it.status == filter.status)
+        }.sortedBy { it.dueAt }
+
+    private fun cancelMatching(updatedAt: Instant, predicate: (CareOccurrence) -> Boolean): Int {
+        val matches = store.values.filter { it.status == CareOccurrenceStatus.SCHEDULED && predicate(it) }
+        matches.forEach { store[it.id] = it.cancel(updatedAt) }
+        return matches.size
+    }
+}
+
+internal class InMemoryCarePlanRepo(
+    initial: Collection<CarePlan> = emptyList(),
+) : CarePlanRepositoryPort {
+    private val store = LinkedHashMap<CarePlanId, CarePlan>().apply { initial.forEach { put(it.id, it) } }
+
+    override fun save(plan: CarePlan): CarePlan = plan.also { store[it.id] = it }
+    override fun findByIdAndTutor(id: CarePlanId, tutorId: TutorId): CarePlan? =
+        store[id]?.takeIf { it.tutorId == tutorId }
+    override fun findByIdAndTutorForUpdate(id: CarePlanId, tutorId: TutorId): CarePlan? =
+        findByIdAndTutor(id, tutorId)
+    override fun listByTutor(tutorId: TutorId, petId: PetId?, active: Boolean?, page: Int, size: Int): List<CarePlan> =
+        store.values.filter {
+            it.tutorId == tutorId && (petId == null || it.petId == petId) && (active == null || it.active == active)
+        }.sortedBy { it.startAt }.drop(page * size).take(size)
+    override fun countByTutor(tutorId: TutorId, petId: PetId?, active: Boolean?): Long =
+        store.values.count {
+            it.tutorId == tutorId && (petId == null || it.petId == petId) && (active == null || it.active == active)
+        }.toLong()
+    override fun findActive(page: Int, size: Int): List<CarePlan> =
+        store.values.filter { it.active }.sortedBy { it.updatedAt }.drop(page * size).take(size)
+    fun all(): Collection<CarePlan> = store.values
+}
+
+internal class InMemoryCareOccurrenceActionRepo : CareOccurrenceActionRepositoryPort {
+    private val store = LinkedHashMap<UUID, CareOccurrenceAction>()
+    override fun findByRequestId(requestId: UUID): CareOccurrenceAction? = store[requestId]
+    override fun save(action: CareOccurrenceAction): CareOccurrenceAction = action.also {
+        require(!store.containsKey(it.requestId)) { "duplicate_request_id" }
+        store[it.requestId] = it
+    }
+    fun all(): Collection<CareOccurrenceAction> = store.values
+}
+
+internal class FakeCareReminderOutbox : CareReminderOutboxPort {
+    private val store = LinkedHashMap<CareOccurrenceId, CareReminderOutboxMessage>()
+    private val sent = mutableSetOf<Long>()
+    private var sequence = 1L
+    override fun enqueueIfAbsent(message: CareReminderOutboxMessage) {
+        store.putIfAbsent(message.occurrenceId, message.copy(id = sequence++))
+    }
+    override fun findPendingDelivery(maxAttempts: Int, limit: Int): List<CareReminderOutboxMessage> =
+        store.values.filter { it.id !in sent && it.attempts < maxAttempts }.take(limit)
+    override fun markSent(id: Long) { sent += id }
+    override fun incrementAttempts(id: Long) {
+        val entry = store.entries.firstOrNull { it.value.id == id } ?: return
+        entry.setValue(entry.value.copy(attempts = entry.value.attempts + 1))
+    }
+    fun all(): Collection<CareReminderOutboxMessage> = store.values
+    fun isSent(id: Long?): Boolean = id != null && id in sent
 }
 
 /** Sem TTL real: sempre executa o loader — suficiente para testar orquestração. */

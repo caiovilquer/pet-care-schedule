@@ -1,16 +1,16 @@
 package dev.vilquer.petcarescheduler.application.adapter.input.scheduler
 
-import dev.vilquer.petcarescheduler.usecase.contract.drivingports.SendDailyRemindersUseCase
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CareScheduleMaintenanceUseCase
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 
-class EventReminderSchedulerTest {
-    private val useCase: SendDailyRemindersUseCase = mock(SendDailyRemindersUseCase::class.java)
-    private val scheduler = EventReminderScheduler(useCase)
+class CareScheduleSchedulerTest {
+    private val useCase: CareScheduleMaintenanceUseCase = mock(CareScheduleMaintenanceUseCase::class.java)
+    private val scheduler = CareScheduleScheduler(useCase)
 
     @Test
     fun `scheduler delegates to use case`() {
-        scheduler.sendDailyReminders()
-        verify(useCase).sendRemindersForToday()
+        scheduler.maintainSchedule()
+        verify(useCase).materializeAndEnqueueReminders()
     }
 }

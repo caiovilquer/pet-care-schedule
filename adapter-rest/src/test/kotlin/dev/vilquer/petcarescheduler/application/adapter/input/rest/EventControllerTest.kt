@@ -3,11 +3,9 @@ package dev.vilquer.petcarescheduler.application.adapter.input.rest
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.vilquer.petcarescheduler.application.mapper.EventDtoMapper
-import dev.vilquer.petcarescheduler.core.domain.entity.EventId
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
-import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
@@ -53,13 +51,14 @@ class EventControllerTest {
                     mapper
                 )
             )
+            .setControllerAdvice(ApiExceptionHandler())
             .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
             .setMessageConverters(MappingJackson2HttpMessageConverter(objectMapper))
             .build()
     }
 
     @Test
-    fun `register returns 201`() {
+    fun `legacy register returns 410 without creating a second source of truth`() {
         setJwtPrincipal()
         val req = EventDtoMapper.RegisterRequest(
             petId       = 1,
@@ -70,19 +69,15 @@ class EventControllerTest {
             frequency   = null
         )
         // Matchers (any/eq) sobre value classes explodem no unboxing; usar valores concretos
-        val expectedCmd = mapper.toRegisterCommand(req)
-        whenever(registerEvent.execute(expectedCmd, TutorId(1)))
-            .thenReturn(EventRegisteredResult(EventId(2)))
-
         mvc.perform(
             post("/api/v1/events")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req))
         )
-            .andExpect(status().isCreated)
-            .andExpect(jsonPath("$.eventId").value(2))
+            .andExpect(status().isGone)
+            .andExpect(jsonPath("$.status").value(410))
 
-        verify(registerEvent).execute(expectedCmd, TutorId(1))
+        verifyNoInteractions(registerEvent)
     }
 
     private fun setJwtPrincipal(tutorId: Long = 1L) {

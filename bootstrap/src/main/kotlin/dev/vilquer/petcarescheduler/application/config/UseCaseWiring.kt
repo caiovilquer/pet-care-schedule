@@ -1,6 +1,8 @@
 package dev.vilquer.petcarescheduler.application.config
 
 import dev.vilquer.petcarescheduler.application.service.AuthAppService
+import dev.vilquer.petcarescheduler.application.service.CareAppService
+import dev.vilquer.petcarescheduler.application.service.CareReminderRelayService
 import dev.vilquer.petcarescheduler.application.service.EventAppService
 import dev.vilquer.petcarescheduler.application.service.DashboardAppService
 import dev.vilquer.petcarescheduler.application.service.LocationAppService
@@ -13,6 +15,10 @@ import dev.vilquer.petcarescheduler.application.service.ReminderRelayService
 import dev.vilquer.petcarescheduler.application.service.SecurityMaintenanceService
 import dev.vilquer.petcarescheduler.application.service.TutorAppService
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceActionRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CarePlanRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.GeocodingPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
@@ -46,6 +52,25 @@ import java.time.Duration
 class UseCaseWiring {
 
     @Bean
+    fun careAppService(
+        plans: CarePlanRepositoryPort,
+        occurrences: CareOccurrenceRepositoryPort,
+        actions: CareOccurrenceActionRepositoryPort,
+        pets: PetRepositoryPort,
+        tutors: TutorRepositoryPort,
+        reminderOutbox: CareReminderOutboxPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+    ) = CareAppService(plans, occurrences, actions, pets, tutors, reminderOutbox, transaction, clock)
+
+    @Bean
+    fun careReminderRelayService(
+        outbox: CareReminderOutboxPort,
+        occurrences: CareOccurrenceRepositoryPort,
+        notifier: NotificationPort,
+    ) = CareReminderRelayService(outbox, occurrences, notifier)
+
+    @Bean
     fun authAppService(
         tutorRepo: TutorRepositoryPort,
         passwordHash: PasswordHashPort,
@@ -73,9 +98,9 @@ class UseCaseWiring {
     fun dashboardAppService(
         tutorRepo: TutorRepositoryPort,
         petRepo: PetRepositoryPort,
-        eventRepo: EventRepositoryPort,
+        occurrences: CareOccurrenceRepositoryPort,
         clock: ClockPort,
-    ) = DashboardAppService(tutorRepo, petRepo, eventRepo, clock)
+    ) = DashboardAppService(tutorRepo, petRepo, occurrences, clock)
 
     @Bean
     fun mediaAppService(

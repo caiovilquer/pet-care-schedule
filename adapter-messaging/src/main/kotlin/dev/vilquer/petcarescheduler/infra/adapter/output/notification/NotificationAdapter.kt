@@ -4,6 +4,7 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.notification
 import dev.vilquer.petcarescheduler.core.domain.entity.Event
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventReminderTarget
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderNotificationTarget
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
 import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import org.slf4j.LoggerFactory
@@ -60,6 +61,28 @@ class EmailNotificationAdapter(
         }
     }
 
+    override fun sendCareReminder(target: CareReminderNotificationTarget): Boolean {
+        val html = renderTemplate(target.type, target.title, target.dueAt, target.petName)
+        val payload = mapOf(
+            "from" to mapOf("email" to props.from, "name" to props.fromName),
+            "to" to listOf(mapOf("email" to target.tutorEmail)),
+            "subject" to "Lembrete do RotinaPet: ${target.type.pt()}",
+            "text" to stripHtml(html),
+            "html" to html,
+        )
+        return try {
+            val status = http.post().uri("/email").body(payload).retrieve()
+                .onStatus({ it.value() >= 400 }) { _, response ->
+                    val body = response.body.bufferedReader().use { it.readText() }
+                    throw IllegalStateException("Mail Send error ${response.statusCode.value()}: $body")
+                }.toBodilessEntity().statusCode
+            status.is2xxSuccessful || status == HttpStatus.ACCEPTED
+        } catch (ex: Exception) {
+            log.error("Failed to send care reminder for occurrence {}", target.occurrenceId.value, ex)
+            false
+        }
+    }
+
     // ===== apresentação =====
 
     private val PTBR: Locale = Locale.of("pt", "BR")
@@ -76,12 +99,22 @@ class EmailNotificationAdapter(
     }
 
     private fun renderTemplate(event: Event, petNameRaw: String?, zoneId: ZoneId = DEFAULTZONE): String {
-        val tipo = event.type.pt()
-        val dataStr = event.dateStart.atZone(zoneId).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
+        return renderTemplate(event.type, event.description, event.dateStart, petNameRaw, zoneId)
+    }
+
+    private fun renderTemplate(
+        type: EventType,
+        descriptionRaw: String?,
+        dateStart: java.time.LocalDateTime,
+        petNameRaw: String?,
+        zoneId: ZoneId = DEFAULTZONE,
+    ): String {
+        val tipo = type.pt()
+        val dataStr = dateStart.atZone(zoneId).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
 
         val petName = petNameRaw?.let { escapeHtml(it) } ?: "Pet"
-        val descricao = event.description?.takeIf { it.isNotBlank() }?.let { escapeHtml(it) } ?: "Sem descrição"
-        val ctaUrl = "https://rotinapet.vilquer.dev/events"
+        val descricao = descriptionRaw?.takeIf { it.isNotBlank() }?.let { escapeHtml(it) } ?: "Sem descrição"
+        val ctaUrl = "https://rotinapet.vilquer.dev/today"
 
         return """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -119,14 +152,14 @@ class EmailNotificationAdapter(
                 <tr>
                   <td align="left" style="border-radius: 6px;" bgcolor="#0895c4">
                     <a href="$ctaUrl" target="_blank" rel="noopener" style="display: inline-block; padding: 10px 16px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">
-                      Ver evento
+                      Ver cuidado
                     </a>
                   </td>
                 </tr>
               </table>
 
               <p style="margin: 16px 0 0 0; font-family: Arial, Helvetica, sans-serif; color: #777777; font-size: 12px; line-height: 18px;">
-                Você recebeu este lembrete porque cadastrou um evento no RotinaPet.
+                Você recebeu este lembrete porque cadastrou um plano de cuidado no RotinaPet.
               </p>
 
             </td>
@@ -154,7 +187,6 @@ class EmailNotificationAdapter(
             ZoneId.of("America/Sao_Paulo")
         }
 }
-
 
 
 

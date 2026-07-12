@@ -16,15 +16,21 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
   - Fotos de pets e avatar do tutor em object storage privado, com upload
     direto, validação de conteúdo e limpeza automática de órfãos.
 
-- **Agendamento de eventos**
-  - Registro, atualização, listagem e exclusão de eventos por pet ou por tutor.
+- **Planos de cuidado e ocorrências**
+  - Um plano guarda regra, recorrência, orientações e política de lembrete;
+    cada execução concreta é uma ocorrência independente e auditável.
   - Tipos de evento: `VACCINE`, `MEDICINE`, `DIARY`, `BREED`, `SERVICE`.
-  - Suporte a recorrência (diária, semanal, mensal, anual): concluir um evento
-    recorrente (`PUT /events/{id}/toggle`) gera automaticamente a próxima
-    ocorrência, enquanto houver repetições ou a data final não tiver passado.
+  - Ocorrências dos próximos 90 dias são materializadas de forma idempotente,
+    sem depender da conclusão da anterior. Edições preservam o histórico e
+    substituem somente execuções futuras ainda pendentes.
+  - Conclusão com lock pessimista, chave de idempotência, trilha de autoria e
+    proteção contra registro em dobro. O próprio autor pode desfazer por até
+    10 minutos. Escritas no endpoint legado `/events` retornam `410 Gone` para
+    impedir duas fontes de verdade durante a transição.
 
 - **Lembretes automáticos e confiáveis**
-  - Um scheduler diário detecta os eventos previstos para o dia e apenas
+  - Um scheduler a cada 5 minutos estende o horizonte e detecta ocorrências no
+    momento configurado, apenas
     enfileira o lembrete (outbox); um segundo scheduler, a cada 5 minutos,
     entrega de fato, com retry automático em caso de falha da API de e‑mail.
     Um lembrete nunca é enviado duas vezes (idempotência por evento) nem se
@@ -73,6 +79,8 @@ services não carregam `@Service`/`@Value`/`@ConfigurationProperties`.
 
 A configuração segura do bucket e do CORS está em
 [`docs/object-storage.md`](docs/object-storage.md).
+O desenho, a migração e a estratégia operacional do Ciclo 2 estão em
+[`docs/cycle-2-care-plans.md`](docs/cycle-2-care-plans.md).
 
 ## Requisitos
 

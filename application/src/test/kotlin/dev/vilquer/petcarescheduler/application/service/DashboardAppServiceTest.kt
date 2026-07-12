@@ -1,14 +1,16 @@
 package dev.vilquer.petcarescheduler.application.service
 
 import dev.vilquer.petcarescheduler.application.FakeClock
-import dev.vilquer.petcarescheduler.application.InMemoryEventRepo
+import dev.vilquer.petcarescheduler.application.InMemoryCareOccurrenceRepo
 import dev.vilquer.petcarescheduler.application.InMemoryPetRepo
 import dev.vilquer.petcarescheduler.application.InMemoryTutorRepo
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
-import dev.vilquer.petcarescheduler.core.domain.entity.Event
+import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrence
+import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceId
+import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceStatus
+import dev.vilquer.petcarescheduler.core.domain.care.CarePlanId
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
-import dev.vilquer.petcarescheduler.core.domain.entity.Status
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.util.UUID
 
 class DashboardAppServiceTest {
     private val tutorId = TutorId(1)
@@ -43,39 +46,33 @@ class DashboardAppServiceTest {
             Pet(name = "Luna", species = "cat", breed = null, birthdate = null, tutorId = tutorId),
         )
         pets.save(Pet(name = "Tobias", species = "dog", breed = null, birthdate = null, tutorId = tutorId))
-        val events = InMemoryEventRepo(countsByTutor = mapOf(tutorId to 3L))
-        events.save(
-            Event(
-                type = EventType.VACCINE,
-                description = "Reforço",
-                dateStart = now.plusDays(2),
-                recurrence = null,
-                status = Status.PENDING,
+        val createdAt = clock.now().toInstant()
+        fun occurrence(type: EventType, title: String, dueAt: LocalDateTime, status: CareOccurrenceStatus) =
+            CareOccurrence(
+                id = CareOccurrenceId(UUID.randomUUID()),
+                planId = CarePlanId(UUID.randomUUID()),
+                scheduleRevision = 0,
+                tutorId = tutorId,
                 petId = luna.id!!,
-            ),
-        )
-        events.save(
-            Event(
-                type = EventType.SERVICE,
-                description = "Banho",
-                dateStart = now.plusDays(8),
-                recurrence = null,
-                status = Status.PENDING,
-                petId = luna.id!!,
-            ),
-        )
-        events.save(
-            Event(
-                type = EventType.MEDICINE,
-                description = "Dose",
-                dateStart = now.plusDays(1),
-                recurrence = null,
-                status = Status.DONE,
-                petId = luna.id!!,
+                sequence = 0,
+                type = type,
+                title = title,
+                dueAt = dueAt,
+                status = status,
+                completedAt = if (status == CareOccurrenceStatus.COMPLETED) createdAt else null,
+                completedByTutorId = if (status == CareOccurrenceStatus.COMPLETED) tutorId else null,
+                createdAt = createdAt,
+                updatedAt = createdAt,
+            )
+        val occurrences = InMemoryCareOccurrenceRepo(
+            listOf(
+                occurrence(EventType.VACCINE, "Reforço", now.plusDays(2), CareOccurrenceStatus.SCHEDULED),
+                occurrence(EventType.SERVICE, "Banho", now.plusDays(8), CareOccurrenceStatus.SCHEDULED),
+                occurrence(EventType.MEDICINE, "Dose", now.plusDays(1), CareOccurrenceStatus.COMPLETED),
             ),
         )
 
-        val result = DashboardAppService(tutors, pets, events, clock).getOverview(tutorId)
+        val result = DashboardAppService(tutors, pets, occurrences, clock).getOverview(tutorId)
 
         assertEquals("Ana", result.firstName)
         assertEquals("ana@example.com", result.email)
@@ -83,7 +80,7 @@ class DashboardAppServiceTest {
         assertEquals(3, result.totalEvents)
         assertEquals(listOf("Luna", "Tobias"), result.pets.map { it.name })
         assertEquals(1, result.upcomingEvents.size)
-        assertEquals("Reforço", result.upcomingEvents.single().description)
+        assertEquals("Reforço", result.upcomingEvents.single().title)
     }
 
     @Test
@@ -91,7 +88,7 @@ class DashboardAppServiceTest {
         val service = DashboardAppService(
             InMemoryTutorRepo(),
             InMemoryPetRepo(),
-            InMemoryEventRepo(),
+            InMemoryCareOccurrenceRepo(),
             clock,
         )
 

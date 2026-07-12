@@ -5,6 +5,7 @@ import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.GetDashboardOverviewUseCase
@@ -13,7 +14,7 @@ import dev.vilquer.petcarescheduler.usecase.result.DashboardOverviewResult
 class DashboardAppService(
     private val tutors: TutorRepositoryPort,
     private val pets: PetRepositoryPort,
-    private val events: EventRepositoryPort,
+    private val occurrences: CareOccurrenceRepositoryPort,
     private val clock: ClockPort,
 ) : GetDashboardOverviewUseCase {
 
@@ -30,14 +31,25 @@ class DashboardAppService(
             avatar = tutor.avatar,
             avatarAssetId = tutor.avatarAssetId,
             totalPets = pets.countByTutor(tutorId),
-            totalEvents = events.countByTutor(tutorId),
+            totalEvents = occurrences.countByTutor(tutorId),
             pets = petItems.map { it.toSummary() },
-            upcomingEvents = events.findUpcomingByTutor(
-                tutorId = tutorId,
-                start = now,
-                end = now.plusDays(7),
-                limit = MAX_UPCOMING,
-            ).map { it.toSummary() },
+            upcomingEvents = occurrences.findUpcoming(tutorId, now, now.plusDays(7), MAX_UPCOMING).map {
+                dev.vilquer.petcarescheduler.usecase.result.CareOccurrenceResult(
+                    id = it.id.value,
+                    version = it.version,
+                    planId = it.planId.value,
+                    petId = it.petId.value,
+                    type = it.type,
+                    title = it.title,
+                    instructions = it.instructions,
+                    dueAt = it.dueAt,
+                    status = it.status,
+                    completedAt = it.completedAt,
+                    completedByTutorId = it.completedByTutorId?.value,
+                    completionNote = it.completionNote,
+                    canUndoUntil = it.completedAt?.plus(CareAppService.UNDO_WINDOW),
+                )
+            },
         )
     }
 
