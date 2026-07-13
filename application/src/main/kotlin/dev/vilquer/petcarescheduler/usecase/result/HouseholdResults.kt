@@ -34,6 +34,13 @@ data class HouseholdInvitationResult(
     val createdAt: Instant,
 )
 
+data class HouseholdInvitationPreviewResult(
+    val householdName: String,
+    val inviterName: String,
+    val role: HouseholdRole,
+    val expiresAt: Instant,
+)
+
 data class HouseholdActivityResult(
     val id: UUID,
     val type: HouseholdActivityType,

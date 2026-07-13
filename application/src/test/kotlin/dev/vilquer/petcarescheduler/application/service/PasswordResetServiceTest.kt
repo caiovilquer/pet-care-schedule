@@ -37,11 +37,21 @@ class PasswordResetServiceTest {
     fun `requestReset creates a token and sends the link`() {
         val tutor = savedTutor()
 
-        service.requestReset(tutor.email)
+        service.requestReset(tutor.email, "/invite?token=household-token")
 
         assertEquals(1, tokens.allTokens().size)
         assertEquals(1, notifier.sent.size)
         assertEquals(tutor.email, notifier.sent.first().to)
+        assertEquals("/invite?token=household-token", notifier.sent.first().returnUrl)
+    }
+
+    @Test
+    fun `requestReset rejects an external return URL`() {
+        val tutor = savedTutor()
+
+        service.requestReset(tutor.email, "//example.com/invite")
+
+        assertEquals(null, notifier.sent.single().returnUrl)
     }
 
     @Test

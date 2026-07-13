@@ -76,7 +76,6 @@ data class HouseholdInvitation(
 ) {
     init {
         require(email.isNotBlank() && email.length <= 255) { "household_invitation_email_invalid" }
-        require(role != HouseholdRole.OWNER) { "household_invitation_owner_not_allowed" }
         require(tokenHash.matches(Regex("^[a-f0-9]{64}$"))) { "household_invitation_hash_invalid" }
         require(activeKey == null || activeKey.length <= 400) { "household_invitation_active_key_invalid" }
     }

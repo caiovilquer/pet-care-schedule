@@ -26,7 +26,7 @@ class PasswordResetService(
     private val ttlMinutes: Long = 30,
 ) : PasswordResetUseCase {
 
-    override fun requestReset(email: Email) {
+    override fun requestReset(email: Email, returnUrl: String?) {
         val tutor = tutors.findByEmail(email) ?: return // resposta neutra
         val now = Instant.now(clock)
         val userId = tutor.id ?: throw IllegalStateException("User not found")
@@ -49,7 +49,7 @@ class PasswordResetService(
         }
 
         // Fora da transação: chamada de rede não deve segurar conexão de banco aberta.
-        notifier.sendResetLink(tutor.email, tokenPlain, ttl)
+        notifier.sendResetLink(tutor.email, tokenPlain, ttl, safeReturnUrl(returnUrl))
     }
 
     override fun validate(token: String): Boolean {
@@ -80,6 +80,9 @@ class PasswordResetService(
         val bytes = ByteArray(32)
         SecureRandom().nextBytes(bytes)
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+    }
+    private fun safeReturnUrl(value: String?): String? = value?.trim()?.takeIf {
+        it.length <= 1_000 && it.startsWith('/') && !it.startsWith("//")
     }
     private fun sha256Hex(s: String): String {
         val dig = MessageDigest.getInstance("SHA-256").digest(s.toByteArray(StandardCharsets.UTF_8))

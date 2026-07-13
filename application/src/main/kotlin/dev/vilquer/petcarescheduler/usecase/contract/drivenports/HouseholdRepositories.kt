@@ -46,9 +46,15 @@ interface HouseholdMemberRepositoryPort {
 
 interface HouseholdInvitationRepositoryPort {
     fun save(invitation: HouseholdInvitation): HouseholdInvitation
+    fun findActiveByHash(hash: String): HouseholdInvitation?
     fun findActiveByHashForUpdate(hash: String): HouseholdInvitation?
     fun findActiveByKeyForUpdate(activeKey: String): HouseholdInvitation?
     fun findByIdForUpdate(id: HouseholdInvitationId, householdId: HouseholdId): HouseholdInvitation?
+    fun listActiveByInviterAndRoleForUpdate(
+        householdId: HouseholdId,
+        inviterTutorId: TutorId,
+        role: HouseholdRole,
+    ): List<HouseholdInvitation>
     fun listActive(householdId: HouseholdId, now: Instant): List<HouseholdInvitation>
 }
 
@@ -63,5 +69,12 @@ interface HouseholdHandoffRepositoryPort {
 }
 
 fun interface HouseholdInvitationNotifierPort {
-    fun sendInvitation(email: String, householdName: String, inviterName: String, token: String, expiresAt: Instant)
+    fun sendInvitation(
+        email: String,
+        householdName: String,
+        inviterName: String,
+        role: HouseholdRole,
+        token: String,
+        expiresAt: Instant,
+    )
 }

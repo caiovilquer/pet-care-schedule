@@ -1,5 +1,6 @@
 package dev.vilquer.petcarescheduler.infra.adapter.output.mail
 
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdRole
 import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdInvitationNotifierPort
 import org.slf4j.LoggerFactory
@@ -19,23 +20,86 @@ class HouseholdInvitationMailAdapter(
 ) : HouseholdInvitationNotifierPort {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun sendInvitation(email: String, householdName: String, inviterName: String, token: String, expiresAt: Instant) {
+    override fun sendInvitation(
+        email: String,
+        householdName: String,
+        inviterName: String,
+        role: HouseholdRole,
+        token: String,
+        expiresAt: Instant,
+    ) {
         val link = "$frontBase/invite?token=${URLEncoder.encode(token, StandardCharsets.UTF_8)}"
-        val safeHousehold = escape(householdName)
-        val safeInviter = escape(inviterName)
-        val html = """
-            <html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#24332b">
-              <h2>Você foi convidado para cuidar junto</h2>
-              <p><strong>$safeInviter</strong> convidou você para a família <strong>$safeHousehold</strong> no RotinaPet.</p>
-              <p><a href="$link" style="display:inline-block;background:#146c43;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none">Aceitar convite</a></p>
-              <p style="color:#66756d;font-size:13px">O convite é pessoal, só funciona para este e-mail e expira em 7 dias.</p>
-            </body></html>
+        val safeHousehold = RotinaPetEmail.escape(householdName)
+        val safeInviter = RotinaPetEmail.escape(inviterName)
+        val roleLabel = when (role) {
+            HouseholdRole.OWNER -> "proprietário"
+            HouseholdRole.CAREGIVER -> "cuidador"
+            HouseholdRole.VIEWER -> "visualizador"
+        }
+        val roleDescription = when (role) {
+            HouseholdRole.OWNER -> "acesso administrativo completo"
+            HouseholdRole.CAREGIVER -> "pode registrar e confirmar cuidados"
+            HouseholdRole.VIEWER -> "pode acompanhar a rotina dos pets"
+        }
+        val content = buildString {
+            append(RotinaPetEmail.badge("Convite de família", RotinaPetEmail.GREEN, "#E3F0E7"))
+            append(RotinaPetEmail.title("Você foi convidado para cuidar junto"))
+            append(
+                RotinaPetEmail.paragraph(
+                    "<strong>$safeInviter</strong> convidou você para participar da família " +
+                        "<strong>$safeHousehold</strong> no RotinaPet e dividir o dia a dia de cuidado com os pets."
+                )
+            )
+            append(
+                RotinaPetEmail.detailCard(
+                    listOf(
+                        "Família" to safeHousehold,
+                        "Convidado por" to safeInviter,
+                        "Seu papel" to "${roleLabel.replaceFirstChar { it.titlecase() }} — $roleDescription",
+                    )
+                )
+            )
+            if (role == HouseholdRole.OWNER) {
+                append(
+                    RotinaPetEmail.notice(
+                        "<strong>Atenção:</strong> como proprietário, você terá acesso administrativo completo a pets, planos, finanças e membros desta família.",
+                        RotinaPetEmail.WARNING,
+                        RotinaPetEmail.WARNING_BG,
+                    )
+                )
+            }
+            append(RotinaPetEmail.ctaButton("Aceitar convite", link))
+            append(RotinaPetEmail.fallbackLink(link))
+            append(RotinaPetEmail.divider())
+            append(
+                RotinaPetEmail.mutedNote(
+                    "O convite é pessoal, só funciona para este e-mail e expira em <strong>7 dias</strong>. " +
+                        "Se você não conhece $safeInviter, pode ignorar esta mensagem."
+                )
+            )
+        }
+        val html = RotinaPetEmail.render(
+            docTitle = "Convite para a família $safeHousehold",
+            preheader = "$safeInviter convidou você para a família $safeHousehold — seu papel será $roleLabel.",
+            contentHtml = content,
+            footerReason = "Você recebeu este e-mail porque alguém convidou este endereço para uma família no RotinaPet.",
+            baseUrl = frontBase,
+        )
+        val text = """
+            Convite de família — RotinaPet
+
+            $inviterName convidou você para a família "$householdName" no RotinaPet.
+            Seu papel será: $roleLabel ($roleDescription).
+
+            Aceite o convite em: $link
+
+            O convite é pessoal, só funciona para este e-mail e expira em 7 dias.
         """.trimIndent()
         val payload = mapOf(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
             "to" to listOf(mapOf("email" to email)),
             "subject" to "$inviterName convidou você para cuidar junto",
-            "text" to "$inviterName convidou você para a família $householdName no RotinaPet. Aceite em: $link",
+            "text" to text,
             "html" to html,
         )
         try {
@@ -48,6 +112,4 @@ class HouseholdInvitationMailAdapter(
             throw ex
         }
     }
-
-    private fun escape(value: String) = value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 }

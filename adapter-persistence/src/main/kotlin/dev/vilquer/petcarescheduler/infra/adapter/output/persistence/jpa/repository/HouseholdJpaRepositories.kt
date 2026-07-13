@@ -62,6 +62,8 @@ interface HouseholdMemberJpaRepository : JpaRepository<HouseholdMemberJpa, UUID>
 }
 
 interface HouseholdInvitationJpaRepository : JpaRepository<HouseholdInvitationJpa, UUID> {
+    fun findByTokenHashAndActiveKeyIsNotNull(tokenHash: String): HouseholdInvitationJpa?
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from HouseholdInvitationJpa i where i.tokenHash = :hash and i.activeKey is not null")
     fun findActiveByHashForUpdate(@Param("hash") hash: String): HouseholdInvitationJpa?
@@ -73,6 +75,14 @@ interface HouseholdInvitationJpaRepository : JpaRepository<HouseholdInvitationJp
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from HouseholdInvitationJpa i where i.id = :id and i.householdId = :householdId")
     fun findOwnedForUpdate(@Param("id") id: UUID, @Param("householdId") householdId: UUID): HouseholdInvitationJpa?
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from HouseholdInvitationJpa i where i.householdId = :householdId and i.invitedByTutorId = :inviterTutorId and i.role = :role and i.activeKey is not null")
+    fun listActiveByInviterAndRoleForUpdate(
+        @Param("householdId") householdId: UUID,
+        @Param("inviterTutorId") inviterTutorId: Long,
+        @Param("role") role: HouseholdRole,
+    ): List<HouseholdInvitationJpa>
 
     @Query("select i from HouseholdInvitationJpa i where i.householdId = :householdId and i.activeKey is not null and i.expiresAt > :now order by i.createdAt desc")
     fun listActive(@Param("householdId") householdId: UUID, @Param("now") now: Instant): List<HouseholdInvitationJpa>

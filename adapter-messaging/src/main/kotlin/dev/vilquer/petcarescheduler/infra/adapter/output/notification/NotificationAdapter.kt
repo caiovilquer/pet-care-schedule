@@ -7,6 +7,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventReminderTa
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderNotificationTarget
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareEscalationNotificationTarget
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
+import dev.vilquer.petcarescheduler.infra.adapter.output.mail.RotinaPetEmail
 import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -39,7 +40,7 @@ class EmailNotificationAdapter(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
             "to" to listOf(mapOf("email" to target.tutorEmail)),
             "subject" to subject,
-            "text" to stripHtml(html),
+            "text" to reminderText(event.type, event.description, event.dateStart, target.petName),
             "html" to html
         )
 
@@ -69,7 +70,7 @@ class EmailNotificationAdapter(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
             "to" to listOf(mapOf("email" to target.tutorEmail)),
             "subject" to "Lembrete do RotinaPet: ${target.type.pt()}",
-            "text" to stripHtml(html),
+            "text" to reminderText(target.type, target.title, target.dueAt, target.petName),
             "html" to html,
         )
         return try {
@@ -87,19 +88,57 @@ class EmailNotificationAdapter(
 
     override fun sendCareEscalation(target: CareEscalationNotificationTarget): Boolean {
         val whenText = target.dueAt.atZone(DEFAULTZONE).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
-        val html = """
-            <html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#26342d">
-              <h2 style="color:#9b2c2c">Cuidado crítico ainda não confirmado</h2>
-              <p>O cuidado <strong>${escapeHtml(target.careTitle)}</strong> de <strong>${escapeHtml(target.petName)}</strong>, previsto para $whenText, continua pendente.</p>
-              <p><a href="${frontendBaseUrl.trimEnd('/')}/today" style="display:inline-block;background:#9b2c2c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">Ver cuidado agora</a></p>
-              <p style="color:#66756d;font-size:12px">Este alerta foi configurado por um proprietário da família no RotinaPet.</p>
-            </body></html>
+        val safeTitle = RotinaPetEmail.escape(target.careTitle)
+        val safePet = RotinaPetEmail.escape(target.petName)
+        val ctaUrl = "${frontendBaseUrl.trimEnd('/')}/today"
+        val content = buildString {
+            append(RotinaPetEmail.badge("Cuidado crítico", RotinaPetEmail.ERROR, RotinaPetEmail.ERROR_BG))
+            append(RotinaPetEmail.title("Um cuidado crítico ainda não foi confirmado"))
+            append(
+                RotinaPetEmail.paragraph(
+                    "O cuidado <strong>$safeTitle</strong> de <strong>$safePet</strong> continua pendente e foi marcado como crítico pela família."
+                )
+            )
+            append(
+                RotinaPetEmail.detailCard(
+                    listOf(
+                        "Pet" to safePet,
+                        "Cuidado" to safeTitle,
+                        "Previsto para" to whenText,
+                    )
+                )
+            )
+            append(
+                RotinaPetEmail.notice(
+                    "Confirme o cuidado assim que possível — ou combine com a família quem vai assumir.",
+                    RotinaPetEmail.ERROR,
+                    RotinaPetEmail.ERROR_BG,
+                )
+            )
+            append(RotinaPetEmail.ctaButton("Ver cuidado agora", ctaUrl, RotinaPetEmail.ERROR))
+            append(RotinaPetEmail.divider())
+            append(RotinaPetEmail.mutedNote("Este alerta foi configurado por um proprietário da família no RotinaPet."))
+        }
+        val html = RotinaPetEmail.render(
+            docTitle = "Cuidado crítico pendente",
+            preheader = "$safeTitle de $safePet, previsto para $whenText, continua pendente.",
+            contentHtml = content,
+            footerReason = "Você recebeu este alerta porque faz parte de uma família com escalonamento de cuidados críticos ativado no RotinaPet.",
+            baseUrl = frontendBaseUrl,
+        )
+        val text = """
+            Cuidado crítico pendente — RotinaPet
+
+            O cuidado "${target.careTitle}" de ${target.petName}, previsto para $whenText, continua pendente.
+            Confirme em: $ctaUrl
+
+            Este alerta foi configurado por um proprietário da família no RotinaPet.
         """.trimIndent()
         val payload = mapOf(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
             "to" to listOf(mapOf("email" to target.recipientEmail)),
             "subject" to "Atenção: cuidado crítico de ${target.petName} está pendente",
-            "text" to stripHtml(html), "html" to html,
+            "text" to text, "html" to html,
         )
         return try {
             http.post().uri("/email").body(payload).retrieve()
@@ -127,6 +166,16 @@ class EmailNotificationAdapter(
         else -> "Evento"
     }
 
+    /** Cores de badge por tipo de evento — espelham os tokens --q-ev-* do frontend. */
+    private fun EventType?.badgeColors(): Pair<String, String> = when (this) {
+        EventType.VACCINE -> "#2F7A56" to "#E3F0E7"
+        EventType.MEDICINE -> "#B34A38" to "#F7E5E0"
+        EventType.DIARY -> "#3E7CA6" to "#E3EDF5"
+        EventType.BREED -> "#B04A72" to "#F6E4EC"
+        EventType.SERVICE -> "#8F6A12" to "#F6ECD2"
+        else -> RotinaPetEmail.GREEN to "#E3F0E7"
+    }
+
     private fun renderTemplate(event: Event, petNameRaw: String?, zoneId: ZoneId = DEFAULTZONE): String {
         return renderTemplate(event.type, event.description, event.dateStart, petNameRaw, zoneId)
     }
@@ -141,73 +190,59 @@ class EmailNotificationAdapter(
         val tipo = type.pt()
         val dataStr = dateStart.atZone(zoneId).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
 
-        val petName = petNameRaw?.let { escapeHtml(it) } ?: "Pet"
-        val descricao = descriptionRaw?.takeIf { it.isNotBlank() }?.let { escapeHtml(it) } ?: "Sem descrição"
+        val petName = petNameRaw?.let { RotinaPetEmail.escape(it) } ?: "Pet"
+        val descricao = descriptionRaw?.takeIf { it.isNotBlank() }?.let { RotinaPetEmail.escape(it) }
         val ctaUrl = "${frontendBaseUrl.trimEnd('/')}/today"
+        val (badgeFg, badgeBg) = type.badgeColors()
 
-        return """
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lembrete RotinaPet</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f0f0f0;">
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-    <tr>
-      <td style="padding: 20px 0;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" width="560" style="border-collapse: collapse; border: 1px solid #e6e6e6; border-radius: 10px; background-color: #ffffff;">
-          <tr>
-            <td style="padding: 16px; font-family: Arial, Helvetica, sans-serif;">
-              
-              <h1 style="font-size: 18px; margin: 0 0 8px 0; font-family: Arial, Helvetica, sans-serif; font-weight: bold; color: #333333;">
-                Lembrete: $tipo
-              </h1>
-
-              <p style="margin: 0 0 12px 0; font-family: Arial, Helvetica, sans-serif; color: #555555; font-size: 16px;">
-                <strong>Pet:</strong> <span style="font-weight: 600;">$petName</span>
-              </p>
-
-              <p style="margin: 0 0 12px 0; font-family: Arial, Helvetica, sans-serif; color: #555555; font-size: 16px;">
-                <strong>Quando:</strong> $dataStr
-              </p>
-
-              <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; color: #333333; font-size: 16px; line-height: 24px;">
-                <strong>Detalhes:</strong> $descricao
-              </p>
-              
-              <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 16px 0;">
-                <tr>
-                  <td align="left" style="border-radius: 6px;" bgcolor="#0895c4">
-                    <a href="$ctaUrl" target="_blank" rel="noopener" style="display: inline-block; padding: 10px 16px; font-family: Arial, Helvetica, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 6px;">
-                      Ver cuidado
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin: 16px 0 0 0; font-family: Arial, Helvetica, sans-serif; color: #777777; font-size: 12px; line-height: 18px;">
-                Você recebeu este lembrete porque cadastrou um plano de cuidado no RotinaPet.
-              </p>
-
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-        """.trimIndent()
+        val content = buildString {
+            append(RotinaPetEmail.badge(tipo, badgeFg, badgeBg))
+            append(RotinaPetEmail.title("Hora de cuidar de $petName"))
+            append(
+                RotinaPetEmail.paragraph(
+                    "Passando para lembrar de um cuidado que faz parte da rotina de <strong>$petName</strong>:"
+                )
+            )
+            append(
+                RotinaPetEmail.detailCard(
+                    buildList {
+                        add("Pet" to petName)
+                        add("Quando" to dataStr)
+                        descricao?.let { add("Detalhes" to it) }
+                    }
+                )
+            )
+            append(RotinaPetEmail.ctaButton("Ver na agenda de hoje", ctaUrl))
+            append(RotinaPetEmail.divider())
+            append(RotinaPetEmail.mutedNote("Depois de concluir, confirme o cuidado no app para manter o histórico de $petName em dia."))
+        }
+        return RotinaPetEmail.render(
+            docTitle = "Lembrete: $tipo",
+            preheader = "$tipo de $petName — $dataStr.",
+            contentHtml = content,
+            footerReason = "Você recebeu este lembrete porque cadastrou um plano de cuidado no RotinaPet.",
+            baseUrl = frontendBaseUrl,
+        )
     }
 
-    // ===== util =====
+    private fun reminderText(
+        type: EventType,
+        description: String?,
+        dateStart: java.time.LocalDateTime,
+        petName: String?,
+        zoneId: ZoneId = DEFAULTZONE,
+    ): String {
+        val dataStr = dateStart.atZone(zoneId).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
+        val detalhes = description?.takeIf { it.isNotBlank() }?.let { "\nDetalhes: $it" }.orEmpty()
+        return """
+            Lembrete do RotinaPet: ${type.pt()}
 
-    private fun stripHtml(html: String) =
-        html.replace(Regex("<[^>]*>"), " ").replace("&nbsp;", " ").replace(Regex("\\s+"), " ").trim()
+            Pet: ${petName ?: "Pet"}
+            Quando: $dataStr$detalhes
 
-    private fun escapeHtml(s: String): String = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            Veja na agenda: ${frontendBaseUrl.trimEnd('/')}/today
+        """.trimIndent()
+    }
 
     private fun parseZoneId(value: String): ZoneId =
         try {

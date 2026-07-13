@@ -43,6 +43,8 @@ springdoc:
       scopes: openid,profile,email
 
 app:
+  seed:
+    enabled: true
   mail:
     from: ${MAIL_FROM}
   google:

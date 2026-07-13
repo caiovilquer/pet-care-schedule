@@ -26,14 +26,20 @@ preserva as referências de autoria existentes.
 
 As permissões vivem no core e são verificadas novamente pelos casos de uso. A
 interface apenas reflete a autorização para evitar ações frustradas. O último
-proprietário não pode ser removido nem rebaixado, e convites nunca concedem
-`OWNER` diretamente.
+proprietário não pode ser removido nem rebaixado. As alterações de papel e
+remoções são serializadas por família para preservar essa regra mesmo sob
+concorrência. Um proprietário pode convidar outra pessoa diretamente como
+`OWNER`, criando uma copropriedade com o mesmo acesso administrativo.
 
 ## Convites seguros
 
 - token aleatório de 256 bits, enviado uma única vez por e-mail;
 - apenas SHA-256 do token é persistido;
 - convite vinculado ao e-mail normalizado do destinatário;
+- o papel concedido é informado no e-mail; convites `OWNER` deixam explícito o
+  acesso administrativo completo;
+- um convite `OWNER` só pode ser aceito enquanto quem o enviou continuar como
+  proprietário da mesma família;
 - validade de sete dias, uso único e revogação explícita;
 - somente um convite ativo por família e e-mail; uma nova tentativa revoga o
   anterior;
@@ -85,6 +91,7 @@ mensagem nem envia o mesmo alerta duas vezes.
 - `PUT /api/v1/households/{id}/default`
 - `PATCH /api/v1/households/{id}`
 - `POST|DELETE /api/v1/households/current/invitations[/{id}]`
+- `POST /api/v1/households/invitations/preview`
 - `POST /api/v1/households/invitations/accept`
 - `PATCH|DELETE /api/v1/households/current/members/{id}`
 - `POST /api/v1/households/current/handoffs`

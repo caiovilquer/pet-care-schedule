@@ -221,10 +221,10 @@ internal class InMemoryRefreshTokenPort : RefreshTokenPort {
 }
 
 internal class FakePasswordResetNotifier : PasswordResetNotifierPort {
-    data class SentLink(val to: Email, val tokenPlain: String, val ttl: Duration)
+    data class SentLink(val to: Email, val tokenPlain: String, val ttl: Duration, val returnUrl: String?)
     val sent = mutableListOf<SentLink>()
-    override fun sendResetLink(to: Email, tokenPlain: String, ttl: Duration) {
-        sent.add(SentLink(to, tokenPlain, ttl))
+    override fun sendResetLink(to: Email, tokenPlain: String, ttl: Duration, returnUrl: String?) {
+        sent.add(SentLink(to, tokenPlain, ttl, returnUrl))
     }
 }
 

@@ -78,6 +78,120 @@ class HouseholdAppServiceTest {
     }
 
     @Test
+    fun `owner invitation creates shared ownership and allows the original owner to change role`() {
+        service.invite(InviteHouseholdMemberCommand("bia@example.com", HouseholdRole.OWNER), access)
+
+        val preview = service.invitationPreview(AcceptHouseholdInvitationCommand(notifier.token), guestId)
+        val accepted = service.accept(AcceptHouseholdInvitationCommand(notifier.token), guestId)
+
+        assertEquals("Casa da Ana", preview.householdName)
+        assertEquals("Ana", preview.inviterName)
+        assertEquals(HouseholdRole.OWNER, preview.role)
+        assertEquals(householdId, accepted)
+        assertEquals(HouseholdRole.OWNER, invitations.items.single().role)
+        assertEquals(HouseholdRole.OWNER, notifier.role)
+        assertEquals(HouseholdRole.OWNER, members.findAccess(guestId, householdId)?.role)
+        assertEquals(2L, members.countOwners(householdId))
+
+        val originalOwner = members.findAccess(ownerId, householdId)!!
+        service.changeRole(
+            ChangeHouseholdMemberRoleCommand(originalOwner.id, originalOwner.version!!, HouseholdRole.CAREGIVER),
+            access,
+        )
+
+        assertEquals(HouseholdRole.CAREGIVER, members.findAccess(ownerId, householdId)?.role)
+        assertEquals(HouseholdRole.OWNER, members.findAccess(guestId, householdId)?.role)
+
+        val remainingOwner = members.findAccess(guestId, householdId)!!
+        assertThrows(ConflictException::class.java) {
+            service.changeRole(
+                ChangeHouseholdMemberRoleCommand(remainingOwner.id, remainingOwner.version!!, HouseholdRole.CAREGIVER),
+                HouseholdAccess(householdId, guestId, HouseholdRole.OWNER),
+            )
+        }
+    }
+
+    @Test
+    fun `owner invitation is revoked when its inviter is no longer an owner`() {
+        members.save(
+            HouseholdMember(
+                householdId = householdId,
+                tutorId = guestId,
+                role = HouseholdRole.OWNER,
+                joinedAt = clock.now().toInstant(),
+            ),
+        )
+        val candidateId = TutorId(3)
+        tutors.save(tutor(candidateId, "Clara", "clara@example.com", null))
+        service.invite(InviteHouseholdMemberCommand("clara@example.com", HouseholdRole.OWNER), access)
+
+        val inviter = members.findAccess(ownerId, householdId)!!
+        service.changeRole(
+            ChangeHouseholdMemberRoleCommand(inviter.id, inviter.version!!, HouseholdRole.CAREGIVER),
+            HouseholdAccess(householdId, guestId, HouseholdRole.OWNER),
+        )
+
+        assertNull(invitations.items.single().activeKey)
+        val demotedInviter = members.findAccess(ownerId, householdId)!!
+        service.changeRole(
+            ChangeHouseholdMemberRoleCommand(demotedInviter.id, demotedInviter.version!!, HouseholdRole.OWNER),
+            HouseholdAccess(householdId, guestId, HouseholdRole.OWNER),
+        )
+        assertThrows(RuntimeException::class.java) {
+            service.accept(AcceptHouseholdInvitationCommand(notifier.token), candidateId)
+        }
+        assertNull(members.findAccess(candidateId, householdId))
+    }
+
+    @Test
+    fun `a person who became a member cannot receive or silently consume another invitation`() {
+        service.invite(InviteHouseholdMemberCommand("bia@example.com", HouseholdRole.OWNER), access)
+        members.save(
+            HouseholdMember(
+                householdId = householdId,
+                tutorId = guestId,
+                role = HouseholdRole.CAREGIVER,
+                joinedAt = clock.now().toInstant(),
+            ),
+        )
+
+        assertThrows(ConflictException::class.java) {
+            service.accept(AcceptHouseholdInvitationCommand(notifier.token), guestId)
+        }
+        assertNotNull(invitations.items.single().activeKey)
+
+        invitations.items.clear()
+        assertThrows(ConflictException::class.java) {
+            service.invite(InviteHouseholdMemberCommand("bia@example.com", HouseholdRole.OWNER), access)
+        }
+        assertTrue(invitations.items.isEmpty())
+    }
+
+    @Test
+    fun `stale owner access cannot mutate members or create an invitation`() {
+        val guest = members.save(
+            HouseholdMember(
+                householdId = householdId,
+                tutorId = guestId,
+                role = HouseholdRole.CAREGIVER,
+                joinedAt = clock.now().toInstant(),
+            ),
+        )
+        val owner = members.findAccess(ownerId, householdId)!!
+        members.save(owner.copy(role = HouseholdRole.CAREGIVER))
+
+        assertThrows(ForbiddenException::class.java) {
+            service.invite(InviteHouseholdMemberCommand("clara@example.com", HouseholdRole.OWNER), access)
+        }
+        assertThrows(ForbiddenException::class.java) {
+            service.changeRole(ChangeHouseholdMemberRoleCommand(guest.id, guest.version!!, HouseholdRole.OWNER), access)
+        }
+        assertThrows(ForbiddenException::class.java) {
+            service.removeMember(guest.id, access)
+        }
+    }
+
+    @Test
     fun `viewer cannot invite and last owner cannot be demoted`() {
         assertThrows(ForbiddenException::class.java) {
             service.invite(
@@ -128,9 +242,12 @@ class HouseholdAppServiceTest {
     private class Invitations : HouseholdInvitationRepositoryPort {
         val items = mutableListOf<HouseholdInvitation>()
         override fun save(invitation: HouseholdInvitation) = invitation.also { value -> items.removeIf { it.id == value.id }; items += value }
+        override fun findActiveByHash(hash: String) = items.firstOrNull { it.tokenHash == hash && it.activeKey != null }
         override fun findActiveByHashForUpdate(hash: String) = items.firstOrNull { it.tokenHash == hash && it.activeKey != null }
         override fun findActiveByKeyForUpdate(activeKey: String) = items.firstOrNull { it.activeKey == activeKey }
         override fun findByIdForUpdate(id: HouseholdInvitationId, householdId: HouseholdId) = items.firstOrNull { it.id == id && it.householdId == householdId }
+        override fun listActiveByInviterAndRoleForUpdate(householdId: HouseholdId, inviterTutorId: TutorId, role: HouseholdRole) =
+            items.filter { it.householdId == householdId && it.invitedByTutorId == inviterTutorId && it.role == role && it.activeKey != null }
         override fun listActive(householdId: HouseholdId, now: Instant) = items.filter { it.householdId == householdId && it.activeKey != null && it.expiresAt > now }
     }
     private class Activities : HouseholdActivityRepositoryPort {
@@ -144,8 +261,17 @@ class HouseholdAppServiceTest {
     }
     private class InvitationNotifier : HouseholdInvitationNotifierPort {
         lateinit var token: String
+        lateinit var role: HouseholdRole
         var fail = false
-        override fun sendInvitation(email: String, householdName: String, inviterName: String, token: String, expiresAt: Instant) {
+        override fun sendInvitation(
+            email: String,
+            householdName: String,
+            inviterName: String,
+            role: HouseholdRole,
+            token: String,
+            expiresAt: Instant,
+        ) {
+            this.role = role
             this.token = token
             if (fail) throw IllegalStateException("mail unavailable")
         }

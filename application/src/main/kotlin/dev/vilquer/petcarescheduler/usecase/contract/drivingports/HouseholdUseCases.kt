@@ -6,6 +6,7 @@ import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import dev.vilquer.petcarescheduler.core.domain.household.HouseholdInvitationId
 import dev.vilquer.petcarescheduler.core.domain.household.HouseholdMemberId
 import dev.vilquer.petcarescheduler.usecase.command.*
+import dev.vilquer.petcarescheduler.usecase.result.HouseholdInvitationPreviewResult
 import dev.vilquer.petcarescheduler.usecase.result.HouseholdOverviewResult
 import dev.vilquer.petcarescheduler.usecase.result.HouseholdSummaryResult
 
@@ -19,6 +20,7 @@ interface HouseholdManagementUseCase {
     fun provisionFor(tutorId: TutorId, firstName: String): HouseholdId
     fun overview(access: HouseholdAccess): HouseholdOverviewResult
     fun invite(command: InviteHouseholdMemberCommand, access: HouseholdAccess)
+    fun invitationPreview(command: AcceptHouseholdInvitationCommand, actorTutorId: TutorId): HouseholdInvitationPreviewResult
     fun accept(command: AcceptHouseholdInvitationCommand, actorTutorId: TutorId): HouseholdId
     fun revokeInvitation(id: HouseholdInvitationId, access: HouseholdAccess)
     fun changeRole(command: ChangeHouseholdMemberRoleCommand, access: HouseholdAccess)

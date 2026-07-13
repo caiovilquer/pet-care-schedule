@@ -48,6 +48,7 @@ import java.util.concurrent.Executors
     properties = [
         "server.ssl.enabled=false",
         "app.mail.from=noreply@test.local",
+        "app.seed.enabled=false",
     ],
 )
 @ActiveProfiles("dev")

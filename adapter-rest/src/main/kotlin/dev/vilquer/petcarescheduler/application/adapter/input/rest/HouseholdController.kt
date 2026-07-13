@@ -82,6 +82,10 @@ class HouseholdController(
     fun accept(@Valid @RequestBody body: HouseholdAcceptRequest, @AuthenticationPrincipal jwt: CurrentJwt) =
         HouseholdAcceptedResponse(management.accept(AcceptHouseholdInvitationCommand(body.token), TutorId(jwt.tutorId())).value)
 
+    @PostMapping("/invitations/preview")
+    fun invitationPreview(@Valid @RequestBody body: HouseholdAcceptRequest, @AuthenticationPrincipal jwt: CurrentJwt) =
+        management.invitationPreview(AcceptHouseholdInvitationCommand(body.token), TutorId(jwt.tutorId()))
+
     @PatchMapping("/current/members/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun changeRole(

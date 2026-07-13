@@ -22,7 +22,8 @@ class PasswordResetController(
     private val rateLimiter: RateLimiterService
 ) {
     data class ForgotReq(
-        @field:EmailConstraint @field:NotBlank val email: String
+        @field:EmailConstraint @field:NotBlank val email: String,
+        @field:Size(max = 1_000) val returnUrl: String? = null,
     )
     data class ResetReq(
         @field:NotBlank val token: String,
@@ -33,7 +34,7 @@ class PasswordResetController(
     fun forgot(@Valid @RequestBody body: ForgotReq, request: HttpServletRequest): ResponseEntity<Void> {
         val key = rateLimitKey(request, body.email.trim().lowercase())
         rateLimiter.check(RateLimitAction.PASSWORD_RESET, key)
-        passwordReset.requestReset(Email.of(body.email).getOrThrow())
+        passwordReset.requestReset(Email.of(body.email).getOrThrow(), body.returnUrl)
         return ResponseEntity.accepted().build()
     }
 

@@ -40,10 +40,16 @@ class HouseholdMemberRepositoryAdapter(private val jpa: HouseholdMemberJpaReposi
 @Repository
 class HouseholdInvitationRepositoryAdapter(private val jpa: HouseholdInvitationJpaRepository) : HouseholdInvitationRepositoryPort {
     override fun save(invitation: HouseholdInvitation) = jpa.saveAndFlush(invitation.toJpa()).toDomain()
+    override fun findActiveByHash(hash: String) = jpa.findByTokenHashAndActiveKeyIsNotNull(hash)?.toDomain()
     override fun findActiveByHashForUpdate(hash: String) = jpa.findActiveByHashForUpdate(hash)?.toDomain()
     override fun findActiveByKeyForUpdate(activeKey: String) = jpa.findActiveByKeyForUpdate(activeKey)?.toDomain()
     override fun findByIdForUpdate(id: HouseholdInvitationId, householdId: HouseholdId) =
         jpa.findOwnedForUpdate(id.value, householdId.value)?.toDomain()
+    override fun listActiveByInviterAndRoleForUpdate(
+        householdId: HouseholdId,
+        inviterTutorId: TutorId,
+        role: HouseholdRole,
+    ) = jpa.listActiveByInviterAndRoleForUpdate(householdId.value, inviterTutorId.value, role).map { it.toDomain() }
     override fun listActive(householdId: HouseholdId, now: java.time.Instant) =
         jpa.listActive(householdId.value, now).map { it.toDomain() }
 }

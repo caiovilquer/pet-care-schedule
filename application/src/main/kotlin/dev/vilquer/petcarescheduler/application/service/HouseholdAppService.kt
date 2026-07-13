@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.application.service
 import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
+import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.household.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
@@ -86,19 +87,21 @@ class HouseholdAppService(
 
     override fun invite(command: InviteHouseholdMemberCommand, access: HouseholdAccess) {
         requirePermission(access, HouseholdPermission.MANAGE_MEMBERS)
-        require(command.role != HouseholdRole.OWNER) { "household_invitation_owner_not_allowed" }
-        val email = Email.of(command.email.trim()).getOrElse { throw IllegalArgumentException("household_invitation_email_invalid") }
-            .value.lowercase()
+        val normalizedEmail = Email.of(command.email.trim())
+            .getOrElse { throw IllegalArgumentException("household_invitation_email_invalid") }
+        val email = normalizedEmail.value.lowercase()
         val actor = tutors.findById(access.actorTutorId) ?: throw NotFoundException("Tutor não encontrado")
         require(actor.email.value.lowercase() != email) { "household_invitation_self_not_allowed" }
-        val existingTutor = Email.of(email).getOrNull()?.let(tutors::findByEmail)
-        if (existingTutor?.id?.let { members.findAccess(it, access.householdId) } != null) {
-            throw ConflictException("Esta pessoa já faz parte da família")
-        }
         val household = households.findById(access.householdId) ?: throw NotFoundException("Família não encontrada")
         val rawToken = token()
         val now = clock.now().toInstant()
         val invitation = transaction.execute {
+            households.findByIdForUpdate(access.householdId) ?: throw NotFoundException("Família não encontrada")
+            requireCurrentPermissionForUpdate(access, HouseholdPermission.MANAGE_MEMBERS)
+            val currentTutor = tutors.findByEmail(normalizedEmail)
+            if (currentTutor?.id?.let { members.findAccessForUpdate(it, access.householdId) } != null) {
+                throw ConflictException("Esta pessoa já faz parte da família")
+            }
             val activeKey = "${access.householdId.value}:$email"
             invitations.findActiveByKeyForUpdate(activeKey)?.let { current ->
                 invitations.save(current.revoke(now))
@@ -119,32 +122,50 @@ class HouseholdAppService(
         // A persistência acontece antes do envio para que o token já esteja válido
         // quando o destinatário abrir o e-mail. Falhas não são ocultadas: o cliente
         // pode informar o proprietário e uma nova tentativa revoga este convite.
-        notifier.sendInvitation(email, household.name, actor.firstName, rawToken, invitation.expiresAt)
+        notifier.sendInvitation(email, household.name, actor.firstName, invitation.role, rawToken, invitation.expiresAt)
+    }
+
+    override fun invitationPreview(
+        command: AcceptHouseholdInvitationCommand,
+        actorTutorId: TutorId,
+    ): HouseholdInvitationPreviewResult {
+        require(command.token.length in 32..128) { "household_invitation_token_invalid" }
+        val invitation = invitations.findActiveByHash(hash(command.token))
+            ?: throw NotFoundException("Convite inválido ou já utilizado")
+        validateActiveInvitation(invitation)
+        val tutor = tutors.findById(actorTutorId) ?: throw NotFoundException("Tutor não encontrado")
+        requireInvitationEmail(invitation, tutor)
+        if (invitation.role == HouseholdRole.OWNER) requireActiveOwnerInviter(invitation, lock = false)
+        val household = households.findById(invitation.householdId) ?: throw NotFoundException("Família não encontrada")
+        val inviter = tutors.findById(invitation.invitedByTutorId) ?: throw NotFoundException("Responsável pelo convite não encontrado")
+        return HouseholdInvitationPreviewResult(household.name, inviter.firstName, invitation.role, invitation.expiresAt)
     }
 
     override fun accept(command: AcceptHouseholdInvitationCommand, actorTutorId: TutorId): HouseholdId = transaction.execute {
         require(command.token.length in 32..128) { "household_invitation_token_invalid" }
-        val invitation = invitations.findActiveByHashForUpdate(hash(command.token))
+        val tokenHash = hash(command.token)
+        val candidate = invitations.findActiveByHash(tokenHash)
             ?: throw NotFoundException("Convite inválido ou já utilizado")
+        households.findByIdForUpdate(candidate.householdId) ?: throw NotFoundException("Família não encontrada")
+        val invitation = invitations.findActiveByHashForUpdate(tokenHash)
+            ?: throw NotFoundException("Convite inválido ou já utilizado")
+        validateActiveInvitation(invitation)
         val now = clock.now().toInstant()
-        if (invitation.activeKey == null || invitation.acceptedAt != null || invitation.revokedAt != null || !invitation.expiresAt.isAfter(now)) {
-            throw ConflictException("Este convite expirou ou já foi utilizado")
-        }
         val tutor = tutors.findById(actorTutorId) ?: throw NotFoundException("Tutor não encontrado")
-        if (!MessageDigest.isEqual(tutor.email.value.lowercase().toByteArray(), invitation.email.toByteArray())) {
-            throw ForbiddenException("Este convite foi enviado para outro e-mail")
-        }
+        requireInvitationEmail(invitation, tutor)
+        if (invitation.role == HouseholdRole.OWNER) requireActiveOwnerInviter(invitation, lock = true)
         val existing = members.findAccessForUpdate(actorTutorId, invitation.householdId)
-        if (existing == null) {
-            members.save(
-                HouseholdMember(
-                    householdId = invitation.householdId,
-                    tutorId = actorTutorId,
-                    role = invitation.role,
-                    joinedAt = now,
-                ),
-            )
+        if (existing != null) {
+            throw ConflictException("Esta pessoa já faz parte da família")
         }
+        members.save(
+            HouseholdMember(
+                householdId = invitation.householdId,
+                tutorId = actorTutorId,
+                role = invitation.role,
+                joinedAt = now,
+            ),
+        )
         invitations.save(invitation.accept(now))
         tutors.save(tutor.copy(defaultHouseholdId = invitation.householdId))
         activities.save(
@@ -163,6 +184,8 @@ class HouseholdAppService(
     override fun revokeInvitation(id: HouseholdInvitationId, access: HouseholdAccess) {
         requirePermission(access, HouseholdPermission.MANAGE_MEMBERS)
         transaction.execute {
+            households.findByIdForUpdate(access.householdId) ?: throw NotFoundException("Família não encontrada")
+            requireCurrentPermissionForUpdate(access, HouseholdPermission.MANAGE_MEMBERS)
             val invitation = invitations.findByIdForUpdate(id, access.householdId)
                 ?: throw NotFoundException("Convite não encontrado")
             if (invitation.activeKey != null) invitations.save(invitation.revoke(clock.now().toInstant()))
@@ -172,6 +195,8 @@ class HouseholdAppService(
     override fun changeRole(command: ChangeHouseholdMemberRoleCommand, access: HouseholdAccess) {
         requirePermission(access, HouseholdPermission.MANAGE_MEMBERS)
         transaction.execute {
+            households.findByIdForUpdate(access.householdId) ?: throw NotFoundException("Família não encontrada")
+            requireCurrentPermissionForUpdate(access, HouseholdPermission.MANAGE_MEMBERS)
             val member = members.findByIdForUpdate(command.memberId, access.householdId)
                 ?: throw NotFoundException("Membro não encontrado")
             requireVersion(member.version, command.expectedVersion)
@@ -179,6 +204,9 @@ class HouseholdAppService(
                 throw ConflictException("A família precisa manter ao menos um proprietário")
             }
             if (member.role == command.role) return@execute
+            if (member.role == HouseholdRole.OWNER && command.role != HouseholdRole.OWNER) {
+                revokePendingOwnerInvitations(member.tutorId, access.householdId)
+            }
             members.save(member.copy(role = command.role))
             activities.save(
                 HouseholdActivity(
@@ -196,11 +224,14 @@ class HouseholdAppService(
     override fun removeMember(memberId: HouseholdMemberId, access: HouseholdAccess) {
         requirePermission(access, HouseholdPermission.MANAGE_MEMBERS)
         transaction.execute {
+            households.findByIdForUpdate(access.householdId) ?: throw NotFoundException("Família não encontrada")
+            requireCurrentPermissionForUpdate(access, HouseholdPermission.MANAGE_MEMBERS)
             val member = members.findByIdForUpdate(memberId, access.householdId)
                 ?: throw NotFoundException("Membro não encontrado")
             if (member.role == HouseholdRole.OWNER && members.countOwners(access.householdId) <= 1) {
                 throw ConflictException("A família precisa manter ao menos um proprietário")
             }
+            revokePendingOwnerInvitations(member.tutorId, access.householdId)
             members.delete(member.id)
             val target = tutors.findById(member.tutorId)
             if (target?.defaultHouseholdId == access.householdId) {
@@ -255,14 +286,56 @@ class HouseholdAppService(
         require(command.householdId == access.householdId) { "household_context_mismatch" }
         return transaction.execute {
             val current = households.findByIdForUpdate(access.householdId) ?: throw NotFoundException("Família não encontrada")
+            val actor = requireCurrentPermissionForUpdate(access, HouseholdPermission.MANAGE_MEMBERS)
             requireVersion(current.version, command.expectedVersion)
             households.save(current.copy(name = command.name.trim(), updatedAt = clock.now().toInstant()))
-                .toSummary(access.role, true, members.count(access.householdId))
+                .toSummary(actor.role, true, members.count(access.householdId))
         }
     }
 
     private fun requirePermission(access: HouseholdAccess, permission: HouseholdPermission) {
         if (!access.can(permission)) throw ForbiddenException("Seu papel nesta família não permite esta ação")
+    }
+
+    private fun requireCurrentPermissionForUpdate(
+        access: HouseholdAccess,
+        permission: HouseholdPermission,
+    ): HouseholdMember {
+        val current = members.findAccessForUpdate(access.actorTutorId, access.householdId)
+        if (current?.role?.allows(permission) != true) {
+            throw ForbiddenException("Seu papel nesta família não permite esta ação")
+        }
+        return current
+    }
+
+    private fun validateActiveInvitation(invitation: HouseholdInvitation) {
+        val now = clock.now().toInstant()
+        if (invitation.activeKey == null || invitation.acceptedAt != null || invitation.revokedAt != null || !invitation.expiresAt.isAfter(now)) {
+            throw ConflictException("Este convite expirou ou já foi utilizado")
+        }
+    }
+
+    private fun requireInvitationEmail(invitation: HouseholdInvitation, tutor: Tutor) {
+        if (!MessageDigest.isEqual(tutor.email.value.lowercase().toByteArray(), invitation.email.toByteArray())) {
+            throw ForbiddenException("Este convite foi enviado para outro e-mail")
+        }
+    }
+
+    private fun requireActiveOwnerInviter(invitation: HouseholdInvitation, lock: Boolean) {
+        val inviter = if (lock) {
+            members.findAccessForUpdate(invitation.invitedByTutorId, invitation.householdId)
+        } else {
+            members.findAccess(invitation.invitedByTutorId, invitation.householdId)
+        }
+        if (inviter?.role != HouseholdRole.OWNER) {
+            throw ConflictException("Este convite de proprietário perdeu a validade")
+        }
+    }
+
+    private fun revokePendingOwnerInvitations(inviterTutorId: TutorId, householdId: HouseholdId) {
+        val now = clock.now().toInstant()
+        invitations.listActiveByInviterAndRoleForUpdate(householdId, inviterTutorId, HouseholdRole.OWNER)
+            .forEach { invitations.save(it.revoke(now)) }
     }
 
     private fun requireVersion(actual: Long?, expected: Long) {

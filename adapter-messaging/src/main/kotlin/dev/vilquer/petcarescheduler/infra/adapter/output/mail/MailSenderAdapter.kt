@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 @Component
@@ -20,20 +22,46 @@ class MailSenderAdapter(
 
     private val log = LoggerFactory.getLogger(MailSenderAdapter::class.java)
 
-    override fun sendResetLink(to: Email, tokenPlain: String, ttl: Duration) {
-        val link = "$frontBase/auth/reset-password?token=$tokenPlain"
+    override fun sendResetLink(to: Email, tokenPlain: String, ttl: Duration, returnUrl: String?) {
+        val returnQuery = returnUrl?.let { "&returnUrl=${URLEncoder.encode(it, StandardCharsets.UTF_8)}" }.orEmpty()
+        val link = "$frontBase/auth/reset-password?token=$tokenPlain$returnQuery"
         val ttlMinutes = ttl.toMinutes()
         val subject = "Redefinição de senha"
-        val text = "Use este link para redefinir sua senha: $link (expira em $ttlMinutes minutos)."
-        val html = """
-          <html><body style="font-family:Arial,Helvetica,sans-serif">
-            <h2>Redefinição de senha</h2>
-            <p>Para criar uma nova senha, clique no botão abaixo:</p>
-            <p><a href="$link" style="background:#2f855a;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Redefinir senha</a></p>
-            <p style="color:#666">O link expira em $ttlMinutes minutos.</p>
-            <p style="color:#777;font-size:12px">Se você não solicitou, ignore este e-mail.</p>
-          </body></html>
+        val text = """
+            Redefinição de senha — RotinaPet
+
+            Recebemos um pedido para redefinir a senha da sua conta.
+            Para criar uma nova senha, acesse: $link
+
+            O link expira em $ttlMinutes minutos e só pode ser usado uma vez.
+            Se você não pediu a redefinição, ignore este e-mail — sua senha continua a mesma.
         """.trimIndent()
+        val content = buildString {
+            append(RotinaPetEmail.title("Vamos criar uma nova senha?"))
+            append(
+                RotinaPetEmail.paragraph(
+                    "Recebemos um pedido para redefinir a senha da conta " +
+                        "<strong>${RotinaPetEmail.escape(to.value)}</strong> no RotinaPet. " +
+                        "É só usar o botão abaixo para escolher uma nova senha."
+                )
+            )
+            append(RotinaPetEmail.ctaButton("Redefinir senha", link))
+            append(RotinaPetEmail.fallbackLink(link))
+            append(RotinaPetEmail.divider())
+            append(
+                RotinaPetEmail.mutedNote(
+                    "O link expira em <strong>$ttlMinutes minutos</strong> e só pode ser usado uma vez. " +
+                        "Se você não pediu a redefinição, pode ignorar este e-mail — sua senha continua a mesma."
+                )
+            )
+        }
+        val html = RotinaPetEmail.render(
+            docTitle = subject,
+            preheader = "Crie uma nova senha para a sua conta — o link expira em $ttlMinutes minutos.",
+            contentHtml = content,
+            footerReason = "Você recebeu este e-mail porque uma redefinição de senha foi solicitada para este endereço no RotinaPet.",
+            baseUrl = frontBase,
+        )
 
         val payload = mapOf(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
