@@ -9,6 +9,7 @@ import java.util.UUID
 interface MediaAssetRepositoryPort {
     fun save(asset: MediaAsset): MediaAsset
     fun findById(id: UUID): MediaAsset?
+    fun findByIdForUpdate(id: UUID): MediaAsset?
     fun delete(id: UUID)
     fun findCleanupCandidates(pendingBefore: Instant, limit: Int): List<MediaAsset>
     fun markPetAssetsForDeletion(petId: PetId)

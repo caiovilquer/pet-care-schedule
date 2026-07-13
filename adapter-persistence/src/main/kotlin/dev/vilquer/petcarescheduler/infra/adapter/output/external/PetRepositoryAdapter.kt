@@ -7,6 +7,7 @@ import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.PetJpaRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Repository
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 
 @Repository
 class PetRepositoryAdapter(
@@ -33,6 +34,17 @@ class PetRepositoryAdapter(
 
     override fun existsForTutor(id: PetId, tutorId: TutorId): Boolean =
         jpa.existsByIdAndTutorId(id.value, tutorId.value)
+
+    override fun listByHousehold(householdId: HouseholdId, page: Int, size: Int): List<Pet> =
+        jpa.findAllByHouseholdIdOrderByNameAscIdAsc(householdId.value, PageRequest.of(page, size)).content.map { it.toDomain() }
+
+    override fun countByHousehold(householdId: HouseholdId) = jpa.countByHouseholdId(householdId.value)
+
+    override fun findByIdAndHousehold(id: PetId, householdId: HouseholdId) =
+        jpa.findByIdAndHouseholdId(id.value, householdId.value)?.toDomain()
+
+    override fun existsForHousehold(id: PetId, householdId: HouseholdId) =
+        jpa.existsByIdAndHouseholdId(id.value, householdId.value)
 
     override fun findAllByTutor(tutorId: TutorId): List<Pet> =
         jpa.findAllByTutorIdOrderByNameAscIdAsc(tutorId.value).map { it.toDomain() }

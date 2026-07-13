@@ -10,6 +10,7 @@ import dev.vilquer.petcarescheduler.core.domain.care.CarePlanId
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.application.TEST_HOUSEHOLD_ID
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderOutboxMessage
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -62,7 +63,7 @@ class CareReminderRelayServiceTest {
 
     private fun occurrence(status: CareOccurrenceStatus): CareOccurrence = CareOccurrence(
         id = CareOccurrenceId(UUID.randomUUID()), planId = CarePlanId(UUID.randomUUID()), scheduleRevision = 0,
-        tutorId = tutorId, petId = PetId(1), sequence = 0, type = EventType.MEDICINE,
+        householdId = TEST_HOUSEHOLD_ID, tutorId = tutorId, petId = PetId(1), responsibleTutorId = tutorId, sequence = 0, type = EventType.MEDICINE,
         title = "Antibiótico", dueAt = LocalDateTime.of(2026, 7, 12, 10, 0), status = status,
         completedAt = if (status == CareOccurrenceStatus.COMPLETED) now else null,
         completedByTutorId = if (status == CareOccurrenceStatus.COMPLETED) tutorId else null,

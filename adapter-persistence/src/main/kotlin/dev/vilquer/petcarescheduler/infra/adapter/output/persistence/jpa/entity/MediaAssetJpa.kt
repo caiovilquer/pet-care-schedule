@@ -12,7 +12,9 @@ class MediaAssetJpa {
     @Id lateinit var id: UUID
     @Version var version: Long? = null
     @Column(name = "tutor_id") var tutorId: Long? = null
+    @Column(name = "household_id") var householdId: UUID? = null
     @Column(name = "pet_id") var petId: Long? = null
+    @Column(name = "health_record_id") var healthRecordId: UUID? = null
     @Enumerated(EnumType.STRING) @Column(nullable = false) lateinit var purpose: MediaPurpose
     @Column(name = "original_filename", nullable = false) lateinit var originalFilename: String
     @Column(name = "content_type", nullable = false) lateinit var contentType: String

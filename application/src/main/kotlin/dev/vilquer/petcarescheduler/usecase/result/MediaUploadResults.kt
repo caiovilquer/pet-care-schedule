@@ -9,4 +9,4 @@ data class MediaUploadInitiatedResult(
     val headers: Map<String, String>,
     val expiresAt: Instant,
 )
-data class MediaAssetResult(val id: UUID, val contentPath: String)
+data class MediaAssetResult(val id: UUID, val contentUrl: String)

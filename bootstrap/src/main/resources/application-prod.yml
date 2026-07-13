@@ -74,7 +74,7 @@ app:
     language: pt-BR
     region: BR
   frontend:
-    base-url: https://rotinapet.vilquer.dev
+    base-url: ${FRONTEND_BASE_URL:https://rotinapet.vilquer.dev}
   security:
     jwt-cache:
       invalidation-skew: ${JWT_INVALIDATION_SKEW:PT2M}

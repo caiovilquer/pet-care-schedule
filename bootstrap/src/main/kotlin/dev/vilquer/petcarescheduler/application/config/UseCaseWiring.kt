@@ -3,9 +3,12 @@ package dev.vilquer.petcarescheduler.application.config
 import dev.vilquer.petcarescheduler.application.service.AuthAppService
 import dev.vilquer.petcarescheduler.application.service.CareAppService
 import dev.vilquer.petcarescheduler.application.service.CareReminderRelayService
+import dev.vilquer.petcarescheduler.application.service.CareEscalationRelayService
 import dev.vilquer.petcarescheduler.application.service.EventAppService
 import dev.vilquer.petcarescheduler.application.service.DashboardAppService
 import dev.vilquer.petcarescheduler.application.service.LocationAppService
+import dev.vilquer.petcarescheduler.application.service.HealthAppService
+import dev.vilquer.petcarescheduler.application.service.HouseholdAppService
 import dev.vilquer.petcarescheduler.application.service.MediaAppService
 import dev.vilquer.petcarescheduler.application.service.PasswordResetService
 import dev.vilquer.petcarescheduler.application.service.PetAppService
@@ -19,8 +22,19 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceA
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CarePlanRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderOutboxPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareEscalationOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.GeocodingPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HealthMeasurementRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HealthRecordAttachmentRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HealthRecordRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdMemberRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdInvitationRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdActivityRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdHandoffRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdInvitationNotifierPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.HouseholdManagementUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.MediaAssetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ObjectStoragePort
@@ -52,6 +66,19 @@ import java.time.Duration
 class UseCaseWiring {
 
     @Bean
+    fun householdAppService(
+        households: HouseholdRepositoryPort,
+        members: HouseholdMemberRepositoryPort,
+        invitations: HouseholdInvitationRepositoryPort,
+        activities: HouseholdActivityRepositoryPort,
+        handoffs: HouseholdHandoffRepositoryPort,
+        tutors: TutorRepositoryPort,
+        notifier: HouseholdInvitationNotifierPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+    ) = HouseholdAppService(households, members, invitations, activities, handoffs, tutors, notifier, transaction, clock)
+
+    @Bean
     fun careAppService(
         plans: CarePlanRepositoryPort,
         occurrences: CareOccurrenceRepositoryPort,
@@ -59,9 +86,21 @@ class UseCaseWiring {
         pets: PetRepositoryPort,
         tutors: TutorRepositoryPort,
         reminderOutbox: CareReminderOutboxPort,
+        escalationOutbox: CareEscalationOutboxPort,
+        householdMembers: HouseholdMemberRepositoryPort,
+        householdActivities: HouseholdActivityRepositoryPort,
         transaction: TransactionPort,
         clock: ClockPort,
-    ) = CareAppService(plans, occurrences, actions, pets, tutors, reminderOutbox, transaction, clock)
+    ) = CareAppService(plans, occurrences, actions, pets, tutors, reminderOutbox, escalationOutbox, householdMembers, householdActivities, transaction, clock)
+
+    @Bean
+    fun careEscalationRelayService(
+        outbox: CareEscalationOutboxPort,
+        occurrences: CareOccurrenceRepositoryPort,
+        notifier: NotificationPort,
+        activities: HouseholdActivityRepositoryPort,
+        clock: ClockPort,
+    ) = CareEscalationRelayService(outbox, occurrences, notifier, activities, clock)
 
     @Bean
     fun careReminderRelayService(
@@ -108,8 +147,22 @@ class UseCaseWiring {
         storage: ObjectStoragePort,
         pets: PetRepositoryPort,
         tutors: TutorRepositoryPort,
+        healthRecords: HealthRecordRepositoryPort,
+        healthAttachments: HealthRecordAttachmentRepositoryPort,
         transaction: TransactionPort,
-    ) = MediaAppService(media, storage, pets, tutors, transaction)
+    ) = MediaAppService(media, storage, pets, tutors, healthRecords, healthAttachments, transaction)
+
+    @Bean
+    fun healthAppService(
+        records: HealthRecordRepositoryPort,
+        measurements: HealthMeasurementRepositoryPort,
+        attachments: HealthRecordAttachmentRepositoryPort,
+        media: MediaAssetRepositoryPort,
+        pets: PetRepositoryPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+        activities: HouseholdActivityRepositoryPort,
+    ) = HealthAppService(records, measurements, attachments, media, pets, transaction, clock, activities)
 
     @Bean
     fun reminderRelayService(
@@ -130,7 +183,9 @@ class UseCaseWiring {
         tutorRepo: TutorRepositoryPort,
         passwordHash: PasswordHashPort,
         petRepo: PetRepositoryPort,
-    ) = TutorAppService(tutorRepo, passwordHash, petRepo)
+        householdManagement: HouseholdManagementUseCase,
+        transaction: TransactionPort,
+    ) = TutorAppService(tutorRepo, passwordHash, petRepo, householdManagement, transaction)
 
     @Bean
     fun rateLimitProperties(environment: Environment): RateLimitProperties =

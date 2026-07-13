@@ -5,11 +5,13 @@ import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Frequency
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.LocalDateTime
+import java.util.UUID
 
 class CarePlanTest {
     private val start = LocalDateTime.of(2026, 7, 12, 10, 0)
@@ -38,6 +40,7 @@ class CarePlanTest {
     }
 
     private fun plan(recurrence: Recurrence?) = CarePlan(
+        householdId = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001")),
         tutorId = TutorId(1),
         petId = PetId(1),
         responsibleTutorId = TutorId(1),

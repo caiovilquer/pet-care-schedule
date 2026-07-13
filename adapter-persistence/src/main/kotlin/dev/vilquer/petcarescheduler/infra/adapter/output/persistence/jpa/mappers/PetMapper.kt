@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mapper
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
 
 /**
@@ -27,7 +28,8 @@ object PetMapper {
             birthdate = jpa.birthdate,
             photoUrl = jpa.photoUrl,
             photoAssetId = jpa.photoAssetId,
-            tutorId = jpa.tutorId?.let { TutorId(it) }
+            tutorId = jpa.tutorId?.let { TutorId(it) },
+            householdId = jpa.householdId?.let(::HouseholdId),
         )
     }
 
@@ -50,6 +52,7 @@ object PetMapper {
             jpa.photoUrl = photoUrl
             jpa.photoAssetId = photoAssetId
             jpa.tutorId = tutorId?.value
+            jpa.householdId = householdId?.value
         }
         return jpa
     }

@@ -50,6 +50,8 @@ app:
     api-key: ${GOOGLE_API_KEY:}
     language: pt-BR
     region: BR
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
   security:
     jwt-cache:
       invalidation-skew: ${JWT_INVALIDATION_SKEW:PT2M}

@@ -5,7 +5,8 @@ import java.util.UUID
 
 data class InitiateMediaUploadCommand(
     val purpose: MediaPurpose,
-    val targetId: Long,
+    val targetId: Long? = null,
+    val targetUuid: UUID? = null,
     val filename: String,
     val contentType: String,
     val sizeBytes: Long,

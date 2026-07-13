@@ -10,6 +10,8 @@ import dev.vilquer.petcarescheduler.usecase.result.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdAccess
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdRole
 
 class PetAppServiceTest {
 
@@ -17,17 +19,18 @@ class PetAppServiceTest {
     private val tutorRepo = InMemoryTutorRepo()
     private val eventRepo = InMemoryEventRepo()
     private val service = PetAppService(petRepo, tutorRepo, eventRepo)
+    private fun access(tutorId: TutorId) = HouseholdAccess(TEST_HOUSEHOLD_ID, tutorId, HouseholdRole.OWNER)
 
     @Test
     fun `createPet should throw NotFoundException when tutor is missing`() {
         val cmd = CreatePetCommand("Rex", "Dog", null, LocalDate.now(), photoUrl = null, tutorId = TutorId(1))
-        assertThrows(NotFoundException::class.java) { service.execute(cmd) }
+        assertThrows(NotFoundException::class.java) { service.execute(cmd, access(TutorId(1))) }
     }
 
     @Test
     fun `getPet throws NotFoundException when pet does not exist`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        assertThrows(NotFoundException::class.java) { service.get(PetId(999), tutor.id!!) }
+        assertThrows(NotFoundException::class.java) { service.get(PetId(999), access(tutor.id!!)) }
     }
 
     @Test
@@ -41,7 +44,7 @@ class PetAppServiceTest {
             photoUrl = "https://example.com/pets/rex.png",
             tutorId = tutor.id!!
         )
-        val result = service.execute(cmd)
+        val result = service.execute(cmd, access(tutor.id!!))
         assertNotNull(result.petId)
         val saved = petRepo.findById(result.petId)!!
         assertEquals("Rex", saved.name)
@@ -51,17 +54,17 @@ class PetAppServiceTest {
     @Test
     fun `updatePet modifies existing pet`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed="mix", birthdate=LocalDate.now(), tutorId=tutor.id!!))
+        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed="mix", birthdate=LocalDate.now(), tutorId=tutor.id!!, householdId=TEST_HOUSEHOLD_ID))
         val cmd = UpdatePetCommand(saved.id!!, name="Bidu", breed=null, birthdate=null)
-        val detail = service.execute(cmd, tutor.id!!)
+        val detail = service.execute(cmd, access(tutor.id!!))
         assertEquals("Bidu", detail.name)
     }
 
     @Test
     fun `listPets returns paginated result`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        petRepo.save(Pet(name="P1", species="Dog", breed=null, birthdate=LocalDate.now(), photoUrl = null, tutorId=tutor.id!!))
-        val page = service.list(tutor.id!!, 0, 10)
+        petRepo.save(Pet(name="P1", species="Dog", breed=null, birthdate=LocalDate.now(), photoUrl = null, tutorId=tutor.id!!, householdId=TEST_HOUSEHOLD_ID))
+        val page = service.list(access(tutor.id!!), 0, 10)
         assertEquals(1, page.total)
         assertEquals(1, page.items.size)
     }
@@ -69,16 +72,16 @@ class PetAppServiceTest {
     @Test
     fun `deletePet removes pet`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed=null, birthdate=LocalDate.now(), tutorId=tutor.id!!))
-        service.execute(DeletePetCommand(saved.id!!), tutor.id!!)
+        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed=null, birthdate=LocalDate.now(), tutorId=tutor.id!!, householdId=TEST_HOUSEHOLD_ID))
+        service.execute(DeletePetCommand(saved.id!!), access(tutor.id!!))
         assertNull(petRepo.findById(saved.id!!))
     }
 
     @Test
     fun `getPet returns detail`() {
         val tutor = tutorRepo.save(Tutor(firstName="A", lastName=null, email=Email.of("e@x.com").getOrThrow(), passwordHash="p", phoneNumber=PhoneNumber.of("+5511912345678").getOrNull()))
-        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed=null, birthdate=LocalDate.now(), tutorId=tutor.id!!))
-        val detail = service.get(saved.id!!, tutor.id!!)
+        val saved = petRepo.save(Pet(name="Rex", species="Dog", breed=null, birthdate=LocalDate.now(), tutorId=tutor.id!!, householdId=TEST_HOUSEHOLD_ID))
+        val detail = service.get(saved.id!!, access(tutor.id!!))
         assertEquals(saved.id, detail.id)
     }
 }

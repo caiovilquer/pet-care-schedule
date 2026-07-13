@@ -5,6 +5,7 @@ import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceStatus
 import dev.vilquer.petcarescheduler.core.domain.care.CarePlanId
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
+import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import java.time.LocalDateTime
 import java.util.UUID
@@ -17,6 +18,10 @@ data class CreateCarePlanCommand(
     val startAt: LocalDateTime,
     val recurrence: Recurrence?,
     val reminderMinutesBefore: Int,
+    val responsibleTutorId: TutorId? = null,
+    val critical: Boolean = false,
+    val escalationDelayMinutes: Int? = null,
+    val escalationTutorId: TutorId? = null,
 )
 
 data class UpdateCarePlanCommand(
@@ -27,6 +32,16 @@ data class UpdateCarePlanCommand(
     val startAt: LocalDateTime,
     val recurrence: Recurrence?,
     val reminderMinutesBefore: Int,
+    val responsibleTutorId: TutorId? = null,
+    val critical: Boolean = false,
+    val escalationDelayMinutes: Int? = null,
+    val escalationTutorId: TutorId? = null,
+)
+
+data class AssignCareOccurrenceCommand(
+    val occurrenceId: CareOccurrenceId,
+    val expectedVersion: Long,
+    val responsibleTutorId: TutorId,
 )
 
 data class CompleteCareOccurrenceCommand(

@@ -9,6 +9,7 @@ import dev.vilquer.petcarescheduler.core.domain.care.CarePlanId
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -27,6 +28,10 @@ interface CarePlanRepositoryPort {
     fun listByTutor(tutorId: TutorId, petId: PetId?, active: Boolean?, page: Int, size: Int): List<CarePlan>
     fun countByTutor(tutorId: TutorId, petId: PetId?, active: Boolean?): Long
     fun findActive(page: Int, size: Int): List<CarePlan>
+    fun findByIdAndHousehold(id: CarePlanId, householdId: HouseholdId): CarePlan?
+    fun findByIdAndHouseholdForUpdate(id: CarePlanId, householdId: HouseholdId): CarePlan?
+    fun listByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?, page: Int, size: Int): List<CarePlan>
+    fun countByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?): Long
 }
 
 interface CareOccurrenceRepositoryPort {
@@ -41,6 +46,13 @@ interface CareOccurrenceRepositoryPort {
     fun findReminderCandidates(from: LocalDateTime, to: LocalDateTime, limit: Int): List<CareOccurrence>
     fun countByTutor(tutorId: TutorId): Long
     fun findUpcoming(tutorId: TutorId, from: LocalDateTime, to: LocalDateTime, limit: Int): List<CareOccurrence>
+    fun findByIdAndHousehold(id: CareOccurrenceId, householdId: HouseholdId): CareOccurrence?
+    fun findByIdAndHouseholdForUpdate(id: CareOccurrenceId, householdId: HouseholdId): CareOccurrence?
+    fun searchByHousehold(householdId: HouseholdId, filter: CareOccurrenceFilter, page: Int, size: Int): List<CareOccurrence>
+    fun countByHousehold(householdId: HouseholdId, filter: CareOccurrenceFilter): Long
+    fun countByHousehold(householdId: HouseholdId): Long
+    fun findUpcomingByHousehold(householdId: HouseholdId, from: LocalDateTime, to: LocalDateTime, limit: Int): List<CareOccurrence>
+    fun findCriticalEscalationCandidates(before: LocalDateTime, limit: Int): List<CareOccurrence>
 }
 
 interface CareOccurrenceActionRepositoryPort {

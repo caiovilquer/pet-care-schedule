@@ -4,6 +4,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.LocalDateTime
@@ -15,6 +16,7 @@ data class CarePlan(
     val id: CarePlanId = CarePlanId(UUID.randomUUID()),
     val version: Long? = null,
     val scheduleRevision: Int = 0,
+    val householdId: HouseholdId,
     val tutorId: TutorId,
     val petId: PetId,
     val responsibleTutorId: TutorId,
@@ -24,6 +26,9 @@ data class CarePlan(
     val startAt: LocalDateTime,
     val recurrence: Recurrence? = null,
     val reminderMinutesBefore: Int = 0,
+    val critical: Boolean = false,
+    val escalationDelayMinutes: Int? = null,
+    val escalationTutorId: TutorId? = null,
     val active: Boolean = true,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -33,6 +38,9 @@ data class CarePlan(
         require(instructions == null || instructions.length <= 2_000) { "care_plan_instructions_invalid" }
         require(reminderMinutesBefore in 0..10_080) { "care_plan_reminder_invalid" }
         require(scheduleRevision >= 0) { "care_plan_revision_invalid" }
+        require(critical == (escalationDelayMinutes != null)) { "care_plan_escalation_configuration_invalid" }
+        require(escalationDelayMinutes == null || escalationDelayMinutes in 15..10_080) { "care_plan_escalation_delay_invalid" }
+        require(!critical || escalationTutorId != null) { "care_plan_escalation_recipient_required" }
     }
 
     fun occurrencesThrough(horizon: LocalDateTime, generatedAt: Instant): List<CareOccurrence> {
@@ -50,14 +58,19 @@ data class CarePlan(
                 id = deterministicOccurrenceId(sequence),
                 planId = id,
                 scheduleRevision = scheduleRevision,
+                householdId = householdId,
                 tutorId = tutorId,
                 petId = petId,
+                responsibleTutorId = responsibleTutorId,
                 sequence = sequence,
                 type = type,
                 title = title,
                 instructions = instructions,
                 dueAt = dueAt,
                 status = CareOccurrenceStatus.SCHEDULED,
+                critical = critical,
+                escalationDelayMinutes = escalationDelayMinutes,
+                escalationTutorId = escalationTutorId,
                 createdAt = generatedAt,
                 updatedAt = generatedAt,
             )

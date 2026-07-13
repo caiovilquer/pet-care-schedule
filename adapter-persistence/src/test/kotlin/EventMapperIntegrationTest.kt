@@ -8,6 +8,8 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Status
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.PetJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
+import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.HouseholdJpa
+import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.HouseholdJpaRepository
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.EventMapper
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.EventJpaRepository
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.PetJpaRepository
@@ -21,6 +23,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.test.context.ContextConfiguration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.Instant
+import java.util.UUID
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -35,6 +39,7 @@ class EventMapperIntegrationTest : AbstractPostgresIntegrationTest() {
 
     @Autowired
     private lateinit var eventRepository: EventJpaRepository
+    @Autowired private lateinit var householdRepository: HouseholdJpaRepository
 
     private lateinit var savedPet: PetJpa
     private val testEventDateTime = LocalDateTime.of(2025, 5, 1, 9, 0)
@@ -49,6 +54,8 @@ class EventMapperIntegrationTest : AbstractPostgresIntegrationTest() {
             phoneNumber = "1198888-1111"
         }
         tutorRepository.save(tutor)
+        val householdUuid = UUID.randomUUID()
+        householdRepository.save(HouseholdJpa().also { it.id = householdUuid; it.name = "Família teste"; it.createdByTutorId = tutor.id!!; it.createdAt = Instant.now(); it.updatedAt = Instant.now() })
 
         // Create and save test pet
         val pet = PetJpa().apply {
@@ -57,6 +64,7 @@ class EventMapperIntegrationTest : AbstractPostgresIntegrationTest() {
             breed = "Siames"
             birthdate = LocalDate.of(2021, 6, 20)
             tutorId = tutor.id!!
+            householdId = householdUuid
         }
         savedPet = petRepository.save(pet)
     }

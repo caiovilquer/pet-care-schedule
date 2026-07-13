@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
 import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentJwt
 import dev.vilquer.petcarescheduler.application.adapter.input.security.tutorId
+import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentHousehold
 import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceId
 import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceStatus
 import dev.vilquer.petcarescheduler.core.domain.care.CarePlanId
@@ -15,6 +16,7 @@ import dev.vilquer.petcarescheduler.usecase.command.CreateCarePlanCommand
 import dev.vilquer.petcarescheduler.usecase.command.SearchCareOccurrencesQuery
 import dev.vilquer.petcarescheduler.usecase.command.UndoCareOccurrenceCommand
 import dev.vilquer.petcarescheduler.usecase.command.UpdateCarePlanCommand
+import dev.vilquer.petcarescheduler.usecase.command.AssignCareOccurrenceCommand
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CareOccurrenceUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CarePlanUseCase
@@ -57,6 +59,10 @@ data class CarePlanRequest(
     @field:Positive @field:Max(10_000) val repetitions: Int? = null,
     val finalDate: LocalDateTime? = null,
     @field:Min(0) @field:Max(10_080) val reminderMinutesBefore: Int = 0,
+    val responsibleTutorId: Long? = null,
+    val critical: Boolean = false,
+    @field:Min(15) @field:Max(10_080) val escalationDelayMinutes: Int? = null,
+    val escalationTutorId: Long? = null,
 ) {
     fun recurrence(): Recurrence? = frequency?.let { Recurrence(it, intervalCount, repetitions, finalDate) }
 }
@@ -64,7 +70,7 @@ data class CarePlanRequest(
 @RestController
 @RequestMapping("/api/v1/care-plans")
 @Validated
-class CarePlanController(private val care: CarePlanUseCase) {
+class CarePlanController(private val care: CarePlanUseCase, private val household: CurrentHousehold) {
     @PostMapping
     fun create(@Valid @RequestBody body: CarePlanRequest, @AuthenticationPrincipal jwt: CurrentJwt): ResponseEntity<CarePlanResult> {
         validateDates(body)
@@ -72,8 +78,9 @@ class CarePlanController(private val care: CarePlanUseCase) {
             CreateCarePlanCommand(
                 PetId(body.petId), body.type, body.title, body.instructions, body.startAt,
                 body.recurrence(), body.reminderMinutesBefore,
+                body.responsibleTutorId?.let(::TutorId), body.critical, body.escalationDelayMinutes, body.escalationTutorId?.let(::TutorId),
             ),
-            TutorId(jwt.tutorId()),
+            household.resolve(jwt),
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(result)
     }
@@ -89,14 +96,15 @@ class CarePlanController(private val care: CarePlanUseCase) {
             UpdateCarePlanCommand(
                 CarePlanId(id), body.type, body.title, body.instructions, body.startAt,
                 body.recurrence(), body.reminderMinutesBefore,
+                body.responsibleTutorId?.let(::TutorId), body.critical, body.escalationDelayMinutes, body.escalationTutorId?.let(::TutorId),
             ),
-            TutorId(jwt.tutorId()),
+            household.resolve(jwt),
         )
     }
 
     @GetMapping("/{id}")
     fun get(@PathVariable id: UUID, @AuthenticationPrincipal jwt: CurrentJwt) =
-        care.get(CarePlanId(id), TutorId(jwt.tutorId()))
+        care.get(CarePlanId(id), household.resolve(jwt))
 
     @GetMapping
     fun list(
@@ -105,12 +113,12 @@ class CarePlanController(private val care: CarePlanUseCase) {
         @RequestParam(required = false) active: Boolean?,
         @RequestParam(defaultValue = "0") @Min(0) page: Int,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) size: Int,
-    ): CarePlansPageResult = care.list(TutorId(jwt.tutorId()), petId?.let(::PetId), active, page, size)
+    ): CarePlansPageResult = care.list(household.resolve(jwt), petId?.let(::PetId), active, page, size)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deactivate(@PathVariable id: UUID, @AuthenticationPrincipal jwt: CurrentJwt) =
-        care.deactivate(CarePlanId(id), TutorId(jwt.tutorId()))
+        care.deactivate(CarePlanId(id), household.resolve(jwt))
 
     private fun validateDates(body: CarePlanRequest) {
         require(body.finalDate == null || !body.finalDate.isBefore(body.startAt)) { "care_plan_final_before_start" }
@@ -124,12 +132,15 @@ data class CareActionRequest(
     @field:Size(max = 500) val note: String? = null,
 )
 
+data class CareAssignmentRequest(val expectedVersion: Long, @field:Positive val responsibleTutorId: Long)
+
 @RestController
 @RequestMapping("/api/v1/care-occurrences")
 @Validated
 class CareOccurrenceController(
     private val care: CareOccurrenceUseCase,
     private val clock: ClockPort,
+    private val household: CurrentHousehold,
 ) {
     @GetMapping
     fun search(
@@ -147,12 +158,12 @@ class CareOccurrenceController(
             SearchCareOccurrencesQuery(
                 from ?: now.minusDays(30), to ?: now.plusDays(90), petId?.let(::PetId), type, status, page, size,
             ),
-            TutorId(jwt.tutorId()),
+            household.resolve(jwt),
         )
     }
 
     @GetMapping("/today")
-    fun today(@AuthenticationPrincipal jwt: CurrentJwt): TodayCareResult = care.today(TutorId(jwt.tutorId()))
+    fun today(@AuthenticationPrincipal jwt: CurrentJwt): TodayCareResult = care.today(household.resolve(jwt))
 
     @PostMapping("/{id}/complete")
     fun complete(
@@ -161,7 +172,7 @@ class CareOccurrenceController(
         @AuthenticationPrincipal jwt: CurrentJwt,
     ): CareOccurrenceResult = care.complete(
         CompleteCareOccurrenceCommand(CareOccurrenceId(id), body.requestId, body.note),
-        TutorId(jwt.tutorId()),
+        household.resolve(jwt),
     )
 
     @PostMapping("/{id}/undo")
@@ -171,6 +182,16 @@ class CareOccurrenceController(
         @AuthenticationPrincipal jwt: CurrentJwt,
     ): CareOccurrenceResult = care.undo(
         UndoCareOccurrenceCommand(CareOccurrenceId(id), body.requestId),
-        TutorId(jwt.tutorId()),
+        household.resolve(jwt),
+    )
+
+    @PutMapping("/{id}/responsible")
+    fun assign(
+        @PathVariable id: UUID,
+        @Valid @RequestBody body: CareAssignmentRequest,
+        @AuthenticationPrincipal jwt: CurrentJwt,
+    ): CareOccurrenceResult = care.assign(
+        AssignCareOccurrenceCommand(CareOccurrenceId(id), body.expectedVersion, TutorId(body.responsibleTutorId)),
+        household.resolve(jwt),
     )
 }

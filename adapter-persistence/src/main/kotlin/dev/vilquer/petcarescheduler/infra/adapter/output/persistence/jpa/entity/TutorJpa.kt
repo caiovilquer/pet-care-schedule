@@ -35,6 +35,9 @@ class TutorJpa {
     @Column(name = "avatar_asset_id")
     var avatarAssetId: UUID? = null
 
+    @Column(name = "default_household_id")
+    var defaultHouseholdId: UUID? = null
+
     @Column(name = "password_changed_at")
     var passwordChangedAt: Instant = Instant.now()
 

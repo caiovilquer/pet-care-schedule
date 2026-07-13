@@ -20,6 +20,7 @@ class CarePlanJpa {
     @Id lateinit var id: UUID
     @Version var version: Long? = null
     @Column(name = "schedule_revision", nullable = false) var scheduleRevision: Int = 0
+    @Column(name = "household_id", nullable = false) lateinit var householdId: UUID
     @Column(name = "tutor_id", nullable = false) var tutorId: Long = 0
     @Column(name = "pet_id", nullable = false) var petId: Long = 0
     @Column(name = "responsible_tutor_id", nullable = false) var responsibleTutorId: Long = 0
@@ -29,6 +30,9 @@ class CarePlanJpa {
     @Column(name = "start_at", nullable = false) lateinit var startAt: LocalDateTime
     @Embedded var recurrence: RecurrenceEmb? = null
     @Column(name = "reminder_minutes_before", nullable = false) var reminderMinutesBefore: Int = 0
+    @Column(nullable = false) var critical: Boolean = false
+    @Column(name = "escalation_delay_minutes") var escalationDelayMinutes: Int? = null
+    @Column(name = "escalation_tutor_id") var escalationTutorId: Long? = null
     @Column(nullable = false) var active: Boolean = true
     @Column(name = "created_at", nullable = false) lateinit var createdAt: Instant
     @Column(name = "updated_at", nullable = false) lateinit var updatedAt: Instant

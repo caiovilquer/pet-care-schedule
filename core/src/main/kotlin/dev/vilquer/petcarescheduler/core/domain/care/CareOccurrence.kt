@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.core.domain.care
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
@@ -17,14 +18,19 @@ data class CareOccurrence(
     val version: Long? = null,
     val planId: CarePlanId,
     val scheduleRevision: Int,
+    val householdId: HouseholdId,
     val tutorId: TutorId,
     val petId: PetId,
+    val responsibleTutorId: TutorId,
     val sequence: Int,
     val type: EventType,
     val title: String,
     val instructions: String? = null,
     val dueAt: LocalDateTime,
     val status: CareOccurrenceStatus,
+    val critical: Boolean = false,
+    val escalationDelayMinutes: Int? = null,
+    val escalationTutorId: TutorId? = null,
     val completedAt: Instant? = null,
     val completedByTutorId: TutorId? = null,
     val completionNote: String? = null,
@@ -41,6 +47,9 @@ data class CareOccurrence(
             status != CareOccurrenceStatus.COMPLETED ||
                 (completedAt != null && completedByTutorId != null),
         ) { "care_occurrence_completion_incomplete" }
+        require(critical == (escalationDelayMinutes != null)) { "care_occurrence_escalation_configuration_invalid" }
+        require(escalationDelayMinutes == null || escalationDelayMinutes in 15..10_080) { "care_occurrence_escalation_delay_invalid" }
+        require(!critical || escalationTutorId != null) { "care_occurrence_escalation_recipient_required" }
     }
 
     fun complete(actor: TutorId, at: Instant, note: String?): CareOccurrence {
@@ -71,4 +80,7 @@ data class CareOccurrence(
         require(status == CareOccurrenceStatus.SCHEDULED) { "care_occurrence_not_scheduled" }
         return copy(status = CareOccurrenceStatus.CANCELLED, updatedAt = at)
     }
+
+    fun assignTo(responsible: TutorId, at: Instant): CareOccurrence =
+        copy(responsibleTutorId = responsible, updatedAt = at)
 }

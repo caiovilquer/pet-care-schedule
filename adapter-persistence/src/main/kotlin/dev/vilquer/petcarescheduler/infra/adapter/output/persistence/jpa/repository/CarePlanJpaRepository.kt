@@ -33,4 +33,18 @@ interface CarePlanJpaRepository : JpaRepository<CarePlanJpa, UUID> {
     ): Page<CarePlanJpa>
 
     fun findAllByActiveTrueOrderByUpdatedAtAsc(pageable: Pageable): List<CarePlanJpa>
+
+    fun findByIdAndHouseholdId(id: UUID, householdId: UUID): CarePlanJpa?
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from CarePlanJpa p where p.id = :id and p.householdId = :householdId")
+    fun findByHouseholdForUpdate(@Param("id") id: UUID, @Param("householdId") householdId: UUID): CarePlanJpa?
+
+    @Query("""
+        select p from CarePlanJpa p where p.householdId = :householdId
+          and (:petId is null or p.petId = :petId) and (:active is null or p.active = :active)
+        order by p.active desc, p.startAt asc, p.id asc
+    """)
+    fun findHouseholdPage(@Param("householdId") householdId: UUID, @Param("petId") petId: Long?,
+                          @Param("active") active: Boolean?, pageable: Pageable): Page<CarePlanJpa>
 }

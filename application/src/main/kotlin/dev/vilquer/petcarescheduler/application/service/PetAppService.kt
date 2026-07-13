@@ -1,12 +1,13 @@
 package dev.vilquer.petcarescheduler.application.service
 
-import dev.vilquer.petcarescheduler.application.exception.ForbiddenException
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.application.mapper.toDetailResult
 import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdAccess
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdPermission
 import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
@@ -25,8 +26,9 @@ class PetAppService(
     DeletePetUseCase,
     GetPetUseCase {
 
-    override fun execute(cmd: CreatePetCommand): PetCreatedResult {
-        val tutor = tutorRepo.findById(cmd.tutorId)
+    override fun execute(cmd: CreatePetCommand, access: HouseholdAccess): PetCreatedResult {
+        requirePermission(access, HouseholdPermission.MANAGE_PETS)
+        val tutor = tutorRepo.findById(access.actorTutorId)
             ?: throw NotFoundException("Tutor ${cmd.tutorId.value} not found")
 
         val pet = Pet(
@@ -35,24 +37,25 @@ class PetAppService(
             breed = cmd.breed?.trim()?.takeIf { it.isNotEmpty() },
             birthdate = cmd.birthdate,
             photoUrl = cmd.photoUrl,
-            tutorId = tutor.id!!
+            tutorId = tutor.id!!,
+            householdId = access.householdId,
         )
         val saved = petRepo.save(pet)
         return PetCreatedResult(saved.id!!)
     }
 
-    override fun list(tutorId: TutorId, page: Int, size: Int): PetsPageResult {
+    override fun list(access: HouseholdAccess, page: Int, size: Int): PetsPageResult {
+        requirePermission(access, HouseholdPermission.VIEW)
         require(page >= 0) { "page deve ser maior ou igual a zero" }
         require(size in 1..100) { "size deve estar entre 1 e 100" }
-        val items = petRepo.listByTutor(tutorId, page, size).map { it.toSummary() }
-        val total = petRepo.countByTutor(tutorId)
+        val items = petRepo.listByHousehold(access.householdId, page, size).map { it.toSummary() }
+        val total = petRepo.countByHousehold(access.householdId)
         return PetsPageResult(items, total, page, size)
     }
 
-    override fun execute(cmd: UpdatePetCommand, tutorId: TutorId): PetDetailResult {
-        if (!petRepo.existsForTutor(cmd.petId, tutorId))
-            throw ForbiddenException("Não pode alterar pet de outro tutor")
-        val existing = petRepo.findByIdAndTutor(cmd.petId, tutorId)
+    override fun execute(cmd: UpdatePetCommand, access: HouseholdAccess): PetDetailResult {
+        requirePermission(access, HouseholdPermission.MANAGE_PETS)
+        val existing = petRepo.findByIdAndHousehold(cmd.petId, access.householdId)
             ?: throw NotFoundException("Pet ${cmd.petId.value} not found")
         val updated = existing.copy(
             name = cmd.name.trim(),
@@ -64,15 +67,20 @@ class PetAppService(
         return saved.toDetailResult(eventRepo.findByPetId(saved.id!!))
     }
 
-    override fun execute(cmd: DeletePetCommand, tutorId: TutorId) {
-        if (!petRepo.existsForTutor(cmd.petId, tutorId))
-            throw ForbiddenException("Não pode deletar pet de outro tutor")
+    override fun execute(cmd: DeletePetCommand, access: HouseholdAccess) {
+        requirePermission(access, HouseholdPermission.MANAGE_PETS)
+        if (!petRepo.existsForHousehold(cmd.petId, access.householdId)) throw NotFoundException("Pet não encontrado")
         petRepo.delete(cmd.petId)
     }
 
-    override fun get(id: PetId, tutorId: TutorId): PetDetailResult {
-        val pet = petRepo.findByIdAndTutor(id, tutorId)
+    override fun get(id: PetId, access: HouseholdAccess): PetDetailResult {
+        requirePermission(access, HouseholdPermission.VIEW)
+        val pet = petRepo.findByIdAndHousehold(id, access.householdId)
             ?: throw NotFoundException("Pet ${id.value} not found")
         return pet.toDetailResult(eventRepo.findByPetId(id))
+    }
+
+    private fun requirePermission(access: HouseholdAccess, permission: HouseholdPermission) {
+        if (!access.can(permission)) throw dev.vilquer.petcarescheduler.application.exception.ForbiddenException("Sem permissão para esta ação")
     }
 }

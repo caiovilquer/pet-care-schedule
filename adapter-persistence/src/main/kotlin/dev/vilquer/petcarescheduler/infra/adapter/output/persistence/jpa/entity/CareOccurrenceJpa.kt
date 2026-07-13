@@ -20,8 +20,10 @@ class CareOccurrenceJpa {
     @Version var version: Long? = null
     @Column(name = "plan_id", nullable = false) lateinit var planId: UUID
     @Column(name = "schedule_revision", nullable = false) var scheduleRevision: Int = 0
+    @Column(name = "household_id", nullable = false) lateinit var householdId: UUID
     @Column(name = "tutor_id", nullable = false) var tutorId: Long = 0
     @Column(name = "pet_id", nullable = false) var petId: Long = 0
+    @Column(name = "responsible_tutor_id", nullable = false) var responsibleTutorId: Long = 0
     @Column(name = "sequence_number", nullable = false) var sequence: Int = 0
     @Enumerated(EnumType.STRING) @Column(nullable = false) lateinit var type: EventType
     @Column(nullable = false, length = 120) lateinit var title: String
@@ -31,6 +33,9 @@ class CareOccurrenceJpa {
     @Column(name = "completed_at") var completedAt: Instant? = null
     @Column(name = "completed_by_tutor_id") var completedByTutorId: Long? = null
     @Column(name = "completion_note", length = 500) var completionNote: String? = null
+    @Column(nullable = false) var critical: Boolean = false
+    @Column(name = "escalation_delay_minutes") var escalationDelayMinutes: Int? = null
+    @Column(name = "escalation_tutor_id") var escalationTutorId: Long? = null
     @Column(name = "created_at", nullable = false) lateinit var createdAt: Instant
     @Column(name = "updated_at", nullable = false) lateinit var updatedAt: Instant
     @Column(name = "legacy_event_id", unique = true) var legacyEventId: Long? = null

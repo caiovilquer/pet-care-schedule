@@ -91,4 +91,35 @@ interface CareOccurrenceJpaRepository : JpaRepository<CareOccurrenceJpa, UUID> {
         @Param("to") to: LocalDateTime,
         pageable: Pageable,
     ): List<CareOccurrenceJpa>
+
+    fun findByIdAndHouseholdId(id: UUID, householdId: UUID): CareOccurrenceJpa?
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from CareOccurrenceJpa o where o.id = :id and o.householdId = :householdId")
+    fun findByHouseholdForUpdate(@Param("id") id: UUID, @Param("householdId") householdId: UUID): CareOccurrenceJpa?
+
+    @Query("""
+        select o from CareOccurrenceJpa o where o.householdId = :householdId
+          and o.dueAt >= :from and o.dueAt < :to
+          and (:petId is null or o.petId = :petId)
+          and (:type is null or o.type = :type)
+          and (:status is null or o.status = :status)
+        order by o.dueAt asc, o.id asc
+    """)
+    fun searchByHousehold(@Param("householdId") householdId: UUID, @Param("from") from: LocalDateTime,
+        @Param("to") to: LocalDateTime, @Param("petId") petId: Long?, @Param("type") type: EventType?,
+        @Param("status") status: CareOccurrenceStatus?, pageable: Pageable): Page<CareOccurrenceJpa>
+
+    fun countByHouseholdId(householdId: UUID): Long
+
+    @Query("""
+        select o from CareOccurrenceJpa o where o.householdId = :householdId and o.status = :status
+          and o.dueAt >= :from and o.dueAt < :to order by o.dueAt asc, o.id asc
+    """)
+    fun findUpcomingByHousehold(@Param("householdId") householdId: UUID, @Param("status") status: CareOccurrenceStatus,
+        @Param("from") from: LocalDateTime, @Param("to") to: LocalDateTime, pageable: Pageable): List<CareOccurrenceJpa>
+
+    fun findAllByStatusAndCriticalTrueAndDueAtLessThanEqualOrderByDueAtAsc(
+        status: CareOccurrenceStatus, before: LocalDateTime, pageable: Pageable,
+    ): List<CareOccurrenceJpa>
 }

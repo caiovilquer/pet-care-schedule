@@ -8,6 +8,10 @@ import dev.vilquer.petcarescheduler.application.InMemoryCareOccurrenceRepo
 import dev.vilquer.petcarescheduler.application.InMemoryCarePlanRepo
 import dev.vilquer.petcarescheduler.application.InMemoryPetRepo
 import dev.vilquer.petcarescheduler.application.InMemoryTutorRepo
+import dev.vilquer.petcarescheduler.application.FakeCareEscalationOutbox
+import dev.vilquer.petcarescheduler.application.FakeHouseholdMemberRepo
+import dev.vilquer.petcarescheduler.application.FakeHouseholdActivityRepo
+import dev.vilquer.petcarescheduler.application.TEST_HOUSEHOLD_ID
 import dev.vilquer.petcarescheduler.application.exception.ConflictException
 import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceId
 import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceStatus
@@ -15,6 +19,8 @@ import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdAccess
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdRole
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Frequency
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
@@ -34,6 +40,7 @@ import java.util.UUID
 
 class CareAppServiceTest {
     private val tutorId = TutorId(1)
+    private val access = HouseholdAccess(TEST_HOUSEHOLD_ID, tutorId, HouseholdRole.OWNER)
     private val localNow = LocalDateTime.of(2026, 7, 12, 9, 0)
     private val clock = FakeClock(ZonedDateTime.of(localNow, ZoneId.of("America/Sao_Paulo")))
     private lateinit var plans: InMemoryCarePlanRepo
@@ -63,13 +70,14 @@ class CareAppServiceTest {
             ),
         )
         pets = InMemoryPetRepo()
-        petId = pets.save(Pet(name = "Luna", species = "cat", breed = null, birthdate = null, tutorId = tutorId)).id!!
-        service = CareAppService(plans, occurrences, actions, pets, tutors, outbox, FakeTransactionPort(), clock)
+        petId = pets.save(Pet(name = "Luna", species = "cat", breed = null, birthdate = null, tutorId = tutorId, householdId = TEST_HOUSEHOLD_ID)).id!!
+        service = CareAppService(plans, occurrences, actions, pets, tutors, outbox, FakeCareEscalationOutbox(),
+            FakeHouseholdMemberRepo(tutorId), FakeHouseholdActivityRepo(), FakeTransactionPort(), clock)
     }
 
     @Test
     fun `recurring plan materializes independent occurrences without waiting for completion`() {
-        service.create(dailyPlan(repetitions = 4), tutorId)
+        service.create(dailyPlan(repetitions = 4), access)
 
         val generated = occurrences.all().sortedBy { it.dueAt }
         assertEquals(4, generated.size)
@@ -79,9 +87,9 @@ class CareAppServiceTest {
 
     @Test
     fun `editing a plan preserves completed history and replaces only future scheduled occurrences`() {
-        val created = service.create(dailyPlan(repetitions = 3), tutorId)
+        val created = service.create(dailyPlan(repetitions = 3), access)
         val first = occurrences.all().minBy { it.dueAt }
-        service.complete(CompleteCareOccurrenceCommand(first.id, UUID.randomUUID(), null), tutorId)
+        service.complete(CompleteCareOccurrenceCommand(first.id, UUID.randomUUID(), null), access)
 
         service.update(
             UpdateCarePlanCommand(
@@ -93,7 +101,7 @@ class CareAppServiceTest {
                 recurrence = Recurrence(Frequency.DAILY, repetitions = 2),
                 reminderMinutesBefore = 30,
             ),
-            tutorId,
+            access,
         )
 
         val all = occurrences.all()
@@ -105,34 +113,34 @@ class CareAppServiceTest {
 
     @Test
     fun `completion is replayable with the same request and rejects a second administration`() {
-        service.create(dailyPlan(repetitions = 1), tutorId)
+        service.create(dailyPlan(repetitions = 1), access)
         val occurrence = occurrences.all().single()
         val requestId = UUID.randomUUID()
 
-        val first = service.complete(CompleteCareOccurrenceCommand(occurrence.id, requestId, "Administrado"), tutorId)
-        val replay = service.complete(CompleteCareOccurrenceCommand(occurrence.id, requestId, "Administrado"), tutorId)
+        val first = service.complete(CompleteCareOccurrenceCommand(occurrence.id, requestId, "Administrado"), access)
+        val replay = service.complete(CompleteCareOccurrenceCommand(occurrence.id, requestId, "Administrado"), access)
 
         assertEquals(first, replay)
         assertEquals(1, actions.all().size)
         assertThrows(ConflictException::class.java) {
-            service.complete(CompleteCareOccurrenceCommand(occurrence.id, UUID.randomUUID(), null), tutorId)
+            service.complete(CompleteCareOccurrenceCommand(occurrence.id, UUID.randomUUID(), null), access)
         }
     }
 
     @Test
     fun `undo is allowed for the same tutor inside the safety window and expires afterwards`() {
-        service.create(dailyPlan(repetitions = 2), tutorId)
+        service.create(dailyPlan(repetitions = 2), access)
         val ordered = occurrences.all().sortedBy { it.dueAt }
-        service.complete(CompleteCareOccurrenceCommand(ordered[0].id, UUID.randomUUID(), null), tutorId)
-        service.complete(CompleteCareOccurrenceCommand(ordered[1].id, UUID.randomUUID(), null), tutorId)
+        service.complete(CompleteCareOccurrenceCommand(ordered[0].id, UUID.randomUUID(), null), access)
+        service.complete(CompleteCareOccurrenceCommand(ordered[1].id, UUID.randomUUID(), null), access)
 
         clock.fixed = clock.fixed.plusMinutes(9)
-        val reopened = service.undo(UndoCareOccurrenceCommand(ordered[0].id, UUID.randomUUID()), tutorId)
+        val reopened = service.undo(UndoCareOccurrenceCommand(ordered[0].id, UUID.randomUUID()), access)
         assertEquals(CareOccurrenceStatus.SCHEDULED, reopened.status)
 
         clock.fixed = clock.fixed.plusMinutes(2)
         assertThrows(ConflictException::class.java) {
-            service.undo(UndoCareOccurrenceCommand(ordered[1].id, UUID.randomUUID()), tutorId)
+            service.undo(UndoCareOccurrenceCommand(ordered[1].id, UUID.randomUUID()), access)
         }
     }
 
@@ -143,7 +151,7 @@ class CareAppServiceTest {
                 startAt = localNow.plusMinutes(30),
                 reminderMinutesBefore = 60,
             ),
-            tutorId,
+            access,
         )
 
         service.materializeAndEnqueueReminders()

@@ -19,6 +19,9 @@ data class CarePlanResult(
     val startAt: LocalDateTime,
     val recurrence: Recurrence?,
     val reminderMinutesBefore: Int,
+    val critical: Boolean,
+    val escalationDelayMinutes: Int?,
+    val escalationTutorId: Long?,
     val active: Boolean,
 )
 
@@ -34,6 +37,7 @@ data class CareOccurrenceResult(
     val version: Long?,
     val planId: UUID,
     val petId: Long,
+    val responsibleTutorId: Long,
     val type: EventType,
     val title: String,
     val instructions: String?,
@@ -42,6 +46,9 @@ data class CareOccurrenceResult(
     val completedAt: Instant?,
     val completedByTutorId: Long?,
     val completionNote: String?,
+    val critical: Boolean,
+    val escalationDelayMinutes: Int?,
+    val escalationTutorId: Long?,
     val canUndoUntil: Instant?,
 )
 

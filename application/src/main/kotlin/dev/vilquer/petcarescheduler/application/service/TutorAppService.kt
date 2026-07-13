@@ -9,13 +9,17 @@ import dev.vilquer.petcarescheduler.usecase.command.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PasswordHashPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.PetRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.HouseholdManagementUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
 
 class TutorAppService(
     private val tutorRepo: TutorRepositoryPort,
     private val passwordHash: PasswordHashPort,
-    private val petRepo: PetRepositoryPort
+    private val petRepo: PetRepositoryPort,
+    private val householdManagement: HouseholdManagementUseCase? = null,
+    private val transaction: TransactionPort = object : TransactionPort { override fun <T> execute(block: () -> T): T = block() },
 ) :
     CreateTutorUseCase,
     UpdateTutorUseCase,
@@ -35,8 +39,11 @@ class TutorAppService(
             phoneNumber = cmd.phoneNumber,
             avatar = cmd.avatar
         )
-        val saved = tutorRepo.save(tutor)
-        return TutorCreatedResult(saved.id!!)
+        return transaction.execute {
+            val saved = tutorRepo.save(tutor)
+            householdManagement?.provisionFor(saved.id!!, saved.firstName)
+            TutorCreatedResult(saved.id!!)
+        }
     }
 
     override fun execute(cmd: UpdateTutorCommand): TutorDetailResult {

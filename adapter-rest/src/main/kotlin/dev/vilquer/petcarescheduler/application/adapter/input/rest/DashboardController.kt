@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
 import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentJwt
 import dev.vilquer.petcarescheduler.application.adapter.input.security.tutorId
+import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentHousehold
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.GetDashboardOverviewUseCase
 import dev.vilquer.petcarescheduler.usecase.result.DashboardOverviewResult
@@ -14,8 +15,9 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/dashboard")
 class DashboardController(
     private val dashboard: GetDashboardOverviewUseCase,
+    private val household: CurrentHousehold,
 ) {
     @GetMapping
     fun overview(@AuthenticationPrincipal jwt: CurrentJwt): DashboardOverviewResult =
-        dashboard.getOverview(TutorId(jwt.tutorId()))
+        dashboard.getOverview(household.resolve(jwt))
 }

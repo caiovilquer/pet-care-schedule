@@ -35,6 +35,9 @@ class PetJpa {
     @Column(name = "tutor_id", nullable = false)
     var tutorId: Long? = null
 
+    @Column(name = "household_id", nullable = false)
+    var householdId: UUID? = null
+
     override fun equals(other: Any?): Boolean =
         this === other || (other is PetJpa && this.id != null && this.id == other.id)
 

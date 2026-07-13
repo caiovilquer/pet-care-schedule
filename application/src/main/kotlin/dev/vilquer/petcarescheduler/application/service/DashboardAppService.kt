@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.application.service
 import dev.vilquer.petcarescheduler.application.exception.NotFoundException
 import dev.vilquer.petcarescheduler.application.mapper.toSummary
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdAccess
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
@@ -18,11 +19,11 @@ class DashboardAppService(
     private val clock: ClockPort,
 ) : GetDashboardOverviewUseCase {
 
-    override fun getOverview(tutorId: TutorId): DashboardOverviewResult {
-        val tutor = tutors.findById(tutorId)
-            ?: throw NotFoundException("Tutor ${tutorId.value} not found")
+    override fun getOverview(access: HouseholdAccess): DashboardOverviewResult {
+        val tutor = tutors.findById(access.actorTutorId)
+            ?: throw NotFoundException("Tutor ${access.actorTutorId.value} not found")
         val now = clock.now().toLocalDateTime()
-        val petItems = pets.listByTutor(tutorId, page = 0, size = MAX_PETS)
+        val petItems = pets.listByHousehold(access.householdId, page = 0, size = MAX_PETS)
 
         return DashboardOverviewResult(
             firstName = tutor.firstName,
@@ -30,15 +31,16 @@ class DashboardAppService(
             email = tutor.email.value,
             avatar = tutor.avatar,
             avatarAssetId = tutor.avatarAssetId,
-            totalPets = pets.countByTutor(tutorId),
-            totalEvents = occurrences.countByTutor(tutorId),
+            totalPets = pets.countByHousehold(access.householdId),
+            totalEvents = occurrences.countByHousehold(access.householdId),
             pets = petItems.map { it.toSummary() },
-            upcomingEvents = occurrences.findUpcoming(tutorId, now, now.plusDays(7), MAX_UPCOMING).map {
+            upcomingEvents = occurrences.findUpcomingByHousehold(access.householdId, now, now.plusDays(7), MAX_UPCOMING).map {
                 dev.vilquer.petcarescheduler.usecase.result.CareOccurrenceResult(
                     id = it.id.value,
                     version = it.version,
                     planId = it.planId.value,
                     petId = it.petId.value,
+                    responsibleTutorId = it.responsibleTutorId.value,
                     type = it.type,
                     title = it.title,
                     instructions = it.instructions,
@@ -47,6 +49,9 @@ class DashboardAppService(
                     completedAt = it.completedAt,
                     completedByTutorId = it.completedByTutorId?.value,
                     completionNote = it.completionNote,
+                    critical = it.critical,
+                    escalationDelayMinutes = it.escalationDelayMinutes,
+                    escalationTutorId = it.escalationTutorId?.value,
                     canUndoUntil = it.completedAt?.plus(CareAppService.UNDO_WINDOW),
                 )
             },

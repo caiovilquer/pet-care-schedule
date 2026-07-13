@@ -28,6 +28,24 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
     10 minutos. Escritas no endpoint legado `/events` retornam `410 Gone` para
     impedir duas fontes de verdade durante a transição.
 
+- **Linha do tempo clínica**
+  - Histórico cronológico de vacinas, medicamentos, consultas, exames, sintomas
+    e cuidados diários, com produto, dose, lote, profissional, clínica e custo.
+  - Séries de peso, temperatura e condição corporal com unidades e faixas
+    consistentes.
+  - Documentos e imagens privados no mesmo object storage, com autorização por
+    tutor, download forçado e URLs assinadas curtas.
+  - Edição concorrente protegida por versão e lock, sem misturar fatos clínicos
+    com a agenda futura.
+
+- **Cuidado compartilhado com responsabilidade**
+  - Famílias isoladas por contexto, com papéis de proprietário, cuidador e
+    visitante aplicados no backend — não apenas escondidos na interface.
+  - Convites pessoais de uso único, responsáveis por cuidado, autoria de cada
+    confirmação, atividade recente e passagem de turno entre cuidadores.
+  - Cuidados críticos podem escalar por e-mail quando continuam pendentes após
+    o prazo escolhido, usando outbox idempotente e retry seguro.
+
 - **Lembretes automáticos e confiáveis**
   - Um scheduler a cada 5 minutos estende o horizonte e detecta ocorrências no
     momento configurado, apenas
@@ -81,6 +99,10 @@ A configuração segura do bucket e do CORS está em
 [`docs/object-storage.md`](docs/object-storage.md).
 O desenho, a migração e a estratégia operacional do Ciclo 2 estão em
 [`docs/cycle-2-care-plans.md`](docs/cycle-2-care-plans.md).
+As garantias, APIs e implantação do Ciclo 3 estão em
+[`docs/cycle-3-clinical-timeline.md`](docs/cycle-3-clinical-timeline.md).
+O modelo de autorização, os convites e a operação do Ciclo 4 estão em
+[`docs/cycle-4-shared-care.md`](docs/cycle-4-shared-care.md).
 
 ## Requisitos
 

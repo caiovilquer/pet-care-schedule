@@ -4,6 +4,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.core.domain.valueobject.PhoneNumber
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 
 /**
  * Mapper responsible for converting between Tutor domain entities and JPA entities.
@@ -29,6 +30,7 @@ object TutorMapper {
             phoneNumber = jpa.phoneNumber?.let { PhoneNumber.of(it).getOrThrow()},
             avatar = jpa.avatar,
             avatarAssetId = jpa.avatarAssetId,
+            defaultHouseholdId = jpa.defaultHouseholdId?.let(::HouseholdId),
         )
     }
 
@@ -55,6 +57,7 @@ object TutorMapper {
             jpa.phoneNumber = phoneNumber?.e164
             jpa.avatar = avatar
             jpa.avatarAssetId = avatarAssetId
+            jpa.defaultHouseholdId = defaultHouseholdId?.value
         }
         return jpa
     }

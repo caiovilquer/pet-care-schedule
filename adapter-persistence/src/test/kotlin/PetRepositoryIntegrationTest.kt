@@ -6,6 +6,9 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.TutorJpa
+import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.entity.HouseholdJpa
+import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.HouseholdJpaRepository
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.PetMapper
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.PetJpaRepository
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.TutorJpaRepository
@@ -16,6 +19,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.test.context.ContextConfiguration
 import java.time.LocalDate
+import java.time.Instant
+import java.util.UUID
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -27,6 +32,13 @@ class PetRepositoryIntegrationTest : AbstractPostgresIntegrationTest() {
 
     @Autowired
     lateinit var petRepoJpa: PetJpaRepository
+    @Autowired lateinit var householdRepoJpa: HouseholdJpaRepository
+
+    private fun householdFor(tutor: TutorJpa): HouseholdId {
+        val id = UUID.randomUUID()
+        householdRepoJpa.save(HouseholdJpa().also { it.id = id; it.name = "Família teste"; it.createdByTutorId = tutor.id!!; it.createdAt = Instant.now(); it.updatedAt = Instant.now() })
+        return HouseholdId(id)
+    }
 
     @Test
     fun `should persist and retrieve pet entity with correct mapping`() {
@@ -47,7 +59,7 @@ class PetRepositoryIntegrationTest : AbstractPostgresIntegrationTest() {
             breed = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
             photoUrl = "https://example.com/pets/rex.png",
-            tutorId = TutorId(tutorJpa.id!!)
+            tutorId = TutorId(tutorJpa.id!!), householdId = householdFor(tutorJpa)
         )
         val petJpa = PetMapper.toJpa(petDom, existing = null)
 
@@ -87,7 +99,7 @@ class PetRepositoryIntegrationTest : AbstractPostgresIntegrationTest() {
             breed = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
             photoUrl = "https://example.com/pets/rex.png",
-            tutorId = TutorId(tutorJpa.id!!)
+            tutorId = TutorId(tutorJpa.id!!), householdId = householdFor(tutorJpa)
         )
         val originalJpa = PetMapper.toJpa(originalDom)
         val savedJpa = petRepoJpa.save(originalJpa)
@@ -129,7 +141,7 @@ class PetRepositoryIntegrationTest : AbstractPostgresIntegrationTest() {
             breed = "Labrador",
             birthdate = LocalDate.of(2019, 8, 1),
             photoUrl = "https://example.com/pets/rex.png",
-            tutorId = TutorId(tutorJpa.id!!)
+            tutorId = TutorId(tutorJpa.id!!), householdId = householdFor(tutorJpa)
         )
         val savedJpa = petRepoJpa.save(PetMapper.toJpa(petDom))
 

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.vilquer.petcarescheduler.application.mapper.PetDtoMapper
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentHousehold
+import dev.vilquer.petcarescheduler.core.domain.household.*
 import dev.vilquer.petcarescheduler.usecase.command.DeletePetCommand
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.*
@@ -23,6 +25,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 
 class PetControllerTest {
 
@@ -32,11 +35,14 @@ class PetControllerTest {
     private val deletePet: DeletePetUseCase = mock()
     private val getPet: GetPetUseCase = mock()
     private val mapper = PetDtoMapper()               // classe concreta
+    private val currentHousehold: CurrentHousehold = mock()
+    private val access = HouseholdAccess(HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001")), TutorId(1), HouseholdRole.OWNER)
     private lateinit var mvc: MockMvc
     private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule())
 
     @BeforeEach
     fun setup() {
+        whenever(currentHousehold.resolve(any())).thenReturn(access)
         mvc = MockMvcBuilders
             .standaloneSetup(
                 PetController(
@@ -45,7 +51,8 @@ class PetControllerTest {
                     listPets,
                     updatePet,
                     deletePet,
-                    getPet
+                    getPet,
+                    currentHousehold,
                 )
             )
             .setCustomArgumentResolvers(AuthenticationPrincipalArgumentResolver())
@@ -56,7 +63,7 @@ class PetControllerTest {
     @Test
     fun `create pet returns 201`() {
         setJwtPrincipal()
-        whenever(createPet.execute(any()))
+        whenever(createPet.execute(any(), eq(access)))
             .thenReturn(PetCreatedResult(PetId(5)))
 
         val req = PetDtoMapper.CreateRequest(
@@ -85,7 +92,7 @@ class PetControllerTest {
         )
 
         // Matchers sobre value classes não casam com o argumento desembrulhado; usar valores concretos
-        whenever(listPets.list(TutorId(1), 0, 20)).thenReturn(page)
+        whenever(listPets.list(access, 0, 20)).thenReturn(page)
 
         mvc.perform(get("/api/v1/pets"))
             .andExpect(status().isOk)
@@ -99,7 +106,7 @@ class PetControllerTest {
             .andExpect(status().isNoContent)
 
         // Matchers/captors sobre value classes explodem no unboxing; usar valores concretos
-        verify(deletePet).execute(DeletePetCommand(PetId(3)), TutorId(1))
+        verify(deletePet).execute(DeletePetCommand(PetId(3)), access)
     }
 
     private fun setJwtPrincipal(tutorId: Long = 1L) {

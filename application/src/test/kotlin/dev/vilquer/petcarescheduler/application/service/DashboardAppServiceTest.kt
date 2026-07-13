@@ -14,6 +14,9 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Pet
 import dev.vilquer.petcarescheduler.core.domain.entity.Tutor
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
+import dev.vilquer.petcarescheduler.application.TEST_HOUSEHOLD_ID
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdAccess
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -24,6 +27,7 @@ import java.util.UUID
 
 class DashboardAppServiceTest {
     private val tutorId = TutorId(1)
+    private val access = HouseholdAccess(TEST_HOUSEHOLD_ID, tutorId, HouseholdRole.OWNER)
     private val now = LocalDateTime.of(2026, 7, 12, 9, 0)
     private val clock = FakeClock(ZonedDateTime.of(now, ZoneId.of("America/Sao_Paulo")))
 
@@ -43,17 +47,19 @@ class DashboardAppServiceTest {
         )
         val pets = InMemoryPetRepo()
         val luna = pets.save(
-            Pet(name = "Luna", species = "cat", breed = null, birthdate = null, tutorId = tutorId),
+            Pet(name = "Luna", species = "cat", breed = null, birthdate = null, tutorId = tutorId, householdId = TEST_HOUSEHOLD_ID),
         )
-        pets.save(Pet(name = "Tobias", species = "dog", breed = null, birthdate = null, tutorId = tutorId))
+        pets.save(Pet(name = "Tobias", species = "dog", breed = null, birthdate = null, tutorId = tutorId, householdId = TEST_HOUSEHOLD_ID))
         val createdAt = clock.now().toInstant()
         fun occurrence(type: EventType, title: String, dueAt: LocalDateTime, status: CareOccurrenceStatus) =
             CareOccurrence(
                 id = CareOccurrenceId(UUID.randomUUID()),
                 planId = CarePlanId(UUID.randomUUID()),
                 scheduleRevision = 0,
+                householdId = TEST_HOUSEHOLD_ID,
                 tutorId = tutorId,
                 petId = luna.id!!,
+                responsibleTutorId = tutorId,
                 sequence = 0,
                 type = type,
                 title = title,
@@ -72,7 +78,7 @@ class DashboardAppServiceTest {
             ),
         )
 
-        val result = DashboardAppService(tutors, pets, occurrences, clock).getOverview(tutorId)
+        val result = DashboardAppService(tutors, pets, occurrences, clock).getOverview(access)
 
         assertEquals("Ana", result.firstName)
         assertEquals("ana@example.com", result.email)
@@ -92,6 +98,6 @@ class DashboardAppServiceTest {
             clock,
         )
 
-        assertThrows(NotFoundException::class.java) { service.getOverview(tutorId) }
+        assertThrows(NotFoundException::class.java) { service.getOverview(access) }
     }
 }

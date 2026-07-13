@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.application.adapter.input.rest
 
 import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentJwt
 import dev.vilquer.petcarescheduler.application.adapter.input.security.tutorId
+import dev.vilquer.petcarescheduler.application.adapter.input.security.CurrentHousehold
 import dev.vilquer.petcarescheduler.application.service.RateLimitAction
 import dev.vilquer.petcarescheduler.application.service.RateLimiterService
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
@@ -32,13 +33,15 @@ import java.util.UUID
 class MediaController(
     private val media: MediaUploadUseCase,
     private val rateLimiter: RateLimiterService,
+    private val household: CurrentHousehold,
 ) {
     data class InitiateRequest(
         val purpose: MediaPurpose,
-        @field:Positive val targetId: Long,
+        @field:Positive val targetId: Long? = null,
+        val targetUuid: UUID? = null,
         @field:NotBlank @field:Size(max = 180) val filename: String,
-        @field:Pattern(regexp = "^image/(jpeg|png)$") val contentType: String,
-        @field:Min(1) @field:Max(5_242_880) val sizeBytes: Long,
+        @field:Pattern(regexp = "^(image/(jpeg|png)|application/pdf)$") val contentType: String,
+        @field:Min(1) @field:Max(10_485_760) val sizeBytes: Long,
         @field:Pattern(regexp = "^[A-Fa-f0-9]{64}$") val checksumSha256: String,
     )
 
@@ -52,10 +55,10 @@ class MediaController(
         rateLimiter.check(RateLimitAction.MEDIA_UPLOAD, "${request.remoteAddr ?: "unknown"}:${tutorId.value}")
         val result = media.initiate(
             InitiateMediaUploadCommand(
-                body.purpose, body.targetId, body.filename, body.contentType,
+                body.purpose, body.targetId, body.targetUuid, body.filename, body.contentType,
                 body.sizeBytes, body.checksumSha256,
             ),
-            tutorId,
+            household.resolve(jwt),
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(result)
     }
@@ -64,12 +67,12 @@ class MediaController(
     fun complete(
         @PathVariable id: UUID,
         @AuthenticationPrincipal jwt: CurrentJwt,
-    ): MediaAssetResult = media.complete(CompleteMediaUploadCommand(id), TutorId(jwt.tutorId()))
+    ): MediaAssetResult = media.complete(CompleteMediaUploadCommand(id), household.resolve(jwt))
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: UUID, @AuthenticationPrincipal jwt: CurrentJwt) {
-        media.delete(DeleteMediaCommand(id), TutorId(jwt.tutorId()))
+        media.delete(DeleteMediaCommand(id), household.resolve(jwt))
     }
 
     @GetMapping("/{id}/content")

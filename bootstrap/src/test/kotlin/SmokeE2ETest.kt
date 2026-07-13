@@ -10,6 +10,13 @@ import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.health.HealthRecordAttachment
+import dev.vilquer.petcarescheduler.core.domain.health.HealthRecordId
+import dev.vilquer.petcarescheduler.core.domain.media.MediaAsset
+import dev.vilquer.petcarescheduler.core.domain.media.MediaPurpose
+import dev.vilquer.petcarescheduler.core.domain.media.MediaStatus
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HealthRecordAttachmentRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.MediaAssetRepositoryPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -24,6 +31,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import java.time.ZoneId
 import java.time.LocalDateTime
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -59,6 +67,12 @@ class SmokeE2ETest {
 
     @Autowired
     lateinit var registerLegacyEvent: RegisterEventUseCase
+
+    @Autowired
+    lateinit var mediaAssets: MediaAssetRepositoryPort
+
+    @Autowired
+    lateinit var healthAttachments: HealthRecordAttachmentRepositoryPort
 
     private fun jsonHeaders(token: String? = null) = HttpHeaders().apply {
         contentType = MediaType.APPLICATION_JSON
@@ -253,6 +267,165 @@ class SmokeE2ETest {
             "/api/v1/pets", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(token)), JsonNode::class.java,
         )
         assertEquals(0, petsAfter.body!!["items"].size(), "pets after delete: ${petsAfter.body}")
+    }
+
+    @Test
+    fun `clinical timeline preserves ownership versions measurements and private attachments`() {
+        val ownerSignup = rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Lia","lastName":null,"email":"lia.health@example.com","rawPassword":"correct-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, ownerSignup.statusCode)
+        val ownerId = TutorId(ownerSignup.body!!["tutorId"].asLong())
+        val ownerLogin = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"lia.health@example.com","password":"correct-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val ownerToken = ownerLogin.body!!["token"].asText()
+        val petCreated = rest.postForEntity(
+            "/api/v1/pets",
+            HttpEntity("""{"name":"Nina","species":"Cat","breed":"SRD","birthdate":"2021-03-10"}""", jsonHeaders(ownerToken)),
+            JsonNode::class.java,
+        )
+        val petId = petCreated.body!!["petId"].asLong()
+        val occurredAt = Instant.now().minusSeconds(60).truncatedTo(ChronoUnit.SECONDS)
+
+        val created = rest.postForEntity(
+            "/api/v1/pets/$petId/health-records",
+            HttpEntity(
+                """{"type":"VACCINE","occurredAt":"$occurredAt","title":"Reforço V5","notes":"Sem reação imediata","productName":"V5","dosage":"1 dose","batchNumber":"LT-2026","professionalName":"Dra. Lia","clinicName":"Clínica Central","costAmount":145.90,"currency":"BRL"}""",
+                jsonHeaders(ownerToken),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, created.statusCode, "create health record: ${created.body}")
+        val recordId = created.body!!["id"].asText()
+        val initialVersion = created.body!!["version"].asLong()
+        assertEquals("VACCINE", created.body!!["type"].asText())
+
+        val measurement = rest.postForEntity(
+            "/api/v1/pets/$petId/health-measurements",
+            HttpEntity(
+                """{"type":"WEIGHT","value":4.75,"measuredAt":"$occurredAt","notes":"Antes do café"}""",
+                jsonHeaders(ownerToken),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, measurement.statusCode, "create measurement: ${measurement.body}")
+        assertEquals("KILOGRAM", measurement.body!!["unit"].asText())
+
+        val updated = rest.exchange(
+            "/api/v1/health-records/$recordId",
+            HttpMethod.PUT,
+            HttpEntity(
+                """{"version":$initialVersion,"type":"VACCINE","occurredAt":"$occurredAt","title":"Reforço V5 felina","notes":"Sem reação","productName":"V5","dosage":"1 dose","batchNumber":"LT-2026","professionalName":"Dra. Lia","clinicName":"Clínica Central","costAmount":145.90,"currency":"BRL"}""",
+                jsonHeaders(ownerToken),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, updated.statusCode, "update health record: ${updated.body}")
+        val currentVersion = updated.body!!["version"].asLong()
+        assertTrue(currentVersion > initialVersion)
+
+        val stale = rest.exchange(
+            "/api/v1/health-records/$recordId",
+            HttpMethod.PUT,
+            HttpEntity(
+                """{"version":$initialVersion,"type":"VACCINE","occurredAt":"$occurredAt","title":"Edição antiga","productName":null,"dosage":null,"batchNumber":null,"professionalName":null,"clinicName":null,"costAmount":null,"currency":null}""",
+                jsonHeaders(ownerToken),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CONFLICT, stale.statusCode)
+
+        val otherSignup = rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Bia","lastName":null,"email":"bia.health@example.com","rawPassword":"correct-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, otherSignup.statusCode)
+        val otherLogin = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"bia.health@example.com","password":"correct-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val otherToken = otherLogin.body!!["token"].asText()
+        val crossTenantRecord = rest.exchange(
+            "/api/v1/health-records/$recordId", HttpMethod.GET,
+            HttpEntity<Void>(jsonHeaders(otherToken)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.NOT_FOUND, crossTenantRecord.statusCode)
+        val crossTenantTimeline = rest.exchange(
+            "/api/v1/pets/$petId/health-records", HttpMethod.GET,
+            HttpEntity<Void>(jsonHeaders(otherToken)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.NOT_FOUND, crossTenantTimeline.statusCode)
+
+        val mediaId = UUID.randomUUID()
+        val ownerHouseholds = rest.exchange(
+            "/api/v1/households", HttpMethod.GET, HttpEntity<Void>(jsonHeaders(ownerToken)), JsonNode::class.java,
+        ).body!!
+        val ownerHouseholdId = dev.vilquer.petcarescheduler.core.domain.household.HouseholdId(
+            UUID.fromString(ownerHouseholds[0]["id"].asText()),
+        )
+        mediaAssets.save(
+            MediaAsset(
+                id = mediaId,
+                tutorId = ownerId,
+                householdId = ownerHouseholdId,
+                petId = PetId(petId),
+                healthRecordId = UUID.fromString(recordId),
+                purpose = MediaPurpose.HEALTH_ATTACHMENT,
+                originalFilename = "resultado.pdf",
+                contentType = "application/pdf",
+                expectedSize = 128,
+                checksumSha256 = "a".repeat(64),
+                stagingKey = "staging/test/$mediaId",
+                objectKey = "media/test/$mediaId.pdf",
+                status = MediaStatus.READY,
+                createdAt = occurredAt,
+                readyAt = occurredAt,
+            ),
+        )
+        healthAttachments.save(
+            HealthRecordAttachment(
+                healthRecordId = HealthRecordId(UUID.fromString(recordId)),
+                mediaAssetId = mediaId,
+                createdAt = occurredAt,
+            ),
+        )
+
+        val anonymousPublicMedia = rest.getForEntity("/api/v1/media/$mediaId/content", JsonNode::class.java)
+        assertEquals(HttpStatus.NOT_FOUND, anonymousPublicMedia.statusCode, "clinical attachment must never use public photo route")
+        val anonymousDownload = rest.getForEntity("/api/v1/health-attachments/$mediaId/download-url", JsonNode::class.java)
+        assertEquals(HttpStatus.UNAUTHORIZED, anonymousDownload.statusCode)
+        val crossTenantDownload = rest.exchange(
+            "/api/v1/health-attachments/$mediaId/download-url", HttpMethod.GET,
+            HttpEntity<Void>(jsonHeaders(otherToken)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.NOT_FOUND, crossTenantDownload.statusCode)
+
+        val timeline = rest.exchange(
+            "/api/v1/pets/$petId/health-records", HttpMethod.GET,
+            HttpEntity<Void>(jsonHeaders(ownerToken)), JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, timeline.statusCode)
+        assertEquals(1, timeline.body!!["total"].asInt())
+        assertEquals("resultado.pdf", timeline.body!!["items"][0]["attachments"][0]["filename"].asText())
+
+        val delete = rest.exchange(
+            "/api/v1/health-records/$recordId?version=$currentVersion", HttpMethod.DELETE,
+            HttpEntity<Void>(jsonHeaders(ownerToken)), Void::class.java,
+        )
+        assertEquals(HttpStatus.NO_CONTENT, delete.statusCode)
     }
 
     @Test

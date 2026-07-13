@@ -6,6 +6,9 @@ import dev.vilquer.petcarescheduler.core.domain.reset.PasswordResetToken
 import dev.vilquer.petcarescheduler.core.domain.session.RefreshToken
 import dev.vilquer.petcarescheduler.core.domain.media.MediaAsset
 import dev.vilquer.petcarescheduler.core.domain.media.MediaStatus
+import dev.vilquer.petcarescheduler.core.domain.health.*
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
+import dev.vilquer.petcarescheduler.core.domain.household.*
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Email
 import dev.vilquer.petcarescheduler.usecase.command.PlaceCategory
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
@@ -18,6 +21,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.UUID
+
+internal val TEST_HOUSEHOLD_ID = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
 
 internal class FakeClock(var fixed: ZonedDateTime) : ClockPort {
     override fun now(): ZonedDateTime = fixed
@@ -75,6 +80,7 @@ internal class InMemoryMediaAssetRepo : MediaAssetRepositoryPort {
     private val store = LinkedHashMap<UUID, MediaAsset>()
     override fun save(asset: MediaAsset): MediaAsset = asset.also { store[it.id] = it }
     override fun findById(id: UUID): MediaAsset? = store[id]
+    override fun findByIdForUpdate(id: UUID): MediaAsset? = store[id]
     override fun delete(id: UUID) { store.remove(id) }
     override fun findCleanupCandidates(pendingBefore: Instant, limit: Int): List<MediaAsset> =
         store.values.filter {
@@ -90,6 +96,7 @@ internal class FakeObjectStorage : ObjectStoragePort {
     val objects = LinkedHashMap<String, ByteArray>()
     val deleted = mutableListOf<String>()
     var failDeletes = false
+    var lastDownloadFilename: String? = null
     override fun presignUpload(key: String, contentType: String, checksumSha256: String, expiresIn: Duration) =
         PresignedUpload("https://storage.example/$key?signature=test", mapOf("content-type" to contentType))
     override fun readObject(key: String, maxBytes: Long): ByteArray =
@@ -102,8 +109,66 @@ internal class FakeObjectStorage : ObjectStoragePort {
         objects.remove(key)
         deleted += key
     }
-    override fun presignDownload(key: String, expiresIn: Duration): String =
-        "https://storage.example/$key?signature=download"
+    override fun presignDownload(key: String, expiresIn: Duration, downloadFilename: String?): String {
+        lastDownloadFilename = downloadFilename
+        return "https://storage.example/$key?signature=download"
+    }
+}
+
+internal class InMemoryHealthRecordRepo : HealthRecordRepositoryPort {
+    private val store = LinkedHashMap<HealthRecordId, HealthRecord>()
+    override fun save(record: HealthRecord): HealthRecord {
+        val saved = record.copy(version = (store[record.id]?.version ?: -1L) + 1L)
+        store[saved.id] = saved
+        return saved
+    }
+    override fun findByIdAndTutor(id: HealthRecordId, tutorId: TutorId) = store[id]?.takeIf { it.tutorId == tutorId }
+    override fun findByIdAndTutorForUpdate(id: HealthRecordId, tutorId: TutorId) = findByIdAndTutor(id, tutorId)
+    override fun search(tutorId: TutorId, filter: HealthRecordFilter, page: Int, size: Int) = store.values
+        .filter { it.tutorId == tutorId && it.petId == filter.petId && it.occurredAt >= filter.from && it.occurredAt < filter.to }
+        .filter { filter.type == null || it.type == filter.type }
+        .sortedByDescending { it.occurredAt }
+        .drop(page * size).take(size)
+    override fun count(tutorId: TutorId, filter: HealthRecordFilter) =
+        search(tutorId, filter, 0, Int.MAX_VALUE).size.toLong()
+    override fun delete(id: HealthRecordId) { store.remove(id) }
+    override fun findByIdAndHousehold(id: HealthRecordId, householdId: HouseholdId) = store[id]?.takeIf { it.householdId == householdId }
+    override fun findByIdAndHouseholdForUpdate(id: HealthRecordId, householdId: HouseholdId) = findByIdAndHousehold(id, householdId)
+    override fun searchByHousehold(householdId: HouseholdId, filter: HealthRecordFilter, page: Int, size: Int) = store.values
+        .filter { it.householdId == householdId && it.petId == filter.petId && it.occurredAt >= filter.from && it.occurredAt < filter.to }
+        .filter { filter.type == null || it.type == filter.type }.sortedByDescending { it.occurredAt }.drop(page * size).take(size)
+    override fun countByHousehold(householdId: HouseholdId, filter: HealthRecordFilter) = searchByHousehold(householdId, filter, 0, Int.MAX_VALUE).size.toLong()
+}
+
+internal class InMemoryHealthAttachmentRepo : HealthRecordAttachmentRepositoryPort {
+    private val store = LinkedHashMap<UUID, HealthRecordAttachment>()
+    override fun save(attachment: HealthRecordAttachment) = attachment.also { store[it.mediaAssetId] = it }
+    override fun countByRecord(recordId: HealthRecordId) = store.values.count { it.healthRecordId == recordId }.toLong()
+    override fun listByRecordIds(recordIds: Collection<HealthRecordId>) = emptyMap<HealthRecordId, List<HealthAttachmentDetails>>()
+    override fun findByMediaId(mediaId: UUID) = store[mediaId]
+    override fun deleteByMediaId(mediaId: UUID) { store.remove(mediaId) }
+}
+
+internal class InMemoryHealthMeasurementRepo : HealthMeasurementRepositoryPort {
+    private val store = LinkedHashMap<HealthMeasurementId, HealthMeasurement>()
+    override fun save(measurement: HealthMeasurement): HealthMeasurement {
+        val saved = measurement.copy(version = (store[measurement.id]?.version ?: -1L) + 1L)
+        store[saved.id] = saved
+        return saved
+    }
+    override fun findByIdAndTutor(id: HealthMeasurementId, tutorId: TutorId) = store[id]?.takeIf { it.tutorId == tutorId }
+    override fun findByIdAndTutorForUpdate(id: HealthMeasurementId, tutorId: TutorId) = findByIdAndTutor(id, tutorId)
+    override fun list(
+        tutorId: TutorId, petId: PetId, type: HealthMeasurementType?, from: Instant, to: Instant, limit: Int,
+    ) = store.values.filter {
+        it.tutorId == tutorId && it.petId == petId && it.measuredAt >= from && it.measuredAt < to &&
+            (type == null || it.type == type)
+    }.sortedBy { it.measuredAt }.take(limit)
+    override fun delete(id: HealthMeasurementId) { store.remove(id) }
+    override fun findByIdAndHouseholdForUpdate(id: HealthMeasurementId, householdId: HouseholdId) = store[id]?.takeIf { it.householdId == householdId }
+    override fun listByHousehold(householdId: HouseholdId, petId: PetId, type: HealthMeasurementType?, from: Instant, to: Instant, limit: Int) = store.values.filter {
+        it.householdId == householdId && it.petId == petId && it.measuredAt >= from && it.measuredAt < to && (type == null || it.type == type)
+    }.sortedBy { it.measuredAt }.take(limit)
 }
 
 internal class InMemoryPasswordResetTokenPort : PasswordResetTokenPort {
@@ -209,6 +274,11 @@ internal class InMemoryPetRepo(initial: Map<PetId, Pet> = emptyMap()) : PetRepos
         store[id]?.tutorId == tutorId
     override fun findAllByTutor(tutorId: TutorId): List<Pet> =
         store.values.filter { it.tutorId == tutorId }
+    override fun listByHousehold(householdId: HouseholdId, page: Int, size: Int) =
+        store.values.filter { it.householdId == householdId || it.householdId == null }.drop(page * size).take(size)
+    override fun countByHousehold(householdId: HouseholdId) = store.values.count { it.householdId == householdId || it.householdId == null }.toLong()
+    override fun findByIdAndHousehold(id: PetId, householdId: HouseholdId) = store[id]?.takeIf { it.householdId == householdId || it.householdId == null }
+    override fun existsForHousehold(id: PetId, householdId: HouseholdId) = findByIdAndHousehold(id, householdId) != null
 }
 
 internal class InMemoryEventRepo(
@@ -315,6 +385,20 @@ internal class InMemoryCareOccurrenceRepo(
         .sortedBy { it.dueAt }
         .take(limit)
         .toList()
+    override fun findByIdAndHousehold(id: CareOccurrenceId, householdId: HouseholdId) = store[id]?.takeIf { it.householdId == householdId }
+    override fun findByIdAndHouseholdForUpdate(id: CareOccurrenceId, householdId: HouseholdId) = findByIdAndHousehold(id, householdId)
+    override fun searchByHousehold(householdId: HouseholdId, filter: CareOccurrenceFilter, page: Int, size: Int) =
+        store.values.filter { it.householdId == householdId && !it.dueAt.isBefore(filter.from) && !it.dueAt.isAfter(filter.to) &&
+            (filter.petId == null || it.petId == filter.petId) && (filter.type == null || it.type == filter.type) && (filter.status == null || it.status == filter.status) }
+            .sortedBy { it.dueAt }.drop(page * size).take(size)
+    override fun countByHousehold(householdId: HouseholdId, filter: CareOccurrenceFilter) = searchByHousehold(householdId, filter, 0, Int.MAX_VALUE).size.toLong()
+    override fun countByHousehold(householdId: HouseholdId) = store.values.count { it.householdId == householdId }.toLong()
+    override fun findUpcomingByHousehold(householdId: HouseholdId, from: java.time.LocalDateTime, to: java.time.LocalDateTime, limit: Int) = store.values.filter {
+        it.householdId == householdId && it.status == CareOccurrenceStatus.SCHEDULED && !it.dueAt.isBefore(from) && !it.dueAt.isAfter(to)
+    }.sortedBy { it.dueAt }.take(limit)
+    override fun findCriticalEscalationCandidates(before: java.time.LocalDateTime, limit: Int) = store.values.filter {
+        it.critical && it.status == CareOccurrenceStatus.SCHEDULED && !it.dueAt.isAfter(before)
+    }.sortedBy { it.dueAt }.take(limit)
 
     fun all(): Collection<CareOccurrence> = store.values
 
@@ -353,6 +437,12 @@ internal class InMemoryCarePlanRepo(
         }.toLong()
     override fun findActive(page: Int, size: Int): List<CarePlan> =
         store.values.filter { it.active }.sortedBy { it.updatedAt }.drop(page * size).take(size)
+    override fun findByIdAndHousehold(id: CarePlanId, householdId: HouseholdId) = store[id]?.takeIf { it.householdId == householdId }
+    override fun findByIdAndHouseholdForUpdate(id: CarePlanId, householdId: HouseholdId) = findByIdAndHousehold(id, householdId)
+    override fun listByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?, page: Int, size: Int) = store.values.filter {
+        it.householdId == householdId && (petId == null || it.petId == petId) && (active == null || it.active == active)
+    }.sortedBy { it.startAt }.drop(page * size).take(size)
+    override fun countByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?) = listByHousehold(householdId, petId, active, 0, Int.MAX_VALUE).size.toLong()
     fun all(): Collection<CarePlan> = store.values
 }
 
@@ -382,6 +472,32 @@ internal class FakeCareReminderOutbox : CareReminderOutboxPort {
     }
     fun all(): Collection<CareReminderOutboxMessage> = store.values
     fun isSent(id: Long?): Boolean = id != null && id in sent
+}
+
+internal class FakeCareEscalationOutbox : CareEscalationOutboxPort {
+    private val items = linkedMapOf<CareOccurrenceId, CareEscalationOutboxMessage>()
+    override fun enqueueIfAbsent(message: CareEscalationOutboxMessage) { items.putIfAbsent(message.occurrenceId, message.copy(id = items.size + 1L)) }
+    override fun findPending(maxAttempts: Int, limit: Int) = items.values.filter { it.attempts < maxAttempts }.take(limit)
+    override fun markSent(id: Long) { }
+    override fun incrementAttempts(id: Long) { }
+}
+
+internal class FakeHouseholdMemberRepo(private val tutorId: TutorId) : HouseholdMemberRepositoryPort {
+    private val member = HouseholdMember(householdId = TEST_HOUSEHOLD_ID, tutorId = tutorId, role = HouseholdRole.OWNER, joinedAt = Instant.EPOCH)
+    override fun save(member: HouseholdMember) = member
+    override fun findAccess(tutorId: TutorId, householdId: HouseholdId) = member.takeIf { tutorId == this.tutorId && householdId == TEST_HOUSEHOLD_ID }
+    override fun findAccessForUpdate(tutorId: TutorId, householdId: HouseholdId) = findAccess(tutorId, householdId)
+    override fun findByIdForUpdate(id: HouseholdMemberId, householdId: HouseholdId) = member.takeIf { id == member.id }
+    override fun listDetails(householdId: HouseholdId) = emptyList<HouseholdMemberDetails>()
+    override fun count(householdId: HouseholdId) = 1L
+    override fun countOwners(householdId: HouseholdId) = 1L
+    override fun delete(id: HouseholdMemberId) { }
+}
+
+internal class FakeHouseholdActivityRepo : HouseholdActivityRepositoryPort {
+    val items = mutableListOf<HouseholdActivity>()
+    override fun save(activity: HouseholdActivity) = activity.also(items::add)
+    override fun listRecent(householdId: HouseholdId, limit: Int) = emptyList<HouseholdActivityDetails>()
 }
 
 /** Sem TTL real: sempre executa o loader — suficiente para testar orquestração. */

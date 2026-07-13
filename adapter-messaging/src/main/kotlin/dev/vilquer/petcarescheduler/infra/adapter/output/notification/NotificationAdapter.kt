@@ -5,6 +5,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.Event
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventReminderTarget
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderNotificationTarget
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareEscalationNotificationTarget
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.NotificationPort
 import dev.vilquer.petcarescheduler.infra.config.MailApiProps
 import org.slf4j.LoggerFactory
@@ -23,7 +24,8 @@ class EmailNotificationAdapter(
     // dois beans RestClient no contexto.
     @param:Qualifier("mailerSendClient") private val http: RestClient,
     private val props: MailApiProps,
-    @param:Value("\${app.timezone:America/Sao_Paulo}") private val timezone: String
+    @param:Value("\${app.timezone:America/Sao_Paulo}") private val timezone: String,
+    @param:Value("\${app.frontend.base-url:https://rotinapet.vilquer.dev}") private val frontendBaseUrl: String,
 ) : NotificationPort {
 
     private val log = LoggerFactory.getLogger(EmailNotificationAdapter::class.java)
@@ -83,6 +85,33 @@ class EmailNotificationAdapter(
         }
     }
 
+    override fun sendCareEscalation(target: CareEscalationNotificationTarget): Boolean {
+        val whenText = target.dueAt.atZone(DEFAULTZONE).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
+        val html = """
+            <html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#26342d">
+              <h2 style="color:#9b2c2c">Cuidado crítico ainda não confirmado</h2>
+              <p>O cuidado <strong>${escapeHtml(target.careTitle)}</strong> de <strong>${escapeHtml(target.petName)}</strong>, previsto para $whenText, continua pendente.</p>
+              <p><a href="${frontendBaseUrl.trimEnd('/')}/today" style="display:inline-block;background:#9b2c2c;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none">Ver cuidado agora</a></p>
+              <p style="color:#66756d;font-size:12px">Este alerta foi configurado por um proprietário da família no RotinaPet.</p>
+            </body></html>
+        """.trimIndent()
+        val payload = mapOf(
+            "from" to mapOf("email" to props.from, "name" to props.fromName),
+            "to" to listOf(mapOf("email" to target.recipientEmail)),
+            "subject" to "Atenção: cuidado crítico de ${target.petName} está pendente",
+            "text" to stripHtml(html), "html" to html,
+        )
+        return try {
+            http.post().uri("/email").body(payload).retrieve()
+                .onStatus({ it.value() >= 400 }) { _, response ->
+                    throw IllegalStateException("Mail Send error ${response.statusCode.value()}")
+                }.toBodilessEntity().statusCode.is2xxSuccessful
+        } catch (ex: Exception) {
+            log.error("Failed to send critical care escalation", ex)
+            false
+        }
+    }
+
     // ===== apresentação =====
 
     private val PTBR: Locale = Locale.of("pt", "BR")
@@ -114,7 +143,7 @@ class EmailNotificationAdapter(
 
         val petName = petNameRaw?.let { escapeHtml(it) } ?: "Pet"
         val descricao = descriptionRaw?.takeIf { it.isNotBlank() }?.let { escapeHtml(it) } ?: "Sem descrição"
-        val ctaUrl = "https://rotinapet.vilquer.dev/today"
+        val ctaUrl = "${frontendBaseUrl.trimEnd('/')}/today"
 
         return """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -187,8 +216,6 @@ class EmailNotificationAdapter(
             ZoneId.of("America/Sao_Paulo")
         }
 }
-
-
 
 
 

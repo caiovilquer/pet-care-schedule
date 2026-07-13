@@ -8,6 +8,7 @@ import dev.vilquer.petcarescheduler.core.domain.care.CarePlan
 import dev.vilquer.petcarescheduler.core.domain.care.CarePlanId
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdId
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.toDomain
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.mappers.toJpa
 import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.repository.CareOccurrenceActionJpaRepository
@@ -34,6 +35,12 @@ class CarePlanRepositoryAdapter(private val jpa: CarePlanJpaRepository) : CarePl
         jpa.findOwnedPage(tutorId.value, petId?.value, active, PageRequest.of(0, 1)).totalElements
     override fun findActive(page: Int, size: Int) =
         jpa.findAllByActiveTrueOrderByUpdatedAtAsc(PageRequest.of(page, size)).map { it.toDomain() }
+    override fun findByIdAndHousehold(id: CarePlanId, householdId: HouseholdId) = jpa.findByIdAndHouseholdId(id.value, householdId.value)?.toDomain()
+    override fun findByIdAndHouseholdForUpdate(id: CarePlanId, householdId: HouseholdId) = jpa.findByHouseholdForUpdate(id.value, householdId.value)?.toDomain()
+    override fun listByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?, page: Int, size: Int) =
+        jpa.findHouseholdPage(householdId.value, petId?.value, active, PageRequest.of(page, size)).content.map { it.toDomain() }
+    override fun countByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?) =
+        jpa.findHouseholdPage(householdId.value, petId?.value, active, PageRequest.of(0, 1)).totalElements
 }
 
 @Repository
@@ -64,6 +71,17 @@ class CareOccurrenceRepositoryAdapter(private val jpa: CareOccurrenceJpaReposito
     override fun countByTutor(tutorId: TutorId) = jpa.countByTutorId(tutorId.value)
     override fun findUpcoming(tutorId: TutorId, from: LocalDateTime, to: LocalDateTime, limit: Int) =
         jpa.findUpcoming(tutorId.value, CareOccurrenceStatus.SCHEDULED, from, to, PageRequest.of(0, limit)).map { it.toDomain() }
+    override fun findByIdAndHousehold(id: CareOccurrenceId, householdId: HouseholdId) = jpa.findByIdAndHouseholdId(id.value, householdId.value)?.toDomain()
+    override fun findByIdAndHouseholdForUpdate(id: CareOccurrenceId, householdId: HouseholdId) = jpa.findByHouseholdForUpdate(id.value, householdId.value)?.toDomain()
+    override fun searchByHousehold(householdId: HouseholdId, filter: CareOccurrenceFilter, page: Int, size: Int) =
+        jpa.searchByHousehold(householdId.value, filter.from, filter.to, filter.petId?.value, filter.type, filter.status, PageRequest.of(page, size)).content.map { it.toDomain() }
+    override fun countByHousehold(householdId: HouseholdId, filter: CareOccurrenceFilter) =
+        jpa.searchByHousehold(householdId.value, filter.from, filter.to, filter.petId?.value, filter.type, filter.status, PageRequest.of(0, 1)).totalElements
+    override fun countByHousehold(householdId: HouseholdId) = jpa.countByHouseholdId(householdId.value)
+    override fun findUpcomingByHousehold(householdId: HouseholdId, from: LocalDateTime, to: LocalDateTime, limit: Int) =
+        jpa.findUpcomingByHousehold(householdId.value, CareOccurrenceStatus.SCHEDULED, from, to, PageRequest.of(0, limit)).map { it.toDomain() }
+    override fun findCriticalEscalationCandidates(before: LocalDateTime, limit: Int) =
+        jpa.findAllByStatusAndCriticalTrueAndDueAtLessThanEqualOrderByDueAtAsc(CareOccurrenceStatus.SCHEDULED, before, PageRequest.of(0, limit)).map { it.toDomain() }
 }
 
 @Repository
