@@ -12,4 +12,5 @@ data class CareEscalationNotificationTarget(
     val petName: String,
     val careTitle: String,
     val dueAt: java.time.LocalDateTime,
+    val timezone: String = dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone.DEFAULT_ID,
 )

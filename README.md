@@ -151,3 +151,6 @@ Detalhes do bucket local: [`docs/object-storage.md`](docs/object-storage.md#mini
 ./gradlew :bootstrap:bootJar
 scripts/run-prod.sh
 ```
+# Timezones e contrato de datas
+
+O timezone canônico da agenda pertence ao household e usa um identificador IANA (por exemplo, `America/New_York`). Households legados sem valor persistido mantêm o fallback compatível `America/Sao_Paulo`; `APP_TIMEZONE` configura apenas o relógio padrão e crons globais, não substitui o fuso de uma família. `startAt`/`dueAt` de cuidados continuam como wall-clock `LocalDateTime`: inputs sem offset são interpretados no timezone do household, enquanto ISO 8601 com offset ou `Z` é tratado como instante e convertido para o wall-clock do household. As respostas de household e agenda incluem `timezone`. Saúde, despesas e conclusões permanecem `Instant`/UTC. A Opção A evita backfill destrutivo; uma futura migração para `Instant` por plano deve preservar também o `zoneId` original.

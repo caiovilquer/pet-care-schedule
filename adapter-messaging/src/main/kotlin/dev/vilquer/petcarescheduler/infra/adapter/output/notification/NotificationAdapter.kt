@@ -18,6 +18,7 @@ import org.springframework.web.client.RestClient
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone
 
 @Component
 class EmailNotificationAdapter(
@@ -25,7 +26,7 @@ class EmailNotificationAdapter(
     // dois beans RestClient no contexto.
     @param:Qualifier("mailerSendClient") private val http: RestClient,
     private val props: MailApiProps,
-    @param:Value("\${app.timezone:America/Sao_Paulo}") private val timezone: String,
+    @param:Value("\${app.timezone}") private val timezone: String,
     @param:Value("\${app.frontend.base-url:https://rotinapet.vilquer.dev}") private val frontendBaseUrl: String,
 ) : NotificationPort {
 
@@ -33,14 +34,15 @@ class EmailNotificationAdapter(
 
     override fun sendEventReminder(target: EventReminderTarget): Boolean {
         val event = target.event
-        val html = renderTemplate(event, target.petName)
+        val zoneId = HouseholdTimezone.parse(target.timezone)
+        val html = renderTemplate(event, target.petName, zoneId)
         val subject = "Lembrete do RotinaPet: ${event.type.pt()}"
 
         val payload = mapOf(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
             "to" to listOf(mapOf("email" to target.tutorEmail)),
             "subject" to subject,
-            "text" to reminderText(event.type, event.description, event.dateStart, target.petName),
+            "text" to reminderText(event.type, event.description, event.dateStart, target.petName, zoneId),
             "html" to html
         )
 
@@ -65,12 +67,13 @@ class EmailNotificationAdapter(
     }
 
     override fun sendCareReminder(target: CareReminderNotificationTarget): Boolean {
-        val html = renderTemplate(target.type, target.title, target.dueAt, target.petName)
+        val zoneId = HouseholdTimezone.parse(target.timezone)
+        val html = renderTemplate(target.type, target.title, target.dueAt, target.petName, zoneId)
         val payload = mapOf(
             "from" to mapOf("email" to props.from, "name" to props.fromName),
             "to" to listOf(mapOf("email" to target.tutorEmail)),
             "subject" to "Lembrete do RotinaPet: ${target.type.pt()}",
-            "text" to reminderText(target.type, target.title, target.dueAt, target.petName),
+            "text" to reminderText(target.type, target.title, target.dueAt, target.petName, zoneId),
             "html" to html,
         )
         return try {
@@ -87,7 +90,7 @@ class EmailNotificationAdapter(
     }
 
     override fun sendCareEscalation(target: CareEscalationNotificationTarget): Boolean {
-        val whenText = target.dueAt.atZone(DEFAULTZONE).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
+        val whenText = target.dueAt.atZone(HouseholdTimezone.parse(target.timezone)).format(DATEFMT).replaceFirstChar { it.titlecase(PTBR) }
         val safeTitle = RotinaPetEmail.escape(target.careTitle)
         val safePet = RotinaPetEmail.escape(target.petName)
         val ctaUrl = "${frontendBaseUrl.trimEnd('/')}/today"
@@ -248,11 +251,9 @@ class EmailNotificationAdapter(
         try {
             ZoneId.of(value)
         } catch (ex: Exception) {
-            ZoneId.of("America/Sao_Paulo")
+            HouseholdTimezone.parse(null)
         }
 }
-
-
 
 
 

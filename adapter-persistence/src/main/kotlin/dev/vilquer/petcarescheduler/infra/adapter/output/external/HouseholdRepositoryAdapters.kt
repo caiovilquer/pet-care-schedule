@@ -80,8 +80,11 @@ private fun name(first: String?, last: String?) = first?.let { listOfNotNull(it,
 private fun Household.toJpa() = HouseholdJpa().also { j ->
     j.id = id.value; j.version = version; j.name = name; j.createdByTutorId = createdByTutorId.value
     j.createdAt = createdAt; j.updatedAt = updatedAt
+    j.timezone = timezone.id
 }
-private fun HouseholdJpa.toDomain() = Household(HouseholdId(id), version, name, TutorId(createdByTutorId), createdAt, updatedAt)
+private fun HouseholdJpa.toDomain() = Household(
+    HouseholdId(id), version, name, TutorId(createdByTutorId), createdAt, updatedAt, HouseholdTimezone.parse(timezone),
+)
 private fun HouseholdMember.toJpa() = HouseholdMemberJpa().also { j ->
     j.id = id.value; j.version = version; j.householdId = householdId.value; j.tutorId = tutorId.value; j.role = role; j.joinedAt = joinedAt
 }

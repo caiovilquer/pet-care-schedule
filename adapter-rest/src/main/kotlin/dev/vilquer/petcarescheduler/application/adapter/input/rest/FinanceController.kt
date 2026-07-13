@@ -95,10 +95,11 @@ class FinanceController(
         @RequestParam(required = false) forecastTo: LocalDate?,
         @RequestParam(required = false) petId: Long?,
     ): FinanceOverviewResult {
-        val today = clock.now().toLocalDate()
+        val access = household.resolve(jwt)
+        val today = clock.now(access.zoneId).toLocalDate()
         return finance.overview(
             FinanceOverviewQuery(from ?: today.withDayOfMonth(1).minusMonths(5), to ?: today, forecastTo ?: today.plusDays(30), petId?.let(::PetId)),
-            household.resolve(jwt),
+            access,
         )
     }
 

@@ -2,6 +2,7 @@ package dev.vilquer.petcarescheduler.usecase.contract.drivenports
 
 import dev.vilquer.petcarescheduler.core.domain.entity.EventId
 import java.time.Instant
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone
 
 data class ReminderOutboxMessage(
     val id: Long? = null,
@@ -10,6 +11,7 @@ data class ReminderOutboxMessage(
     val petName: String?,
     val createdAt: Instant,
     val attempts: Int = 0,
+    val timezone: String = HouseholdTimezone.DEFAULT_ID,
 )
 
 interface ReminderOutboxPort {

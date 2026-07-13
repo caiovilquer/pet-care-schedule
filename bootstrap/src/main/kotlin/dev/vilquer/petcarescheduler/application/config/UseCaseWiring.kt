@@ -91,7 +91,8 @@ class UseCaseWiring {
         storage: ObjectStoragePort,
         transaction: TransactionPort,
         clock: ClockPort,
-    ) = VeterinaryReportAppService(records, measurements, attachments, occurrences, pets, shares, media, storage, transaction, clock)
+        households: HouseholdRepositoryPort,
+    ) = VeterinaryReportAppService(records, measurements, attachments, occurrences, pets, shares, media, storage, transaction, clock, households)
 
     @Bean
     fun householdAppService(
@@ -117,9 +118,10 @@ class UseCaseWiring {
         escalationOutbox: CareEscalationOutboxPort,
         householdMembers: HouseholdMemberRepositoryPort,
         householdActivities: HouseholdActivityRepositoryPort,
+        households: HouseholdRepositoryPort,
         transaction: TransactionPort,
         clock: ClockPort,
-    ) = CareAppService(plans, occurrences, actions, pets, tutors, reminderOutbox, escalationOutbox, householdMembers, householdActivities, transaction, clock)
+    ) = CareAppService(plans, occurrences, actions, pets, tutors, reminderOutbox, escalationOutbox, householdMembers, householdActivities, transaction, clock, households)
 
     @Bean
     fun careEscalationRelayService(
@@ -128,14 +130,16 @@ class UseCaseWiring {
         notifier: NotificationPort,
         activities: HouseholdActivityRepositoryPort,
         clock: ClockPort,
-    ) = CareEscalationRelayService(outbox, occurrences, notifier, activities, clock)
+        households: HouseholdRepositoryPort,
+    ) = CareEscalationRelayService(outbox, occurrences, notifier, activities, clock, households)
 
     @Bean
     fun careReminderRelayService(
         outbox: CareReminderOutboxPort,
         occurrences: CareOccurrenceRepositoryPort,
         notifier: NotificationPort,
-    ) = CareReminderRelayService(outbox, occurrences, notifier)
+        households: HouseholdRepositoryPort,
+    ) = CareReminderRelayService(outbox, occurrences, notifier, households)
 
     @Bean
     fun authAppService(

@@ -22,7 +22,7 @@ class DashboardAppService(
     override fun getOverview(access: HouseholdAccess): DashboardOverviewResult {
         val tutor = tutors.findById(access.actorTutorId)
             ?: throw NotFoundException("Tutor ${access.actorTutorId.value} not found")
-        val now = clock.now().toLocalDateTime()
+        val now = clock.now(access.zoneId).toLocalDateTime()
         val petItems = pets.listByHousehold(access.householdId, page = 0, size = MAX_PETS)
 
         return DashboardOverviewResult(
@@ -55,6 +55,7 @@ class DashboardAppService(
                     estimatedCostAmount = it.estimatedCostAmount,
                     estimatedCostCurrency = it.estimatedCostCurrency,
                     canUndoUntil = it.completedAt?.plus(CareAppService.UNDO_WINDOW),
+                    timezone = access.zoneId.id,
                 )
             },
         )

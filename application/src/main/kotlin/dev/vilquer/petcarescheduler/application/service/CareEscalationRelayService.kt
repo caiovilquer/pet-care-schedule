@@ -3,6 +3,7 @@ package dev.vilquer.petcarescheduler.application.service
 import dev.vilquer.petcarescheduler.core.domain.care.CareOccurrenceStatus
 import dev.vilquer.petcarescheduler.core.domain.household.HouseholdActivity
 import dev.vilquer.petcarescheduler.core.domain.household.HouseholdActivityType
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.*
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DispatchPendingCareEscalationsUseCase
 
@@ -12,6 +13,7 @@ class CareEscalationRelayService(
     private val notifier: NotificationPort,
     private val activities: HouseholdActivityRepositoryPort,
     private val clock: ClockPort,
+    private val households: HouseholdRepositoryPort? = null,
 ) : DispatchPendingCareEscalationsUseCase {
     override fun dispatchPendingCareEscalations() {
         outbox.findPending(MAX_ATTEMPTS, BATCH).forEach { message ->
@@ -22,6 +24,7 @@ class CareEscalationRelayService(
             }
             val sent = notifier.sendCareEscalation(CareEscalationNotificationTarget(
                 message.recipientEmail, message.petName, message.careTitle, message.dueAt,
+                households?.findById(message.householdId)?.timezone?.id ?: HouseholdTimezone.DEFAULT_ID,
             ))
             message.id?.let { id ->
                 if (sent) {

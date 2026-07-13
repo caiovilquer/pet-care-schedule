@@ -26,6 +26,7 @@ data class HouseholdInviteRequest(@field:Email @field:Size(max = 255) val email:
 data class HouseholdAcceptRequest(@field:NotBlank @field:Size(min = 32, max = 128) val token: String)
 data class HouseholdRoleRequest(val expectedVersion: Long, val role: HouseholdRole)
 data class HouseholdRenameRequest(val expectedVersion: Long, @field:NotBlank @field:Size(max = 100) val name: String)
+data class HouseholdTimezoneRequest(val expectedVersion: Long, @field:NotBlank @field:Size(max = 64) val timezone: String)
 data class HouseholdHandoffRequest(val toTutorId: Long?, @field:NotBlank @field:Size(max = 1_000) val note: String)
 data class HouseholdAcceptedResponse(val householdId: UUID)
 
@@ -57,6 +58,15 @@ class HouseholdController(
         @Valid @RequestBody body: HouseholdRenameRequest,
         @AuthenticationPrincipal jwt: CurrentJwt,
     ) = management.rename(RenameHouseholdCommand(HouseholdId(id), body.expectedVersion, body.name), current.resolve(jwt))
+
+    @PatchMapping("/{id}/timezone")
+    fun updateTimezone(
+        @PathVariable id: UUID,
+        @Valid @RequestBody body: HouseholdTimezoneRequest,
+        @AuthenticationPrincipal jwt: CurrentJwt,
+    ) = management.updateTimezone(
+        UpdateHouseholdTimezoneCommand(HouseholdId(id), body.expectedVersion, body.timezone), current.resolve(jwt),
+    )
 
     @PostMapping("/current/invitations")
     @ResponseStatus(HttpStatus.NO_CONTENT)

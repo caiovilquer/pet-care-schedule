@@ -35,6 +35,7 @@ class VeterinaryReportAppService(
     private val storage: ObjectStoragePort,
     private val transaction: TransactionPort,
     private val clock: ClockPort,
+    private val households: HouseholdRepositoryPort? = null,
 ) : VeterinaryReportUseCase {
 
     override fun summary(query: VeterinarySummaryQuery, access: HouseholdAccess): VeterinarySummaryResult {
@@ -96,7 +97,7 @@ class VeterinaryReportAppService(
         if (!share.scope.includeDocuments) throw NotFoundException("Documento não encontrado")
         val attachment = attachments.findByMediaId(command.mediaId) ?: throw NotFoundException("Documento não encontrado")
         val record = records.findByIdAndHousehold(attachment.healthRecordId, share.householdId)
-            ?.takeIf { it.petId == share.petId && inPeriod(it.occurredAt, share.scope.from, share.scope.to) }
+            ?.takeIf { it.petId == share.petId && inPeriod(it.occurredAt, share.scope.from, share.scope.to, share.householdId) }
             ?: throw NotFoundException("Documento não encontrado")
         val asset = media.findById(command.mediaId)?.takeIf {
             it.status == MediaStatus.READY && it.purpose == MediaPurpose.HEALTH_ATTACHMENT &&
@@ -111,7 +112,7 @@ class VeterinaryReportAppService(
             "veterinary_summary_period_too_large"
         }
         val pet = pets.findByIdAndHousehold(query.petId, householdId) ?: throw NotFoundException("Resumo não encontrado")
-        val zone = clock.now().zone
+        val zone = zoneFor(householdId)
         val fromInstant = query.from.atStartOfDay(zone).toInstant()
         val toInstant = query.to.plusDays(1).atStartOfDay(zone).toInstant()
         val filter = HealthRecordFilter(query.petId, fromInstant, toInstant, null)
@@ -123,7 +124,7 @@ class VeterinaryReportAppService(
             CareOccurrenceFilter(query.from.atStartOfDay(), query.to.plusDays(1).atStartOfDay(), query.petId),
             0, MAX_OCCURRENCES,
         )
-        val now = clock.now().toLocalDateTime()
+        val now = clock.now(zone).toLocalDateTime()
         val completed = careItems.count { it.status == CareOccurrenceStatus.COMPLETED }
         val overdue = careItems.count { it.status == CareOccurrenceStatus.SCHEDULED && it.dueAt.isBefore(now) }
         val upcoming = careItems.count { it.status == CareOccurrenceStatus.SCHEDULED && !it.dueAt.isBefore(now) }
@@ -155,10 +156,12 @@ class VeterinaryReportAppService(
         return share
     }
 
-    private fun inPeriod(value: Instant, from: java.time.LocalDate, to: java.time.LocalDate): Boolean {
-        val zone = clock.now().zone
+    private fun inPeriod(value: Instant, from: java.time.LocalDate, to: java.time.LocalDate, householdId: HouseholdId): Boolean {
+        val zone = zoneFor(householdId)
         return !value.isBefore(from.atStartOfDay(zone).toInstant()) && value.isBefore(to.plusDays(1).atStartOfDay(zone).toInstant())
     }
+    private fun zoneFor(householdId: HouseholdId) =
+        households?.findById(householdId)?.timezone ?: HouseholdTimezone.parse(null)
     private fun Pet.toResult() = VeterinaryPetResult(id!!.value, name, species, breed, birthdate)
     private fun HealthRecord.toResult(disclosure: Disclosure) = VeterinaryRecordResult(
         id.value, type, occurredAt, title, notes.takeIf { disclosure.notes }, productName, dosage, batchNumber,

@@ -20,6 +20,9 @@ class ReminderOutboxJpa {
     @Column(name = "pet_name")
     var petName: String? = null
 
+    @Column(length = 64)
+    var timezone: String? = null
+
     @Column(name = "created_at", nullable = false)
     lateinit var createdAt: Instant
 

@@ -63,7 +63,8 @@ class EventRepositoryAdapter(
             EventReminderTarget(
                 event = row.event.toDomain(),
                 tutorEmail = row.tutorEmail,
-                petName = row.petName
+                petName = row.petName,
+                timezone = dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone.parse(row.timezone).id,
             )
         }
 }

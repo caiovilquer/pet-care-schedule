@@ -30,6 +30,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdMemberRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdActivityRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CareOccurrenceUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CarePlanUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CareScheduleMaintenanceUseCase
@@ -54,6 +55,7 @@ class CareAppService(
     private val householdActivities: HouseholdActivityRepositoryPort,
     private val transaction: TransactionPort,
     private val clock: ClockPort,
+    private val households: HouseholdRepositoryPort? = null,
 ) : CarePlanUseCase, CareOccurrenceUseCase, CareScheduleMaintenanceUseCase {
 
     override fun create(command: CreateCarePlanCommand, access: HouseholdAccess): CarePlanResult {
@@ -63,7 +65,7 @@ class CareAppService(
         val responsible = command.responsibleTutorId ?: access.actorTutorId
         requireCaregiver(responsible, access.householdId)
         validateEscalation(command.critical, command.escalationDelayMinutes, command.escalationTutorId, access.householdId)
-        val now = clock.now()
+        val now = clock.now(access.zoneId)
         require(!command.startAt.isBefore(now.toLocalDateTime().minusMinutes(5))) { "care_plan_start_in_past" }
         val plan = CarePlan(
             householdId = access.householdId,
@@ -87,7 +89,7 @@ class CareAppService(
         return transaction.execute {
             val saved = plans.save(plan)
             occurrences.saveAllIfAbsent(saved.occurrencesThrough(horizon(now.toLocalDateTime()), now.toInstant()))
-            saved.toResult()
+            saved.toResult(access.zoneId.id)
         }
     }
 
@@ -96,7 +98,7 @@ class CareAppService(
         val existing = plans.findByIdAndHouseholdForUpdate(command.planId, access.householdId)
             ?: throw NotFoundException("Plano de cuidado não encontrado")
         if (!existing.active) throw ConflictException("Este plano já foi encerrado")
-        val now = clock.now()
+        val now = clock.now(access.zoneId)
         val responsible = command.responsibleTutorId ?: existing.responsibleTutorId
         requireCaregiver(responsible, access.householdId)
         validateEscalation(command.critical, command.escalationDelayMinutes, command.escalationTutorId, access.householdId)
@@ -122,7 +124,7 @@ class CareAppService(
             saved.occurrencesThrough(horizon(now.toLocalDateTime()), now.toInstant())
                 .filterNot { it.dueAt.isBefore(now.toLocalDateTime()) },
         )
-        saved.toResult()
+        saved.toResult(access.zoneId.id)
     }
 
     override fun deactivate(planId: CarePlanId, access: HouseholdAccess) {
@@ -139,7 +141,7 @@ class CareAppService(
 
     override fun get(planId: CarePlanId, access: HouseholdAccess): CarePlanResult {
         requirePermission(access, HouseholdPermission.VIEW)
-        return plans.findByIdAndHousehold(planId, access.householdId)?.toResult()
+        return plans.findByIdAndHousehold(planId, access.householdId)?.toResult(access.zoneId.id)
             ?: throw NotFoundException("Plano de cuidado não encontrado")
     }
 
@@ -148,7 +150,7 @@ class CareAppService(
         validatePage(page, size)
         petId?.let { require(pets.existsForHousehold(it, access.householdId)) { "care_plan_pet_not_found" } }
         return CarePlansPageResult(
-            plans.listByHousehold(access.householdId, petId, active, page, size).map { it.toResult() },
+            plans.listByHousehold(access.householdId, petId, active, page, size).map { it.toResult(access.zoneId.id) },
             plans.countByHousehold(access.householdId, petId, active),
             page,
             size,
@@ -163,7 +165,7 @@ class CareAppService(
         query.petId?.let { require(pets.existsForHousehold(it, access.householdId)) { "care_occurrence_pet_not_found" } }
         val filter = CareOccurrenceFilter(query.from, query.to, query.petId, query.type, query.status)
         return CareOccurrencesPageResult(
-            occurrences.searchByHousehold(access.householdId, filter, query.page, query.size).map { it.toResult() },
+            occurrences.searchByHousehold(access.householdId, filter, query.page, query.size).map { it.toResult(access.zoneId.id) },
             occurrences.countByHousehold(access.householdId, filter),
             query.page,
             query.size,
@@ -172,17 +174,17 @@ class CareAppService(
 
     override fun today(access: HouseholdAccess): TodayCareResult {
         requirePermission(access, HouseholdPermission.VIEW)
-        val now = clock.now()
+        val now = clock.now(access.zoneId)
         val start = now.toLocalDate().atStartOfDay()
         val end = start.plusDays(1)
         val overdueFilter = CareOccurrenceFilter(start.minusYears(2), start, status = CareOccurrenceStatus.SCHEDULED)
         val todayFilter = CareOccurrenceFilter(start, end)
-        val overdue = occurrences.searchByHousehold(access.householdId, overdueFilter, 0, TODAY_LIMIT).map { it.toResult() }
+        val overdue = occurrences.searchByHousehold(access.householdId, overdueFilter, 0, TODAY_LIMIT).map { it.toResult(access.zoneId.id) }
         val today = occurrences.searchByHousehold(access.householdId, todayFilter, 0, TODAY_LIMIT)
-        val scheduled = today.filter { it.status == CareOccurrenceStatus.SCHEDULED }.map { it.toResult() }
-        val completed = today.filter { it.status == CareOccurrenceStatus.COMPLETED }.map { it.toResult() }
+        val scheduled = today.filter { it.status == CareOccurrenceStatus.SCHEDULED }.map { it.toResult(access.zoneId.id) }
+        val completed = today.filter { it.status == CareOccurrenceStatus.COMPLETED }.map { it.toResult(access.zoneId.id) }
         val nextWeek = CareOccurrenceFilter(start, start.plusDays(7), status = CareOccurrenceStatus.SCHEDULED)
-        return TodayCareResult(now.toLocalDate(), overdue, scheduled, completed, occurrences.countByHousehold(access.householdId, nextWeek))
+        return TodayCareResult(now.toLocalDate(), overdue, scheduled, completed, occurrences.countByHousehold(access.householdId, nextWeek), access.zoneId.id)
     }
 
     override fun complete(command: CompleteCareOccurrenceCommand, access: HouseholdAccess): CareOccurrenceResult = transaction.execute {
@@ -224,7 +226,7 @@ class CareAppService(
             actorTutorId = tutorId, petId = completed.petId, careOccurrenceId = completed.id.value,
             summary = "${completed.title} foi concluído", happenedAt = now,
         ))
-        completed.toResult()
+        completed.toResult(access.zoneId.id)
     }
 
     override fun undo(command: UndoCareOccurrenceCommand, access: HouseholdAccess): CareOccurrenceResult = transaction.execute {
@@ -264,7 +266,7 @@ class CareAppService(
             actorTutorId = tutorId, petId = reopened.petId, careOccurrenceId = reopened.id.value,
             summary = "${reopened.title} foi reaberto", happenedAt = now,
         ))
-        reopened.toResult()
+        reopened.toResult(access.zoneId.id)
     }
 
     override fun assign(command: AssignCareOccurrenceCommand, access: HouseholdAccess): CareOccurrenceResult = transaction.execute {
@@ -282,16 +284,18 @@ class CareAppService(
             petId = saved.petId, careOccurrenceId = saved.id.value,
             summary = "Responsável por ${saved.title} foi atualizado", happenedAt = now,
         ))
-        saved.toResult()
+        saved.toResult(access.zoneId.id)
     }
 
     override fun materializeAndEnqueueReminders() {
-        val now = clock.now()
+        val defaultNow = clock.now()
         var page = 0
         while (true) {
             val batch = plans.findActive(page, MATERIALIZATION_BATCH)
             if (batch.isEmpty()) break
             batch.forEach { plan ->
+                val zoneId = households?.findById(plan.householdId)?.timezone ?: HouseholdTimezone.parse(null)
+                val now = clock.now(zoneId)
                 transaction.execute {
                     val locked = plans.findByIdAndTutorForUpdate(plan.id, plan.tutorId) ?: return@execute
                     if (locked.active) {
@@ -305,9 +309,11 @@ class CareAppService(
             page += 1
         }
 
-        val localNow = now.toLocalDateTime()
-        occurrences.findReminderCandidates(localNow.minusHours(12), localNow.plusDays(8), REMINDER_SCAN_LIMIT)
+        val scanNow = defaultNow.toLocalDateTime()
+        occurrences.findReminderCandidates(scanNow.minusDays(2), scanNow.plusDays(9), REMINDER_SCAN_LIMIT)
             .forEach { occurrence ->
+                val zoneId = households?.findById(occurrence.householdId)?.timezone ?: HouseholdTimezone.parse(null)
+                val localNow = clock.now(zoneId).toLocalDateTime()
                 val plan = plans.findByIdAndTutor(occurrence.planId, occurrence.tutorId) ?: return@forEach
                 val triggerAt = occurrence.dueAt.minusMinutes(plan.reminderMinutesBefore.toLong())
                 if (triggerAt.isAfter(localNow)) return@forEach
@@ -319,12 +325,14 @@ class CareAppService(
                         tutorId = occurrence.tutorId,
                         tutorEmail = tutor.email.value,
                         petName = pet.name,
-                        createdAt = now.toInstant(),
+                        createdAt = defaultNow.toInstant(),
                     ),
                 )
             }
 
-        occurrences.findCriticalEscalationCandidates(localNow, ESCALATION_SCAN_LIMIT).forEach { occurrence ->
+        occurrences.findCriticalEscalationCandidates(scanNow.plusDays(1), ESCALATION_SCAN_LIMIT).forEach { occurrence ->
+            val zoneId = households?.findById(occurrence.householdId)?.timezone ?: HouseholdTimezone.parse(null)
+            val localNow = clock.now(zoneId).toLocalDateTime()
             val delay = occurrence.escalationDelayMinutes ?: return@forEach
             val recipientId = occurrence.escalationTutorId ?: return@forEach
             if (occurrence.dueAt.plusMinutes(delay.toLong()).isAfter(localNow)) return@forEach
@@ -334,7 +342,7 @@ class CareAppService(
                 occurrenceId = occurrence.id, householdId = occurrence.householdId,
                 recipientTutorId = recipientId, recipientEmail = recipient.email.value,
                 petName = pet.name, careTitle = occurrence.title, dueAt = occurrence.dueAt,
-                createdAt = now.toInstant(),
+                createdAt = defaultNow.toInstant(),
             ))
         }
     }
@@ -344,22 +352,22 @@ class CareAppService(
         if (action.occurrenceId.value != occurrenceId || action.actorTutorId != access.actorTutorId || action.action != expected) {
             throw ConflictException("A chave de idempotência já foi usada em outra operação")
         }
-        return occurrences.findByIdAndHousehold(action.occurrenceId, access.householdId)?.toResult()
+        return occurrences.findByIdAndHousehold(action.occurrenceId, access.householdId)?.toResult(access.zoneId.id)
             ?: throw NotFoundException("Cuidado não encontrado")
     }
 
-    private fun CarePlan.toResult() = CarePlanResult(
+    private fun CarePlan.toResult(timezone: String) = CarePlanResult(
         id.value, version, petId.value, responsibleTutorId.value, type, title, instructions,
         startAt, recurrence, reminderMinutesBefore, critical, escalationDelayMinutes, escalationTutorId?.value,
-        estimatedCostAmount, estimatedCostCurrency, active,
+        estimatedCostAmount, estimatedCostCurrency, active, timezone,
     )
 
-    private fun CareOccurrence.toResult(): CareOccurrenceResult {
+    private fun CareOccurrence.toResult(timezone: String): CareOccurrenceResult {
         val undoUntil = completedAt?.plus(UNDO_WINDOW)
         return CareOccurrenceResult(
             id.value, version, planId.value, petId.value, responsibleTutorId.value, type, title, instructions, dueAt, status,
             completedAt, completedByTutorId?.value, completionNote, critical, escalationDelayMinutes, escalationTutorId?.value,
-            estimatedCostAmount, estimatedCostCurrency, undoUntil,
+            estimatedCostAmount, estimatedCostCurrency, undoUntil, timezone,
         )
     }
 

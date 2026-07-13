@@ -161,6 +161,22 @@ class CareAppServiceTest {
         assertEquals(1, outbox.all().size)
     }
 
+    @Test
+    fun `today uses household date across Sao Paulo and New York midnight boundary`() {
+        clock.fixed = ZonedDateTime.of(2026, 7, 13, 0, 30, 0, 0, ZoneId.of("America/Sao_Paulo"))
+        val nyAccess = access.copy(zoneId = ZoneId.of("America/New_York"))
+        service.create(
+            dailyPlan(repetitions = 1).copy(startAt = LocalDateTime.of(2026, 7, 12, 23, 45)),
+            nyAccess,
+        )
+
+        val result = service.today(nyAccess)
+
+        assertEquals(java.time.LocalDate.of(2026, 7, 12), result.date)
+        assertEquals("America/New_York", result.timezone)
+        assertEquals(LocalDateTime.of(2026, 7, 12, 23, 45), result.today.single().dueAt)
+    }
+
     private fun dailyPlan(repetitions: Int) = CreateCarePlanCommand(
         petId = petId,
         type = EventType.MEDICINE,

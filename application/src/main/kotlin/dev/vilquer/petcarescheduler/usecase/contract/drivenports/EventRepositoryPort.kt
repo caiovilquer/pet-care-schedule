@@ -28,5 +28,6 @@ interface EventRepositoryPort {
 data class EventReminderTarget(
     val event: Event,
     val tutorEmail: String,
-    val petName: String?
+    val petName: String?,
+    val timezone: String = dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone.DEFAULT_ID,
 )

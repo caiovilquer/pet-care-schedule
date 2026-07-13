@@ -14,6 +14,7 @@ class HouseholdJpa {
     @Column(name = "created_by_tutor_id", nullable = false) var createdByTutorId: Long = 0
     @Column(name = "created_at", nullable = false) lateinit var createdAt: Instant
     @Column(name = "updated_at", nullable = false) lateinit var updatedAt: Instant
+    @Column(length = 64) var timezone: String? = null
 }
 
 @Entity @Table(name = "household_member")

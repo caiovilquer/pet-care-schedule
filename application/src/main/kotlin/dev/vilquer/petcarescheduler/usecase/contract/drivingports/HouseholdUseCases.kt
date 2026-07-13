@@ -27,4 +27,5 @@ interface HouseholdManagementUseCase {
     fun removeMember(memberId: HouseholdMemberId, access: HouseholdAccess)
     fun createHandoff(command: CreateHouseholdHandoffCommand, access: HouseholdAccess)
     fun rename(command: RenameHouseholdCommand, access: HouseholdAccess): HouseholdSummaryResult
+    fun updateTimezone(command: UpdateHouseholdTimezoneCommand, access: HouseholdAccess): HouseholdSummaryResult
 }

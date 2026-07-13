@@ -3,11 +3,28 @@ package dev.vilquer.petcarescheduler.core.domain.household
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import java.time.Instant
+import java.time.ZoneId
 import java.util.UUID
 
 @JvmInline value class HouseholdId(val value: UUID)
 @JvmInline value class HouseholdMemberId(val value: UUID)
 @JvmInline value class HouseholdInvitationId(val value: UUID)
+
+object HouseholdTimezone {
+    const val DEFAULT_ID = "America/Sao_Paulo"
+
+    fun parse(value: String?): ZoneId = value?.trim()?.takeIf { it.isNotEmpty() }
+        ?.let { runCatching { ZoneId.of(it) }.getOrNull() }
+        ?: ZoneId.of(DEFAULT_ID)
+
+    fun requireValid(value: String): ZoneId = try {
+        val normalized = value.trim()
+        require(normalized in ZoneId.getAvailableZoneIds())
+        ZoneId.of(normalized)
+    } catch (_: Exception) {
+        throw IllegalArgumentException("household_timezone_invalid")
+    }
+}
 
 enum class HouseholdRole { OWNER, CAREGIVER, VIEWER }
 
@@ -36,6 +53,7 @@ data class HouseholdAccess(
     val householdId: HouseholdId,
     val actorTutorId: TutorId,
     val role: HouseholdRole,
+    val zoneId: ZoneId = HouseholdTimezone.parse(null),
 ) {
     fun can(permission: HouseholdPermission) = role.allows(permission)
 }
@@ -47,6 +65,7 @@ data class Household(
     val createdByTutorId: TutorId,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val timezone: ZoneId = HouseholdTimezone.parse(null),
 ) {
     init { require(name.isNotBlank() && name.length <= 100) { "household_name_invalid" } }
 }

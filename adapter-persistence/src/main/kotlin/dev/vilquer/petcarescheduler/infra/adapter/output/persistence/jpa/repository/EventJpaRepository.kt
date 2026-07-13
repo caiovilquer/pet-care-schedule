@@ -87,10 +87,11 @@ interface EventJpaRepository : JpaRepository<EventJpa, Long> {
 
     @Query(
         """
-        select e as event, t.email as tutorEmail, p.name as petName
+        select e as event, t.email as tutorEmail, p.name as petName, h.timezone as timezone
           from EventJpa e
           join PetJpa   p on p.id = e.petId
           join TutorJpa t on t.id = p.tutorId
+          join HouseholdJpa h on h.id = p.householdId
          where e.status = :status
            and e.dateStart >= :start
            and e.dateStart < :end
@@ -107,4 +108,5 @@ interface EventReminderTargetRow {
     val event: EventJpa
     val tutorEmail: String
     val petName: String
+    val timezone: String?
 }

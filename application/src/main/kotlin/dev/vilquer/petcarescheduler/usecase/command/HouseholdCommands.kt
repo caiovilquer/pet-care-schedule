@@ -14,3 +14,4 @@ data class ChangeHouseholdMemberRoleCommand(
 )
 data class CreateHouseholdHandoffCommand(val toTutorId: TutorId?, val note: String)
 data class RenameHouseholdCommand(val householdId: HouseholdId, val expectedVersion: Long, val name: String)
+data class UpdateHouseholdTimezoneCommand(val householdId: HouseholdId, val expectedVersion: Long, val timezone: String)

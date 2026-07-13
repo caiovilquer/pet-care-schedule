@@ -12,6 +12,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivingports.*
 import dev.vilquer.petcarescheduler.usecase.result.EventDetailResult
 import dev.vilquer.petcarescheduler.usecase.result.EventRegisteredResult
 import dev.vilquer.petcarescheduler.usecase.result.EventsPageResult
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone
 
 class EventAppService(
     private val eventRepo: EventRepositoryPort,
@@ -114,18 +115,21 @@ class EventAppService(
 
     override fun sendRemindersForToday() {
         val now = clock.now()
-        val start = now.toLocalDate().atStartOfDay()
-        val end = start.plusDays(1)
+        val scanStart = now.toLocalDate().atStartOfDay().minusDays(1)
+        val scanEnd = scanStart.plusDays(3)
         // Só enfileira: a entrega de fato (com retry) é responsabilidade do
         // ReminderRelayService, rodando em outro scheduler. Isso evita que
         // uma API de e-mail lenta trave a varredura diária inteira.
-        eventRepo.findPendingReminders(start, end).forEach { target ->
+        eventRepo.findPendingReminders(scanStart, scanEnd).forEach { target ->
+            val localDate = clock.now(HouseholdTimezone.parse(target.timezone)).toLocalDate()
+            if (target.event.dateStart.toLocalDate() != localDate) return@forEach
             outbox.enqueueIfAbsent(
                 ReminderOutboxMessage(
                     eventId = target.event.id!!,
                     tutorEmail = target.tutorEmail,
                     petName = target.petName,
                     createdAt = now.toInstant(),
+                    timezone = target.timezone,
                 )
             )
         }

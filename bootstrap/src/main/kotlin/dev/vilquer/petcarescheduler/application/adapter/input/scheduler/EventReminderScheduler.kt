@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 class CareScheduleScheduler(
     private val maintenance: CareScheduleMaintenanceUseCase
 ) {
-    @Scheduled(cron = "0 */5 * * * *", zone = "\${app.timezone:America/Sao_Paulo}")
+    @Scheduled(cron = "0 */5 * * * *", zone = "\${app.timezone}")
     @SchedulerLock(name = "materializeCareSchedule", lockAtMostFor = "PT4M", lockAtLeastFor = "PT15S")
     fun maintainSchedule() = maintenance.materializeAndEnqueueReminders()
 }

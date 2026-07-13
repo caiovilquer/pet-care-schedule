@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 class SecurityMaintenanceScheduler(
     private val securityMaintenance: SecurityMaintenanceUseCase
 ) {
-    @Scheduled(cron = "0 30 3 * * *", zone = "\${app.timezone:America/Sao_Paulo}")
+    @Scheduled(cron = "0 30 3 * * *", zone = "\${app.timezone}")
     @SchedulerLock(name = "cleanupSecurityArtifacts", lockAtMostFor = "PT15M", lockAtLeastFor = "PT1M")
     fun cleanupSecurityArtifacts() {
         securityMaintenance.cleanupSecurityArtifacts()

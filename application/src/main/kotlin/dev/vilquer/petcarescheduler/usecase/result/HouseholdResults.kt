@@ -12,6 +12,7 @@ data class HouseholdSummaryResult(
     val role: HouseholdRole,
     val isDefault: Boolean,
     val memberCount: Long,
+    val timezone: String,
 )
 
 data class HouseholdMemberResult(

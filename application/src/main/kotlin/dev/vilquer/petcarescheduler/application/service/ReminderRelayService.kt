@@ -30,7 +30,7 @@ class ReminderRelayService(
             }
 
             val delivered = notifier.sendEventReminder(
-                EventReminderTarget(event, message.tutorEmail, message.petName)
+                EventReminderTarget(event, message.tutorEmail, message.petName, message.timezone)
             )
             if (delivered) outbox.markSent(message.id!!) else outbox.incrementAttempts(message.id!!)
         }

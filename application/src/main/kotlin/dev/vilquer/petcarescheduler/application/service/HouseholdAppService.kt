@@ -37,7 +37,8 @@ class HouseholdAppService(
             ?: throw NotFoundException("Família padrão não encontrada")
         val member = members.findAccess(actorTutorId, householdId)
             ?: throw NotFoundException("Família não encontrada")
-        return HouseholdAccess(householdId, actorTutorId, member.role)
+        val household = households.findById(householdId) ?: throw NotFoundException("Família não encontrada")
+        return HouseholdAccess(householdId, actorTutorId, member.role, household.timezone)
     }
 
     override fun list(actorTutorId: TutorId): List<HouseholdSummaryResult> {
@@ -293,6 +294,19 @@ class HouseholdAppService(
         }
     }
 
+    override fun updateTimezone(command: UpdateHouseholdTimezoneCommand, access: HouseholdAccess): HouseholdSummaryResult {
+        requirePermission(access, HouseholdPermission.MANAGE_MEMBERS)
+        require(command.householdId == access.householdId) { "household_context_mismatch" }
+        val zoneId = HouseholdTimezone.requireValid(command.timezone)
+        return transaction.execute {
+            val current = households.findByIdForUpdate(access.householdId) ?: throw NotFoundException("Família não encontrada")
+            val actor = requireCurrentPermissionForUpdate(access, HouseholdPermission.MANAGE_MEMBERS)
+            requireVersion(current.version, command.expectedVersion)
+            households.save(current.copy(timezone = zoneId, updatedAt = clock.now().toInstant()))
+                .toSummary(actor.role, true, members.count(access.householdId))
+        }
+    }
+
     private fun requirePermission(access: HouseholdAccess, permission: HouseholdPermission) {
         if (!access.can(permission)) throw ForbiddenException("Seu papel nesta família não permite esta ação")
     }
@@ -343,7 +357,7 @@ class HouseholdAppService(
     }
 
     private fun Household.toSummary(role: HouseholdRole, default: Boolean, count: Long) =
-        HouseholdSummaryResult(id.value, version, name, role, default, count)
+        HouseholdSummaryResult(id.value, version, name, role, default, count, timezone.id)
     private fun HouseholdMemberDetails.toResult() = HouseholdMemberResult(
         member.id.value, member.version, member.tutorId.value, firstName, lastName, email,
         avatarAssetId, member.role, member.joinedAt,

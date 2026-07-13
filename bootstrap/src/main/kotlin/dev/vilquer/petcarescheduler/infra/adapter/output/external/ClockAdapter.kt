@@ -5,10 +5,11 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.time.ZonedDateTime
 import java.time.ZoneId
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone
 
 @Component
 class ClockAdapter(
-    @param:Value("\${app.timezone:America/Sao_Paulo}") private val timezone: String
+    @param:Value("\${app.timezone}") private val timezone: String
 ) : ClockPort {
     override fun now(): ZonedDateTime = ZonedDateTime.now(parseZoneId(timezone))
 
@@ -16,6 +17,6 @@ class ClockAdapter(
         try {
             ZoneId.of(value)
         } catch (ex: Exception) {
-            ZoneId.of("America/Sao_Paulo")
+            HouseholdTimezone.parse(null)
         }
 }

@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 import java.math.BigDecimal
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone
 
 data class CarePlanResult(
     val id: UUID,
@@ -26,6 +27,7 @@ data class CarePlanResult(
     val estimatedCostAmount: BigDecimal?,
     val estimatedCostCurrency: String?,
     val active: Boolean,
+    val timezone: String = HouseholdTimezone.DEFAULT_ID,
 )
 
 data class CarePlansPageResult(
@@ -55,6 +57,7 @@ data class CareOccurrenceResult(
     val estimatedCostAmount: BigDecimal?,
     val estimatedCostCurrency: String?,
     val canUndoUntil: Instant?,
+    val timezone: String = HouseholdTimezone.DEFAULT_ID,
 )
 
 data class CareOccurrencesPageResult(
@@ -70,4 +73,5 @@ data class TodayCareResult(
     val today: List<CareOccurrenceResult>,
     val completedToday: List<CareOccurrenceResult>,
     val upcomingSevenDays: Long,
+    val timezone: String = HouseholdTimezone.DEFAULT_ID,
 )

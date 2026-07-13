@@ -92,17 +92,18 @@ class FinanceAppService(
         require(Duration.between(query.from.atStartOfDay(), query.to.plusDays(1).atStartOfDay()) <= MAX_OVERVIEW_PERIOD) {
             "finance_period_too_large"
         }
-        require(!query.forecastTo.isBefore(clock.now().toLocalDate()) && !query.forecastTo.isAfter(clock.now().toLocalDate().plusDays(90))) {
+        val localNow = clock.now(access.zoneId)
+        require(!query.forecastTo.isBefore(localNow.toLocalDate()) && !query.forecastTo.isAfter(localNow.toLocalDate().plusDays(90))) {
             "finance_forecast_period_invalid"
         }
         query.petId?.let { requirePet(it, access) }
-        val zone = clock.now().zone
+        val zone = access.zoneId
         val fromInstant = query.from.atStartOfDay(zone).toInstant()
         val toInstant = query.to.plusDays(1).atStartOfDay(zone).toInstant()
         val expenseItems = expenses.search(access.householdId, ExpenseFilter(fromInstant, toInstant, query.petId), 0, MAX_ITEMS)
         val clinical = healthRecords.searchCostsByHousehold(access.householdId, query.petId, fromInstant, toInstant, MAX_ITEMS)
             .filter { it.costAmount != null && it.currency != null }
-        val forecastStart = clock.now().toLocalDateTime()
+        val forecastStart = localNow.toLocalDateTime()
         val forecastEnd = query.forecastTo.plusDays(1).atStartOfDay()
         val forecast = occurrences.searchByHousehold(
             access.householdId,
@@ -142,7 +143,7 @@ class FinanceAppService(
         return FinanceOverviewResult(
             query.from, query.to, query.forecastTo, realized, forecastTotals,
             categories.sortedWith(compareBy({ it.currency }, { -it.amount.toDouble() })), monthly, upcoming,
-            insights(realized, categories, forecast, clock.now().toLocalDateTime().plusDays(7)),
+            insights(realized, categories, forecast, localNow.toLocalDateTime().plusDays(7)),
         )
     }
 

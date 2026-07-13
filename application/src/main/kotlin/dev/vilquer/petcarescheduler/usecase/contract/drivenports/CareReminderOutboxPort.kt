@@ -5,6 +5,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import java.time.Instant
 import java.time.LocalDateTime
+import dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone
 
 data class CareReminderOutboxMessage(
     val id: Long? = null,
@@ -30,4 +31,5 @@ data class CareReminderNotificationTarget(
     val dueAt: LocalDateTime,
     val tutorEmail: String,
     val petName: String?,
+    val timezone: String = HouseholdTimezone.DEFAULT_ID,
 )

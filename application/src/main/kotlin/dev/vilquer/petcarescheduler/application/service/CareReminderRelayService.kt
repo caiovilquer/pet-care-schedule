@@ -11,6 +11,7 @@ class CareReminderRelayService(
     private val outbox: CareReminderOutboxPort,
     private val occurrences: CareOccurrenceRepositoryPort,
     private val notifier: NotificationPort,
+    private val households: dev.vilquer.petcarescheduler.usecase.contract.drivenports.HouseholdRepositoryPort? = null,
     private val maxAttempts: Int = 5,
     private val batchSize: Int = 100,
 ) : DispatchPendingCareRemindersUseCase {
@@ -28,6 +29,8 @@ class CareReminderRelayService(
                 CareReminderNotificationTarget(
                     occurrence.id, occurrence.type, occurrence.title, occurrence.dueAt,
                     message.tutorEmail, message.petName,
+                    households?.findById(occurrence.householdId)?.timezone?.id
+                        ?: dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone.DEFAULT_ID,
                 ),
             )
             if (delivered) outbox.markSent(message.id!!) else outbox.incrementAttempts(message.id!!)

@@ -26,6 +26,7 @@ class ReminderOutboxJpaAdapter(
                     eventId = message.eventId.value
                     tutorEmail = message.tutorEmail
                     petName = message.petName
+                    timezone = message.timezone
                     createdAt = message.createdAt
                 }
             )
@@ -46,6 +47,7 @@ class ReminderOutboxJpaAdapter(
                 petName = it.petName,
                 createdAt = it.createdAt,
                 attempts = it.attempts,
+                timezone = dev.vilquer.petcarescheduler.core.domain.household.HouseholdTimezone.parse(it.timezone).id,
             )
         }
 
