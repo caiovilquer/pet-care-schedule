@@ -16,6 +16,8 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
 import java.net.URI
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 class S3ObjectStorageAdapter(private val properties: ObjectStorageProperties) : ObjectStoragePort, AutoCloseable {
@@ -85,10 +87,15 @@ class S3ObjectStorageAdapter(private val properties: ObjectStorageProperties) : 
         Unit
     }
 
-    override fun presignDownload(key: String, expiresIn: Duration): String = storageCall {
-        val request = GetObjectRequest.builder().bucket(bucket).key(key)
+    override fun presignDownload(key: String, expiresIn: Duration, downloadFilename: String?): String = storageCall {
+        val builder = GetObjectRequest.builder().bucket(bucket).key(key)
             .responseCacheControl("private, max-age=900")
-            .build()
+        if (downloadFilename != null) {
+            val encoded = URLEncoder.encode(downloadFilename, StandardCharsets.UTF_8).replace("+", "%20")
+            builder.responseContentDisposition("attachment; filename*=UTF-8''$encoded")
+                .responseContentType("application/octet-stream")
+        }
+        val request = builder.build()
         presigner.presignGetObject(
             GetObjectPresignRequest.builder().signatureDuration(expiresIn).getObjectRequest(request).build(),
         ).url().toString()

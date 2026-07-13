@@ -9,5 +9,5 @@ interface ObjectStoragePort {
     fun readObject(key: String, maxBytes: Long): ByteArray
     fun promote(sourceKey: String, destinationKey: String, contentType: String)
     fun delete(key: String)
-    fun presignDownload(key: String, expiresIn: Duration): String
+    fun presignDownload(key: String, expiresIn: Duration, downloadFilename: String? = null): String
 }

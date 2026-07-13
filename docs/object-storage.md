@@ -1,6 +1,6 @@
-# Object storage de fotos
+# Object storage de fotos e documentos clínicos
 
-O RotinaPet usa o mesmo adaptador S3 para Railway Buckets e Cloudflare R2. O bucket deve permanecer privado. O navegador recebe uma URL `PUT` válida por 3 minutos; depois do envio, a API confere tamanho, SHA-256, assinatura real, decodificação e dimensões da imagem antes de promovê-la de `staging/` para uma chave imutável em `media/`.
+O RotinaPet usa o mesmo adaptador S3 para Railway Buckets e Cloudflare R2. O bucket deve permanecer privado. O navegador recebe uma URL `PUT` válida por 3 minutos; depois do envio, a API confere tamanho, SHA-256 e assinatura real antes de promover o objeto de `staging/` para uma chave imutável em `media/`. Imagens também são decodificadas e limitadas por dimensão; documentos clínicos PDF exigem cabeçalho e trailer válidos.
 
 ## Railway Bucket
 
@@ -55,7 +55,9 @@ No Railway, configure a mesma permissão de origem/método na opção de CORS do
 - `PENDING` expira em 15 minutos; um job com lock distribuído apaga uploads incompletos.
 - substituições e exclusões viram `PENDING_DELETE` antes da remoção física;
 - se o storage falhar durante a limpeza, o registro é mantido para uma nova tentativa;
-- arquivos prontos são lidos por redirect para uma URL `GET` curta, sem tornar o bucket público;
+- fotos prontas são lidas por redirect para uma URL `GET` curta, sem tornar o bucket público;
+- anexos clínicos exigem JWT e vínculo com o tutor a cada emissão de URL. A resposta é `no-store` e a URL assinada força download como `application/octet-stream` por 15 minutos;
+- fotos permanecem limitadas a 5 MB; cada registro clínico aceita até cinco anexos JPG, PNG ou PDF de até 10 MB;
 - monitore respostas 429 (limite de uploads), 502 (storage indisponível) e o crescimento do prefixo `staging/`.
 
-Antes de ativar em produção, valide criação, troca e remoção de foto em um ambiente de preview com um bucket isolado.
+Antes de ativar em produção, valide criação, troca e remoção de foto, além de upload, download autenticado e remoção de um documento clínico, em um ambiente de preview com um bucket isolado.

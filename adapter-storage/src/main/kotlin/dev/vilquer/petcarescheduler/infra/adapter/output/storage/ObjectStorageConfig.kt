@@ -24,6 +24,6 @@ class ObjectStorageConfig {
         override fun readObject(key: String, maxBytes: Long): ByteArray = unavailable()
         override fun promote(sourceKey: String, destinationKey: String, contentType: String) = unavailable()
         override fun delete(key: String) = unavailable()
-        override fun presignDownload(key: String, expiresIn: Duration): String = unavailable()
+        override fun presignDownload(key: String, expiresIn: Duration, downloadFilename: String?): String = unavailable()
     }
 }
