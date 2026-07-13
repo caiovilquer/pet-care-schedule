@@ -118,20 +118,32 @@ estão em [`docs/cycle-5-veterinary-finance.md`](docs/cycle-5-veterinary-finance
 
 - JDK 21+
 - Kotlin 2.0 / Spring Boot 3.5 (versões centralizadas em `gradle/libs.versions.toml`)
-- Docker (para MailHog e para os testes de `adapter-persistence`, que sobem
-  um Postgres real via Testcontainers — `./gradlew check` falha sem Docker
-  disponível)
+- Docker (para MailHog, MinIO e para os testes de `adapter-persistence`, que
+  sobem um Postgres real via Testcontainers — `./gradlew check` falha sem
+  Docker disponível)
 - Gradle Wrapper (`./gradlew`)
 
 ## Executando o projeto
 
 ```bash
-# Opcional: servidor de e‑mail fake
-docker compose up -d mailhog
+# MailHog (e-mail) + MinIO (bucket S3 local)
+docker compose up -d
 
-# Inicia a aplicação (módulo bootstrap) com H2 e swagger
-./gradlew :bootstrap:bootRun
+# API com H2, swagger e object storage apontando para o MinIO
+scripts/run-dev.sh
 ```
+
+Sem MinIO (storage desligado), basta `MAIL_FROM=noreply@localhost ./gradlew :bootstrap:bootRun`.
+
+| Serviço   | URL |
+|-----------|-----|
+| API       | `https://localhost:8443` |
+| Swagger   | `https://localhost:8443/swagger-ui.html` |
+| MailHog   | `http://localhost:8025` |
+| MinIO API | `http://localhost:9000` |
+| MinIO UI  | `http://localhost:9001` (user/pass: `minioadmin` / `minioadmin`) |
+
+Detalhes do bucket local: [`docs/object-storage.md`](docs/object-storage.md#minio-local).
 
 ## Producao (sem Docker)
 

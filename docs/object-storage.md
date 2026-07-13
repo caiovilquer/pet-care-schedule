@@ -2,6 +2,29 @@
 
 O RotinaPet usa o mesmo adaptador S3 para Railway Buckets e Cloudflare R2. O bucket deve permanecer privado. O navegador recebe uma URL `PUT` válida por 3 minutos; depois do envio, a API confere tamanho, SHA-256 e assinatura real antes de promover o objeto de `staging/` para uma chave imutável em `media/`. Imagens também são decodificadas e limitadas por dimensão; documentos clínicos PDF exigem cabeçalho e trailer válidos.
 
+## MinIO (local)
+
+```bash
+docker compose up -d
+scripts/run-dev.sh
+```
+
+O compose sobe o MinIO na porta `9000` (console em `9001`), cria o bucket `rotinapet` e aplica CORS para `http://localhost:4200`. Credenciais padrão: `minioadmin` / `minioadmin`.
+
+`scripts/run-dev.sh` exporta:
+
+```text
+OBJECT_STORAGE_ENABLED=true
+OBJECT_STORAGE_ENDPOINT=http://localhost:9000
+OBJECT_STORAGE_REGION=us-east-1
+OBJECT_STORAGE_BUCKET=rotinapet
+OBJECT_STORAGE_ACCESS_KEY=minioadmin
+OBJECT_STORAGE_SECRET_KEY=minioadmin
+OBJECT_STORAGE_PATH_STYLE=true
+```
+
+O upload no browser vai direto ao MinIO via URL pré-assinada; por isso o CORS no bucket é obrigatório. Use `path-style=true` com MinIO.
+
 ## Railway Bucket
 
 1. Crie um Bucket no mesmo ambiente do backend.
