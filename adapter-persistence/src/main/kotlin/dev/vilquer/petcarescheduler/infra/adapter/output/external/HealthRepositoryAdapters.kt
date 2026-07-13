@@ -45,6 +45,8 @@ class HealthRecordRepositoryAdapter(private val jpa: HealthRecordJpaRepository) 
         jpa.searchByHousehold(householdId.value, filter.petId.value, filter.from, filter.to, filter.type, PageRequest.of(page, size)).content.map { it.toDomain() }
     override fun countByHousehold(householdId: HouseholdId, filter: HealthRecordFilter) =
         jpa.searchByHousehold(householdId.value, filter.petId.value, filter.from, filter.to, filter.type, PageRequest.of(0, 1)).totalElements
+    override fun searchCostsByHousehold(householdId: HouseholdId, petId: PetId?, from: Instant, to: Instant, limit: Int) =
+        jpa.findCostsByHousehold(householdId.value, petId?.value, from, to, PageRequest.of(0, limit)).map { it.toDomain() }
 }
 
 @Repository

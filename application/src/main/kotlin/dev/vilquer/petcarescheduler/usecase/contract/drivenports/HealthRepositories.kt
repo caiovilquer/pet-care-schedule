@@ -41,6 +41,7 @@ interface HealthRecordRepositoryPort {
     fun findByIdAndHouseholdForUpdate(id: HealthRecordId, householdId: HouseholdId): HealthRecord?
     fun searchByHousehold(householdId: HouseholdId, filter: HealthRecordFilter, page: Int, size: Int): List<HealthRecord>
     fun countByHousehold(householdId: HouseholdId, filter: HealthRecordFilter): Long
+    fun searchCostsByHousehold(householdId: HouseholdId, petId: PetId?, from: Instant, to: Instant, limit: Int): List<HealthRecord>
 }
 
 interface HealthMeasurementRepositoryPort {

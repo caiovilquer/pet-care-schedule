@@ -79,6 +79,8 @@ class CareAppService(
             critical = command.critical,
             escalationDelayMinutes = command.escalationDelayMinutes,
             escalationTutorId = command.escalationTutorId,
+            estimatedCostAmount = command.estimatedCostAmount,
+            estimatedCostCurrency = command.estimatedCostCurrency?.trim()?.uppercase(),
             createdAt = now.toInstant(),
             updatedAt = now.toInstant(),
         )
@@ -110,6 +112,8 @@ class CareAppService(
             critical = command.critical,
             escalationDelayMinutes = command.escalationDelayMinutes,
             escalationTutorId = command.escalationTutorId,
+            estimatedCostAmount = command.estimatedCostAmount,
+            estimatedCostCurrency = command.estimatedCostCurrency?.trim()?.uppercase(),
             updatedAt = now.toInstant(),
         )
         occurrences.cancelScheduledFrom(existing.id, now.toLocalDateTime(), now.toInstant())
@@ -346,14 +350,16 @@ class CareAppService(
 
     private fun CarePlan.toResult() = CarePlanResult(
         id.value, version, petId.value, responsibleTutorId.value, type, title, instructions,
-        startAt, recurrence, reminderMinutesBefore, critical, escalationDelayMinutes, escalationTutorId?.value, active,
+        startAt, recurrence, reminderMinutesBefore, critical, escalationDelayMinutes, escalationTutorId?.value,
+        estimatedCostAmount, estimatedCostCurrency, active,
     )
 
     private fun CareOccurrence.toResult(): CareOccurrenceResult {
         val undoUntil = completedAt?.plus(UNDO_WINDOW)
         return CareOccurrenceResult(
             id.value, version, planId.value, petId.value, responsibleTutorId.value, type, title, instructions, dueAt, status,
-            completedAt, completedByTutorId?.value, completionNote, critical, escalationDelayMinutes, escalationTutorId?.value, undoUntil,
+            completedAt, completedByTutorId?.value, completionNote, critical, escalationDelayMinutes, escalationTutorId?.value,
+            estimatedCostAmount, estimatedCostCurrency, undoUntil,
         )
     }
 

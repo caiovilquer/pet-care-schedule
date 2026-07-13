@@ -18,6 +18,8 @@ enum class HouseholdPermission {
     MANAGE_PETS,
     MANAGE_PLANS,
     MANAGE_MEMBERS,
+    MANAGE_FINANCES,
+    SHARE_VETERINARY_SUMMARY,
 }
 
 fun HouseholdRole.allows(permission: HouseholdPermission): Boolean = when (this) {

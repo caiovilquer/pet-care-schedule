@@ -13,6 +13,8 @@ data class RateLimitProperties(
     val tokenRefresh: RateLimitConfig = RateLimitConfig(),
     val mediaUpload: RateLimitConfig = RateLimitConfig(maxAttempts = 20, window = Duration.ofHours(1)),
     val householdInvite: RateLimitConfig = RateLimitConfig(maxAttempts = 10, window = Duration.ofHours(1)),
+    val veterinaryShareCreate: RateLimitConfig = RateLimitConfig(maxAttempts = 10, window = Duration.ofHours(1)),
+    val veterinaryShareAccess: RateLimitConfig = RateLimitConfig(maxAttempts = 60, window = Duration.ofMinutes(15)),
 )
 
 data class RateLimitConfig(
@@ -20,7 +22,10 @@ data class RateLimitConfig(
     val window: Duration = Duration.ofMinutes(15)
 )
 
-enum class RateLimitAction { LOGIN, PASSWORD_RESET, TOKEN_REFRESH, MEDIA_UPLOAD, HOUSEHOLD_INVITE }
+enum class RateLimitAction {
+    LOGIN, PASSWORD_RESET, TOKEN_REFRESH, MEDIA_UPLOAD, HOUSEHOLD_INVITE,
+    VETERINARY_SHARE_CREATE, VETERINARY_SHARE_ACCESS,
+}
 
 class RateLimiterService(
     private val props: RateLimitProperties,
@@ -34,6 +39,8 @@ class RateLimiterService(
             RateLimitAction.TOKEN_REFRESH -> props.tokenRefresh
             RateLimitAction.MEDIA_UPLOAD -> props.mediaUpload
             RateLimitAction.HOUSEHOLD_INVITE -> props.householdInvite
+            RateLimitAction.VETERINARY_SHARE_CREATE -> props.veterinaryShareCreate
+            RateLimitAction.VETERINARY_SHARE_ACCESS -> props.veterinaryShareAccess
         }
         val id = "${action.name}:${key}"
         val count = store.registerAttempt(id, clock.instant(), limit.window)
@@ -47,7 +54,10 @@ class RateLimiterService(
     }
 
     fun cleanup() {
-        val maxWindow = maxOf(props.login.window, props.passwordReset.window, props.tokenRefresh.window, props.mediaUpload.window)
+        val maxWindow = maxOf(
+            props.login.window, props.passwordReset.window, props.tokenRefresh.window, props.mediaUpload.window,
+            props.householdInvite.window, props.veterinaryShareCreate.window, props.veterinaryShareAccess.window,
+        )
         store.deleteOlderThan(clock.instant().minus(maxWindow))
     }
 }

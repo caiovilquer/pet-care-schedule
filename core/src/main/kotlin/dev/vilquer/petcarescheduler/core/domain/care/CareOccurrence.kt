@@ -8,6 +8,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
+import java.math.BigDecimal
 
 @JvmInline value class CareOccurrenceId(val value: UUID)
 
@@ -31,6 +32,8 @@ data class CareOccurrence(
     val critical: Boolean = false,
     val escalationDelayMinutes: Int? = null,
     val escalationTutorId: TutorId? = null,
+    val estimatedCostAmount: BigDecimal? = null,
+    val estimatedCostCurrency: String? = null,
     val completedAt: Instant? = null,
     val completedByTutorId: TutorId? = null,
     val completionNote: String? = null,
@@ -50,6 +53,10 @@ data class CareOccurrence(
         require(critical == (escalationDelayMinutes != null)) { "care_occurrence_escalation_configuration_invalid" }
         require(escalationDelayMinutes == null || escalationDelayMinutes in 15..10_080) { "care_occurrence_escalation_delay_invalid" }
         require(!critical || escalationTutorId != null) { "care_occurrence_escalation_recipient_required" }
+        require(estimatedCostAmount == null || (estimatedCostAmount > BigDecimal.ZERO && estimatedCostAmount.scale() <= 2)) {
+            "care_occurrence_estimated_cost_invalid"
+        }
+        require((estimatedCostAmount == null) == (estimatedCostCurrency == null)) { "care_occurrence_estimated_currency_required" }
     }
 
     fun complete(actor: TutorId, at: Instant, note: String?): CareOccurrence {

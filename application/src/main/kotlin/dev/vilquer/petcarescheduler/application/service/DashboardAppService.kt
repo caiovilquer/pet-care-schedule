@@ -52,6 +52,8 @@ class DashboardAppService(
                     critical = it.critical,
                     escalationDelayMinutes = it.escalationDelayMinutes,
                     escalationTutorId = it.escalationTutorId?.value,
+                    estimatedCostAmount = it.estimatedCostAmount,
+                    estimatedCostCurrency = it.estimatedCostCurrency,
                     canUndoUntil = it.completedAt?.plus(CareAppService.UNDO_WINDOW),
                 )
             },

@@ -17,6 +17,8 @@ import dev.vilquer.petcarescheduler.application.service.RateLimiterService
 import dev.vilquer.petcarescheduler.application.service.ReminderRelayService
 import dev.vilquer.petcarescheduler.application.service.SecurityMaintenanceService
 import dev.vilquer.petcarescheduler.application.service.TutorAppService
+import dev.vilquer.petcarescheduler.application.service.FinanceAppService
+import dev.vilquer.petcarescheduler.application.service.VeterinaryReportAppService
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceActionRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
@@ -50,6 +52,8 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ReminderOutboxP
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TokenIssuerPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ExpenseRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.VeterinaryShareRepositoryPort
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -64,6 +68,30 @@ import java.time.Duration
  */
 @Configuration
 class UseCaseWiring {
+
+    @Bean
+    fun financeAppService(
+        expenses: ExpenseRepositoryPort,
+        healthRecords: HealthRecordRepositoryPort,
+        occurrences: CareOccurrenceRepositoryPort,
+        pets: PetRepositoryPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+    ) = FinanceAppService(expenses, healthRecords, occurrences, pets, transaction, clock)
+
+    @Bean
+    fun veterinaryReportAppService(
+        records: HealthRecordRepositoryPort,
+        measurements: HealthMeasurementRepositoryPort,
+        attachments: HealthRecordAttachmentRepositoryPort,
+        occurrences: CareOccurrenceRepositoryPort,
+        pets: PetRepositoryPort,
+        shares: VeterinaryShareRepositoryPort,
+        media: MediaAssetRepositoryPort,
+        storage: ObjectStoragePort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+    ) = VeterinaryReportAppService(records, measurements, attachments, occurrences, pets, shares, media, storage, transaction, clock)
 
     @Bean
     fun householdAppService(

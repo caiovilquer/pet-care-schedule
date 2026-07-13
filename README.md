@@ -46,6 +46,14 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
   - Cuidados críticos podem escalar por e-mail quando continuam pendentes após
     o prazo escolhido, usando outbox idempotente e retry seguro.
 
+- **Resumo veterinário e planejamento financeiro**
+  - Resumo por período com adesão, histórico clínico, medições e documentos,
+    pronto para impressão e consulta.
+  - Links somente leitura com escopo mínimo, expiração, revogação, segredo no
+    fragmento da URL e downloads privados de curta duração.
+  - Custos realizados separados de previsões dos planos, com acesso financeiro
+    exclusivo do proprietário e destaques estritamente descritivos.
+
 - **Lembretes automáticos e confiáveis**
   - Um scheduler a cada 5 minutos estende o horizonte e detecta ocorrências no
     momento configurado, apenas
@@ -103,6 +111,8 @@ As garantias, APIs e implantação do Ciclo 3 estão em
 [`docs/cycle-3-clinical-timeline.md`](docs/cycle-3-clinical-timeline.md).
 O modelo de autorização, os convites e a operação do Ciclo 4 estão em
 [`docs/cycle-4-shared-care.md`](docs/cycle-4-shared-care.md).
+As garantias de privacidade, o modelo financeiro e a implantação do Ciclo 5
+estão em [`docs/cycle-5-veterinary-finance.md`](docs/cycle-5-veterinary-finance.md).
 
 ## Requisitos
 

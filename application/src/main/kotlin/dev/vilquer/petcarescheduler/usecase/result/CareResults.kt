@@ -7,6 +7,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import java.math.BigDecimal
 
 data class CarePlanResult(
     val id: UUID,
@@ -22,6 +23,8 @@ data class CarePlanResult(
     val critical: Boolean,
     val escalationDelayMinutes: Int?,
     val escalationTutorId: Long?,
+    val estimatedCostAmount: BigDecimal?,
+    val estimatedCostCurrency: String?,
     val active: Boolean,
 )
 
@@ -49,6 +52,8 @@ data class CareOccurrenceResult(
     val critical: Boolean,
     val escalationDelayMinutes: Int?,
     val escalationTutorId: Long?,
+    val estimatedCostAmount: BigDecimal?,
+    val estimatedCostCurrency: String?,
     val canUndoUntil: Instant?,
 )
 

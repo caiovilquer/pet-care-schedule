@@ -13,6 +13,19 @@ import java.time.Instant
 import java.util.UUID
 
 interface HealthRecordJpaRepository : JpaRepository<HealthRecordJpa, UUID> {
+    @Query("""
+        select r from HealthRecordJpa r
+        where r.householdId = :householdId and r.occurredAt >= :from and r.occurredAt < :to
+          and r.costAmount is not null and (:petId is null or r.petId = :petId)
+        order by r.occurredAt desc, r.id desc
+    """)
+    fun findCostsByHousehold(
+        @Param("householdId") householdId: UUID,
+        @Param("petId") petId: Long?,
+        @Param("from") from: Instant,
+        @Param("to") to: Instant,
+        pageable: org.springframework.data.domain.Pageable,
+    ): List<HealthRecordJpa>
     @Query("select r from HealthRecordJpa r where r.id = :id and r.tutorId = :tutorId")
     fun findOwned(@Param("id") id: UUID, @Param("tutorId") tutorId: Long): HealthRecordJpa?
 

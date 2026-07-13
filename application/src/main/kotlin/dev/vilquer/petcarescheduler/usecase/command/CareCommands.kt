@@ -9,6 +9,7 @@ import dev.vilquer.petcarescheduler.core.domain.entity.TutorId
 import dev.vilquer.petcarescheduler.core.domain.valueobject.Recurrence
 import java.time.LocalDateTime
 import java.util.UUID
+import java.math.BigDecimal
 
 data class CreateCarePlanCommand(
     val petId: PetId,
@@ -22,6 +23,8 @@ data class CreateCarePlanCommand(
     val critical: Boolean = false,
     val escalationDelayMinutes: Int? = null,
     val escalationTutorId: TutorId? = null,
+    val estimatedCostAmount: BigDecimal? = null,
+    val estimatedCostCurrency: String? = null,
 )
 
 data class UpdateCarePlanCommand(
@@ -36,6 +39,8 @@ data class UpdateCarePlanCommand(
     val critical: Boolean = false,
     val escalationDelayMinutes: Int? = null,
     val escalationTutorId: TutorId? = null,
+    val estimatedCostAmount: BigDecimal? = null,
+    val estimatedCostCurrency: String? = null,
 )
 
 data class AssignCareOccurrenceCommand(

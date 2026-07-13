@@ -31,6 +31,10 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.Size
+import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.DecimalMax
+import jakarta.validation.constraints.Digits
+import jakarta.validation.constraints.Pattern
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -47,6 +51,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 import java.util.UUID
+import java.math.BigDecimal
 
 data class CarePlanRequest(
     @field:Positive val petId: Long,
@@ -63,6 +68,9 @@ data class CarePlanRequest(
     val critical: Boolean = false,
     @field:Min(15) @field:Max(10_080) val escalationDelayMinutes: Int? = null,
     val escalationTutorId: Long? = null,
+    @field:DecimalMin("0.01") @field:DecimalMax("9999999999.99") @field:Digits(integer = 10, fraction = 2)
+    val estimatedCostAmount: BigDecimal? = null,
+    @field:Pattern(regexp = "^[A-Za-z]{3}$") val estimatedCostCurrency: String? = null,
 ) {
     fun recurrence(): Recurrence? = frequency?.let { Recurrence(it, intervalCount, repetitions, finalDate) }
 }
@@ -79,6 +87,7 @@ class CarePlanController(private val care: CarePlanUseCase, private val househol
                 PetId(body.petId), body.type, body.title, body.instructions, body.startAt,
                 body.recurrence(), body.reminderMinutesBefore,
                 body.responsibleTutorId?.let(::TutorId), body.critical, body.escalationDelayMinutes, body.escalationTutorId?.let(::TutorId),
+                body.estimatedCostAmount, body.estimatedCostCurrency,
             ),
             household.resolve(jwt),
         )
@@ -97,6 +106,7 @@ class CarePlanController(private val care: CarePlanUseCase, private val househol
                 CarePlanId(id), body.type, body.title, body.instructions, body.startAt,
                 body.recurrence(), body.reminderMinutesBefore,
                 body.responsibleTutorId?.let(::TutorId), body.critical, body.escalationDelayMinutes, body.escalationTutorId?.let(::TutorId),
+                body.estimatedCostAmount, body.estimatedCostCurrency,
             ),
             household.resolve(jwt),
         )

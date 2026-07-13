@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
+import java.math.BigDecimal
+import java.util.Currency
 
 @JvmInline value class CarePlanId(val value: UUID)
 
@@ -29,6 +31,8 @@ data class CarePlan(
     val critical: Boolean = false,
     val escalationDelayMinutes: Int? = null,
     val escalationTutorId: TutorId? = null,
+    val estimatedCostAmount: BigDecimal? = null,
+    val estimatedCostCurrency: String? = null,
     val active: Boolean = true,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -41,6 +45,14 @@ data class CarePlan(
         require(critical == (escalationDelayMinutes != null)) { "care_plan_escalation_configuration_invalid" }
         require(escalationDelayMinutes == null || escalationDelayMinutes in 15..10_080) { "care_plan_escalation_delay_invalid" }
         require(!critical || escalationTutorId != null) { "care_plan_escalation_recipient_required" }
+        require(estimatedCostAmount == null || (estimatedCostAmount > BigDecimal.ZERO && estimatedCostAmount <= MAX_COST && estimatedCostAmount.scale() <= 2)) {
+            "care_plan_estimated_cost_invalid"
+        }
+        require((estimatedCostAmount == null) == (estimatedCostCurrency == null)) { "care_plan_estimated_currency_required" }
+        estimatedCostCurrency?.let {
+            require(it.matches(Regex("^[A-Z]{3}$"))) { "care_plan_estimated_currency_invalid" }
+            runCatching { Currency.getInstance(it) }.getOrElse { throw IllegalArgumentException("care_plan_estimated_currency_invalid") }
+        }
     }
 
     fun occurrencesThrough(horizon: LocalDateTime, generatedAt: Instant): List<CareOccurrence> {
@@ -71,6 +83,8 @@ data class CarePlan(
                 critical = critical,
                 escalationDelayMinutes = escalationDelayMinutes,
                 escalationTutorId = escalationTutorId,
+                estimatedCostAmount = estimatedCostAmount,
+                estimatedCostCurrency = estimatedCostCurrency,
                 createdAt = generatedAt,
                 updatedAt = generatedAt,
             )
@@ -92,5 +106,6 @@ data class CarePlan(
 
     companion object {
         const val MAX_OCCURRENCES_PER_HORIZON = 500
+        private val MAX_COST = BigDecimal("9999999999.99")
     }
 }

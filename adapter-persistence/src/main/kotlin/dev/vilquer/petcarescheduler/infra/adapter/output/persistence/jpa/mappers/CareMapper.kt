@@ -17,7 +17,8 @@ fun CarePlanJpa.toDomain() = CarePlan(
     responsibleTutorId = TutorId(responsibleTutorId), type = type, title = title,
     instructions = instructions, startAt = startAt, recurrence = recurrence?.toDomain(),
     reminderMinutesBefore = reminderMinutesBefore, critical = critical, escalationDelayMinutes = escalationDelayMinutes,
-    escalationTutorId = escalationTutorId?.let(::TutorId), active = active, createdAt = createdAt, updatedAt = updatedAt,
+    escalationTutorId = escalationTutorId?.let(::TutorId), estimatedCostAmount = estimatedCostAmount,
+    estimatedCostCurrency = estimatedCostCurrency, active = active, createdAt = createdAt, updatedAt = updatedAt,
 )
 
 fun CarePlan.toJpa() = CarePlanJpa().also {
@@ -25,7 +26,8 @@ fun CarePlan.toJpa() = CarePlanJpa().also {
     it.responsibleTutorId = responsibleTutorId.value; it.type = type; it.title = title
     it.instructions = instructions; it.startAt = startAt; it.recurrence = recurrence?.toEmb()
     it.reminderMinutesBefore = reminderMinutesBefore; it.critical = critical; it.escalationDelayMinutes = escalationDelayMinutes
-    it.escalationTutorId = escalationTutorId?.value; it.active = active; it.createdAt = createdAt; it.updatedAt = updatedAt
+    it.escalationTutorId = escalationTutorId?.value; it.estimatedCostAmount = estimatedCostAmount
+    it.estimatedCostCurrency = estimatedCostCurrency; it.active = active; it.createdAt = createdAt; it.updatedAt = updatedAt
 }
 
 fun CareOccurrenceJpa.toDomain() = CareOccurrence(
@@ -35,6 +37,7 @@ fun CareOccurrenceJpa.toDomain() = CareOccurrence(
     dueAt = dueAt, status = status, completedAt = completedAt,
     completedByTutorId = completedByTutorId?.let(::TutorId), completionNote = completionNote, critical = critical,
     escalationDelayMinutes = escalationDelayMinutes, escalationTutorId = escalationTutorId?.let(::TutorId),
+    estimatedCostAmount = estimatedCostAmount, estimatedCostCurrency = estimatedCostCurrency,
     createdAt = createdAt, updatedAt = updatedAt, legacyEventId = legacyEventId,
 )
 
@@ -44,7 +47,8 @@ fun CareOccurrence.toJpa() = CareOccurrenceJpa().also {
     it.sequence = sequence; it.type = type; it.title = title; it.instructions = instructions; it.dueAt = dueAt
     it.status = status; it.completedAt = completedAt; it.completedByTutorId = completedByTutorId?.value
     it.completionNote = completionNote; it.critical = critical; it.escalationDelayMinutes = escalationDelayMinutes
-    it.escalationTutorId = escalationTutorId?.value; it.createdAt = createdAt; it.updatedAt = updatedAt; it.legacyEventId = legacyEventId
+    it.escalationTutorId = escalationTutorId?.value; it.estimatedCostAmount = estimatedCostAmount
+    it.estimatedCostCurrency = estimatedCostCurrency; it.createdAt = createdAt; it.updatedAt = updatedAt; it.legacyEventId = legacyEventId
 }
 
 fun CareOccurrenceActionJpa.toDomain() = CareOccurrenceAction(

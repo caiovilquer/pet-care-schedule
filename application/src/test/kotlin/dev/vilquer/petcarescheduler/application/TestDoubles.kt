@@ -138,6 +138,9 @@ internal class InMemoryHealthRecordRepo : HealthRecordRepositoryPort {
         .filter { it.householdId == householdId && it.petId == filter.petId && it.occurredAt >= filter.from && it.occurredAt < filter.to }
         .filter { filter.type == null || it.type == filter.type }.sortedByDescending { it.occurredAt }.drop(page * size).take(size)
     override fun countByHousehold(householdId: HouseholdId, filter: HealthRecordFilter) = searchByHousehold(householdId, filter, 0, Int.MAX_VALUE).size.toLong()
+    override fun searchCostsByHousehold(householdId: HouseholdId, petId: PetId?, from: Instant, to: Instant, limit: Int) = store.values
+        .filter { it.householdId == householdId && (petId == null || it.petId == petId) && it.occurredAt >= from && it.occurredAt < to && it.costAmount != null }
+        .sortedByDescending { it.occurredAt }.take(limit)
 }
 
 internal class InMemoryHealthAttachmentRepo : HealthRecordAttachmentRepositoryPort {

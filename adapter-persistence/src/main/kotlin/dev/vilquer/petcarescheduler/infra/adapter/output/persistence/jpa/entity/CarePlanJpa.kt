@@ -13,6 +13,7 @@ import jakarta.persistence.Version
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
+import java.math.BigDecimal
 
 @Entity
 @Table(name = "care_plan")
@@ -33,6 +34,8 @@ class CarePlanJpa {
     @Column(nullable = false) var critical: Boolean = false
     @Column(name = "escalation_delay_minutes") var escalationDelayMinutes: Int? = null
     @Column(name = "escalation_tutor_id") var escalationTutorId: Long? = null
+    @Column(name = "estimated_cost_amount", precision = 12, scale = 2) var estimatedCostAmount: BigDecimal? = null
+    @Column(name = "estimated_cost_currency", length = 3) var estimatedCostCurrency: String? = null
     @Column(nullable = false) var active: Boolean = true
     @Column(name = "created_at", nullable = false) lateinit var createdAt: Instant
     @Column(name = "updated_at", nullable = false) lateinit var updatedAt: Instant

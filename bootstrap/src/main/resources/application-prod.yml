@@ -39,6 +39,7 @@ spring:
       # com ele, conexões ociosas são fechadas após idle-timeout (10 min)
       minimum-idle: ${DB_POOL_MIN_IDLE:2}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
