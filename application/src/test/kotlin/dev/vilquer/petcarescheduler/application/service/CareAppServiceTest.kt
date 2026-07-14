@@ -112,6 +112,33 @@ class CareAppServiceTest {
     }
 
     @Test
+    fun `current metadata edit creates a new schedule revision for v2 migration characterization`() {
+        val created = service.create(dailyPlan(repetitions = 2), access)
+        val previousIds = occurrences.all().map { it.id }.toSet()
+
+        service.update(
+            UpdateCarePlanCommand(
+                planId = dev.vilquer.petcarescheduler.core.domain.care.CarePlanId(created.id),
+                type = EventType.MEDICINE,
+                title = "Mesmo horário, novo título",
+                instructions = "Dose prescrita",
+                startAt = localNow.plusHours(1),
+                recurrence = Recurrence(Frequency.DAILY, repetitions = 2),
+                reminderMinutesBefore = 15,
+            ),
+            access,
+        )
+
+        assertEquals(1, plans.all().single().scheduleRevision)
+        assertEquals(2, occurrences.all().count { it.status == CareOccurrenceStatus.CANCELLED })
+        assertTrue(
+            occurrences.all()
+                .filter { it.status == CareOccurrenceStatus.SCHEDULED }
+                .none { it.id in previousIds },
+        )
+    }
+
+    @Test
     fun `completion is replayable with the same request and rejects a second administration`() {
         service.create(dailyPlan(repetitions = 1), access)
         val occurrence = occurrences.all().single()
@@ -159,6 +186,40 @@ class CareAppServiceTest {
 
         assertEquals(1, occurrences.all().size)
         assertEquals(1, outbox.all().size)
+    }
+
+    @Test
+    fun `current reminder recipient is the author even when the plan has another responsible tutor`() {
+        val caregiverId = TutorId(2)
+        tutors.save(
+            Tutor(
+                id = caregiverId,
+                firstName = "Bruno",
+                lastName = "Costa",
+                email = Email.of("bruno@example.com").getOrThrow(),
+                passwordHash = "hash",
+                phoneNumber = null,
+            ),
+        )
+        service = CareAppService(
+            plans, occurrences, actions, pets, tutors, outbox, FakeCareEscalationOutbox(),
+            FakeHouseholdMemberRepo(tutorId, listOf(caregiverId)), FakeHouseholdActivityRepo(),
+            FakeTransactionPort(), clock,
+        )
+        service.create(
+            dailyPlan(repetitions = 1).copy(
+                startAt = localNow.plusMinutes(30),
+                reminderMinutesBefore = 60,
+                responsibleTutorId = caregiverId,
+            ),
+            access,
+        )
+
+        service.materializeAndEnqueueReminders()
+
+        assertEquals(caregiverId, occurrences.all().single().responsibleTutorId)
+        assertEquals(tutorId, outbox.all().single().tutorId)
+        assertEquals("ana@example.com", outbox.all().single().tutorEmail)
     }
 
     @Test

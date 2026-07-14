@@ -50,10 +50,9 @@ dependencies {
     implementation(libs.shedlock.jdbc)
 
     runtimeOnly("org.postgresql:postgresql")
-    // Perfil dev e testes de integração usam H2 em modo PostgreSQL
-    runtimeOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.testcontainers:postgresql")
     // TestRestTemplate cai para o HttpURLConnection da JDK sem um client HTTP
     // dedicado no classpath; esse client lança HttpRetryException em qualquer
     // resposta 401 recebida com corpo em modo streaming (bug/limitação da JDK,

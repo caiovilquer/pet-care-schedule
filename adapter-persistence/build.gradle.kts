@@ -33,9 +33,8 @@ dependencies {
     // declarar a versão do BOM explicitamente resolve o conflito.
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // Postgres real via Testcontainers, no lugar do H2 em modo PostgreSQL:
-    // as mesmas migrações Flyway (common + postgresql) usadas em produção
-    // passam a ser exercitadas nos testes, não só a variante h2/.
+    // As mesmas migrações Flyway (common + postgresql) usadas em produção
+    // são exercitadas contra PostgreSQL/pgvector real nos testes.
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.flywaydb:flyway-core")
     testImplementation("org.flywaydb:flyway-database-postgresql")

@@ -39,7 +39,7 @@ import java.util.concurrent.Executors
 
 /**
  * Rede de segurança da Fase 1: exercita o fluxo completo da API com o contexto
- * real (H2 + Flyway + JWT). Se o wiring de qualquer bean sumir durante a
+ * real (PostgreSQL/pgvector + Flyway + JWT). Se o wiring de qualquer bean sumir durante a
  * migração de módulos, este teste quebra imediatamente.
  */
 @SpringBootTest(
@@ -52,7 +52,7 @@ import java.util.concurrent.Executors
     ],
 )
 @ActiveProfiles("dev")
-class SmokeE2ETest {
+class SmokeE2ETest : AbstractPostgresIntegrationTest() {
 
     @Autowired
     lateinit var rest: TestRestTemplate
@@ -547,7 +547,7 @@ class SmokeE2ETest {
         assertTrue(eventCreated.eventId.value > 0)
 
         // Chama os beans diretamente (em vez de esperar o cron) para exercitar
-        // o ReminderOutboxJpaAdapter de verdade, contra o H2, sem fakes.
+        // o ReminderOutboxJpaAdapter de verdade, contra PostgreSQL, sem fakes.
         sendDailyReminders.sendRemindersForToday()
         sendDailyReminders.sendRemindersForToday() // idempotência: não deve duplicar a mensagem
 

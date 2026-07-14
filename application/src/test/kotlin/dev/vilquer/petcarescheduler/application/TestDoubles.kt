@@ -485,10 +485,22 @@ internal class FakeCareEscalationOutbox : CareEscalationOutboxPort {
     override fun incrementAttempts(id: Long) { }
 }
 
-internal class FakeHouseholdMemberRepo(private val tutorId: TutorId) : HouseholdMemberRepositoryPort {
-    private val member = HouseholdMember(householdId = TEST_HOUSEHOLD_ID, tutorId = tutorId, role = HouseholdRole.OWNER, joinedAt = Instant.EPOCH)
+internal class FakeHouseholdMemberRepo(
+    tutorId: TutorId,
+    caregiverIds: List<TutorId> = emptyList(),
+) : HouseholdMemberRepositoryPort {
+    private val members = (listOf(tutorId) + caregiverIds).mapIndexed { index, memberTutorId ->
+        HouseholdMember(
+            householdId = TEST_HOUSEHOLD_ID,
+            tutorId = memberTutorId,
+            role = if (index == 0) HouseholdRole.OWNER else HouseholdRole.CAREGIVER,
+            joinedAt = Instant.EPOCH,
+        )
+    }
+    private val member = members.first()
     override fun save(member: HouseholdMember) = member
-    override fun findAccess(tutorId: TutorId, householdId: HouseholdId) = member.takeIf { tutorId == this.tutorId && householdId == TEST_HOUSEHOLD_ID }
+    override fun findAccess(tutorId: TutorId, householdId: HouseholdId) =
+        members.firstOrNull { it.tutorId == tutorId && householdId == TEST_HOUSEHOLD_ID }
     override fun findAccessForUpdate(tutorId: TutorId, householdId: HouseholdId) = findAccess(tutorId, householdId)
     override fun findByIdForUpdate(id: HouseholdMemberId, householdId: HouseholdId) = member.takeIf { id == member.id }
     override fun listDetails(householdId: HouseholdId) = emptyList<HouseholdMemberDetails>()

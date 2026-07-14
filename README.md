@@ -71,7 +71,7 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
   - Redefinição de senha com token de uso único; a troca de senha e a
     emissão/invalidação de tokens são atômicas (`TransactionPort`).
   - OpenAPI/Swagger UI em `/swagger-ui.html`.
-  - Console H2 em `/h2-console` para inspeção do banco em memória.
+  - PostgreSQL 16 + pgvector no ambiente local e nas suítes de integração.
 
 - **Observabilidade**
   - Spring Boot Actuator: `/actuator/health` (público), `/actuator/info` e
@@ -113,32 +113,35 @@ O modelo de autorização, os convites e a operação do Ciclo 4 estão em
 [`docs/cycle-4-shared-care.md`](docs/cycle-4-shared-care.md).
 As garantias de privacidade, o modelo financeiro e a implantação do Ciclo 5
 estão em [`docs/cycle-5-veterinary-finance.md`](docs/cycle-5-veterinary-finance.md).
+As decisões duráveis da evolução de IA estão em [`docs/adr`](docs/adr/README.md).
 
 ## Requisitos
 
 - JDK 21+
 - Kotlin 2.0 / Spring Boot 3.5 (versões centralizadas em `gradle/libs.versions.toml`)
-- Docker (para MailHog, MinIO e para os testes de `adapter-persistence`, que
-  sobem um Postgres real via Testcontainers — `./gradlew check` falha sem
+- Docker (para PostgreSQL/pgvector, MailHog, MinIO e para os testes de integração,
+  que sobem o mesmo banco via Testcontainers — `./gradlew check` falha sem
   Docker disponível)
 - Gradle Wrapper (`./gradlew`)
 
 ## Executando o projeto
 
 ```bash
-# MailHog (e-mail) + MinIO (bucket S3 local)
+# PostgreSQL/pgvector + MailHog (e-mail) + MinIO (bucket S3 local)
 docker compose up -d
 
-# API com H2, swagger e object storage apontando para o MinIO
+# API com PostgreSQL, Swagger e object storage apontando para o MinIO
 scripts/run-dev.sh
 ```
 
-Sem MinIO (storage desligado), basta `MAIL_FROM=noreply@localhost ./gradlew :bootstrap:bootRun`.
+Com apenas o PostgreSQL local ativo, o storage pode permanecer desligado e a API
+pode ser iniciada com `MAIL_FROM=noreply@localhost ./gradlew :bootstrap:bootRun`.
 
 | Serviço   | URL |
 |-----------|-----|
 | API       | `https://localhost:8443` |
 | Swagger   | `https://localhost:8443/swagger-ui.html` |
+| PostgreSQL | `localhost:5432` (`rotinapet` / `rotinapet`) |
 | MailHog   | `http://localhost:8025` |
 | MinIO API | `http://localhost:9000` |
 | MinIO UI  | `http://localhost:9001` (user/pass: `minioadmin` / `minioadmin`) |

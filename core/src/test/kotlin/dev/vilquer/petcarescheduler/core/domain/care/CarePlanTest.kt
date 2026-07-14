@@ -28,6 +28,24 @@ class CarePlanTest {
     }
 
     @Test
+    fun `legacy occurrence id bytes stay frozen through the cursor migration`() {
+        val fixedPlan = plan(Recurrence(Frequency.DAILY)).copy(
+            id = CarePlanId(UUID.fromString("00000000-0000-0000-0000-000000000123")),
+        )
+        val generated = fixedPlan.occurrencesThrough(start.plusYears(10), generatedAt)
+
+        assertEquals(
+            CareOccurrenceId(UUID.fromString("af263c1f-c96d-33d0-ab5c-a7d2053e4842")),
+            generated.first().id,
+        )
+        assertEquals(499, generated.last().sequence)
+        assertEquals(
+            CareOccurrenceId(UUID.fromString("b384c31c-76ba-36f1-94f4-590f8d631a9e")),
+            generated.last().id,
+        )
+    }
+
+    @Test
     fun `final date is inclusive and horizon generation is bounded`() {
         val inclusive = plan(Recurrence(Frequency.DAILY, finalDate = start.plusDays(2)))
         assertEquals(3, inclusive.occurrencesThrough(start.plusDays(10), generatedAt).size)

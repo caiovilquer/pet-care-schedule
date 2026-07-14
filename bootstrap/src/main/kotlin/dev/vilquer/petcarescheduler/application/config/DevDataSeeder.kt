@@ -61,7 +61,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 /**
- * Popula o H2 em memória com um cenário completo para exercitar login,
+ * Popula o PostgreSQL local com um cenário completo para exercitar login,
  * famílias compartilhadas, pets, cuidados, saúde, finanças e convites.
  *
  * Ativo somente com `app.seed.enabled=true` (perfil `dev`).
