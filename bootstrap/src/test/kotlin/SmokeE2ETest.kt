@@ -150,7 +150,7 @@ class SmokeE2ETest : AbstractPostgresIntegrationTest() {
         val planCreated = rest.postForEntity(
             "/api/v1/care-plans",
             HttpEntity(
-                """{"petId":$petId,"type":"VACCINE","title":"Antirrábica","instructions":"Levar carteira","startAt":"$startAt","frequency":"DAILY","intervalCount":1,"repetitions":2,"reminderMinutesBefore":30}""",
+                """{"petId":$petId,"type":"VACCINE","title":"Antirrábica","instructions":"Levar carteira","startAt":"$startAt","zoneId":"America/Sao_Paulo","scheduleRule":{"kind":"CALENDAR_INTERVAL","calendarUnit":"DAY","intervalCount":1,"dailyTimes":[],"repetitions":2},"reminderMinutesBefore":30}""",
                 jsonHeaders(token),
             ),
             JsonNode::class.java,

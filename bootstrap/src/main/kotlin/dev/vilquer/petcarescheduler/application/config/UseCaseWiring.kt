@@ -23,6 +23,7 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceActionRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CarePlanRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CarePlanMaterializationCursorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareEscalationOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
@@ -110,6 +111,7 @@ class UseCaseWiring {
     @Bean
     fun careAppService(
         plans: CarePlanRepositoryPort,
+        cursors: CarePlanMaterializationCursorRepositoryPort,
         occurrences: CareOccurrenceRepositoryPort,
         actions: CareOccurrenceActionRepositoryPort,
         pets: PetRepositoryPort,
@@ -118,10 +120,9 @@ class UseCaseWiring {
         escalationOutbox: CareEscalationOutboxPort,
         householdMembers: HouseholdMemberRepositoryPort,
         householdActivities: HouseholdActivityRepositoryPort,
-        households: HouseholdRepositoryPort,
         transaction: TransactionPort,
         clock: ClockPort,
-    ) = CareAppService(plans, occurrences, actions, pets, tutors, reminderOutbox, escalationOutbox, householdMembers, householdActivities, transaction, clock, households)
+    ) = CareAppService(plans, cursors, occurrences, actions, pets, tutors, reminderOutbox, escalationOutbox, householdMembers, householdActivities, transaction, clock)
 
     @Bean
     fun careEscalationRelayService(
@@ -130,16 +131,16 @@ class UseCaseWiring {
         notifier: NotificationPort,
         activities: HouseholdActivityRepositoryPort,
         clock: ClockPort,
-        households: HouseholdRepositoryPort,
-    ) = CareEscalationRelayService(outbox, occurrences, notifier, activities, clock, households)
+        members: HouseholdMemberRepositoryPort,
+    ) = CareEscalationRelayService(outbox, occurrences, notifier, activities, clock, members)
 
     @Bean
     fun careReminderRelayService(
         outbox: CareReminderOutboxPort,
         occurrences: CareOccurrenceRepositoryPort,
         notifier: NotificationPort,
-        households: HouseholdRepositoryPort,
-    ) = CareReminderRelayService(outbox, occurrences, notifier, households)
+        members: HouseholdMemberRepositoryPort,
+    ) = CareReminderRelayService(outbox, occurrences, notifier, members)
 
     @Bean
     fun authAppService(
