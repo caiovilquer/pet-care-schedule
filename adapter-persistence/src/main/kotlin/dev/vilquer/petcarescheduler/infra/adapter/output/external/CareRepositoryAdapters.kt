@@ -39,6 +39,8 @@ class CarePlanRepositoryAdapter(private val jpa: CarePlanJpaRepository) : CarePl
         jpa.findAllByActiveTrueOrderByUpdatedAtAsc(PageRequest.of(page, size)).map { it.toDomain() }
     override fun findByIdAndHousehold(id: CarePlanId, householdId: HouseholdId) = jpa.findByIdAndHouseholdId(id.value, householdId.value)?.toDomain()
     override fun findByIdAndHouseholdForUpdate(id: CarePlanId, householdId: HouseholdId) = jpa.findByHouseholdForUpdate(id.value, householdId.value)?.toDomain()
+    override fun findBySourceDraftId(sourceDraftId: UUID, householdId: HouseholdId) =
+        jpa.findBySourceDraftIdAndHouseholdId(sourceDraftId, householdId.value)?.toDomain()
     override fun listByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?, page: Int, size: Int) =
         jpa.findHouseholdPage(householdId.value, petId?.value, active, PageRequest.of(page, size)).content.map { it.toDomain() }
     override fun countByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?) =

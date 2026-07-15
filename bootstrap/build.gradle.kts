@@ -23,6 +23,7 @@ springBoot {
 dependencies {
     implementation(project(":core"))
     implementation(project(":application"))
+    implementation(project(":adapter-ai"))
     implementation(project(":adapter-rest"))
     implementation(project(":adapter-persistence"))
     implementation(project(":adapter-messaging"))

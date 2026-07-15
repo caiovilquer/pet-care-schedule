@@ -19,7 +19,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 fun CarePlanJpa.toDomain() = CarePlan(
-    id = CarePlanId(id), version = version, scheduleRevision = scheduleRevision, householdId = HouseholdId(householdId), tutorId = TutorId(tutorId), petId = PetId(petId),
+    id = CarePlanId(id), version = version, sourceDraftId = sourceDraftId, scheduleRevision = scheduleRevision, householdId = HouseholdId(householdId), tutorId = TutorId(tutorId), petId = PetId(petId),
     responsibleTutorId = TutorId(responsibleTutorId), type = type, title = title,
     instructions = instructions, startAt = startAt, zoneId = ZoneId.of(zoneId),
     scheduleRule = ScheduleRule(
@@ -34,7 +34,7 @@ fun CarePlanJpa.toDomain() = CarePlan(
 )
 
 fun CarePlan.toJpa() = CarePlanJpa().also {
-    it.id = id.value; it.version = version; it.scheduleRevision = scheduleRevision; it.householdId = householdId.value; it.tutorId = tutorId.value; it.petId = petId.value
+    it.id = id.value; it.version = version; it.sourceDraftId = sourceDraftId; it.scheduleRevision = scheduleRevision; it.householdId = householdId.value; it.tutorId = tutorId.value; it.petId = petId.value
     it.responsibleTutorId = responsibleTutorId.value; it.type = type; it.title = title
     it.instructions = instructions; it.startAt = startAt; it.zoneId = zoneId.id; it.scheduleKind = scheduleRule.kind
     it.calendarUnit = scheduleRule.calendarUnit; it.intervalCount = scheduleRule.intervalCount

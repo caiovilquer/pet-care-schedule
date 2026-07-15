@@ -63,6 +63,9 @@ class CareAppService(
 
     override fun create(command: CreateCarePlanCommand, access: HouseholdAccess): CarePlanResult {
         requirePermission(access, HouseholdPermission.MANAGE_PLANS)
+        command.sourceDraftId?.let { sourceDraftId ->
+            plans.findBySourceDraftId(sourceDraftId, access.householdId)?.let { return it.toResult() }
+        }
         val pet = pets.findByIdAndHousehold(command.petId, access.householdId)
             ?: throw NotFoundException("Pet não encontrado")
         val responsible = command.responsibleTutorId ?: access.actorTutorId
@@ -71,6 +74,7 @@ class CareAppService(
         val now = clock.now(access.zoneId)
         require(!command.startAt.isBefore(now.toInstant().minus(Duration.ofMinutes(5)))) { "care_plan_start_in_past" }
         val plan = CarePlan(
+            sourceDraftId = command.sourceDraftId,
             householdId = access.householdId,
             tutorId = access.actorTutorId,
             petId = command.petId,

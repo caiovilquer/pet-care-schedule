@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":application"))
 
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     // Spring Data precisa de kotlin-reflect para introspectar repositórios Kotlin
     implementation(kotlin("reflect"))
 

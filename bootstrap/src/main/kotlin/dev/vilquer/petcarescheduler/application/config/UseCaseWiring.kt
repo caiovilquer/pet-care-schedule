@@ -2,6 +2,8 @@ package dev.vilquer.petcarescheduler.application.config
 
 import dev.vilquer.petcarescheduler.application.service.AuthAppService
 import dev.vilquer.petcarescheduler.application.service.CareAppService
+import dev.vilquer.petcarescheduler.application.service.CareDraftAppService
+import dev.vilquer.petcarescheduler.application.service.CareDraftSettings
 import dev.vilquer.petcarescheduler.application.service.CareReminderRelayService
 import dev.vilquer.petcarescheduler.application.service.CareEscalationRelayService
 import dev.vilquer.petcarescheduler.application.service.EventAppService
@@ -24,6 +26,9 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceA
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CarePlanRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CarePlanMaterializationCursorRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareDraftRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.AiInteractionRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareInstructionExtractorPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareReminderOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareEscalationOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EventRepositoryPort
@@ -69,6 +74,26 @@ import java.time.Duration
  */
 @Configuration
 class UseCaseWiring {
+
+    @Bean
+    fun careDraftSettings(environment: Environment) = CareDraftSettings(
+        enabled = environment.getProperty("app.ai.enabled", Boolean::class.java, false),
+        ttl = environment.getProperty("app.ai.draft-ttl", Duration::class.java, Duration.ofHours(24)),
+        maxInputCharacters = environment.getProperty("app.ai.max-input-characters", Int::class.java, 4_000),
+    )
+
+    @Bean
+    fun careDraftAppService(
+        drafts: CareDraftRepositoryPort,
+        interactions: AiInteractionRepositoryPort,
+        extractor: CareInstructionExtractorPort,
+        carePlans: dev.vilquer.petcarescheduler.usecase.contract.drivingports.CarePlanUseCase,
+        pets: PetRepositoryPort,
+        members: HouseholdMemberRepositoryPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+        settings: CareDraftSettings,
+    ) = CareDraftAppService(drafts, interactions, extractor, carePlans, pets, members, transaction, clock, settings)
 
     @Bean
     fun financeAppService(

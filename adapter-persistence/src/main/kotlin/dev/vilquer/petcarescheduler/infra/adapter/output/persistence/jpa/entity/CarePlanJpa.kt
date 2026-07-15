@@ -19,6 +19,7 @@ import java.math.BigDecimal
 class CarePlanJpa {
     @Id lateinit var id: UUID
     @Version var version: Long? = null
+    @Column(name = "source_draft_id", unique = true) var sourceDraftId: UUID? = null
     @Column(name = "schedule_revision", nullable = false) var scheduleRevision: Int = 0
     @Column(name = "household_id", nullable = false) lateinit var householdId: UUID
     @Column(name = "tutor_id", nullable = false) var tutorId: Long = 0

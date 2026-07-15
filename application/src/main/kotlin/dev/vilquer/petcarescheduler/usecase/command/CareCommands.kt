@@ -27,6 +27,7 @@ data class CreateCarePlanCommand(
     val escalationTutorId: TutorId? = null,
     val estimatedCostAmount: BigDecimal? = null,
     val estimatedCostCurrency: String? = null,
+    val sourceDraftId: UUID? = null,
 )
 
 data class UpdateCarePlanCommand(

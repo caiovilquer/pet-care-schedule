@@ -31,6 +31,7 @@ interface CarePlanRepositoryPort {
     fun findActive(page: Int, size: Int): List<CarePlan>
     fun findByIdAndHousehold(id: CarePlanId, householdId: HouseholdId): CarePlan?
     fun findByIdAndHouseholdForUpdate(id: CarePlanId, householdId: HouseholdId): CarePlan?
+    fun findBySourceDraftId(sourceDraftId: UUID, householdId: HouseholdId): CarePlan?
     fun listByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?, page: Int, size: Int): List<CarePlan>
     fun countByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?): Long
 }

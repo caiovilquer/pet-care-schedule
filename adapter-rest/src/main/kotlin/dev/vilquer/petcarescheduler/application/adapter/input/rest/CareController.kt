@@ -148,30 +148,31 @@ class CarePlanController(private val care: CarePlanUseCase, private val househol
     fun deactivate(@PathVariable id: UUID, @AuthenticationPrincipal jwt: CurrentJwt) =
         care.deactivate(CarePlanId(id), household.resolve(jwt))
 
-    private fun CareScheduleRuleRequest.toDomain(zoneId: ZoneId): ScheduleRule {
-        val parsedEnd = endAt?.let { CareWallClock.parse(it, zoneId) }
-        val rawTimes = try {
-            dailyTimes.map(LocalTime::parse)
-        } catch (_: Exception) {
-            throw IllegalArgumentException("care_schedule_daily_times_invalid")
-        }
-        require(rawTimes.size == rawTimes.distinct().size) { "care_schedule_daily_times_invalid" }
-        val parsedTimes = rawTimes.sorted()
-        return when (kind) {
-            ScheduleKind.ONE_TIME -> ScheduleRule.oneTime()
-            ScheduleKind.CALENDAR_INTERVAL -> ScheduleRule.calendar(
-                requireNotNull(calendarUnit) { "care_schedule_calendar_unit_required" },
-                requireNotNull(intervalCount) { "care_schedule_interval_required" },
-                repetitions,
-                parsedEnd,
-            )
-            ScheduleKind.FIXED_INTERVAL -> ScheduleRule.fixed(
-                Duration.ofMinutes(requireNotNull(fixedIntervalMinutes) { "care_schedule_fixed_interval_required" }),
-                repetitions,
-                parsedEnd,
-            )
-            ScheduleKind.DAILY_TIMES -> ScheduleRule.daily(parsedTimes, repetitions, parsedEnd)
-        }
+}
+
+internal fun CareScheduleRuleRequest.toDomain(zoneId: ZoneId): ScheduleRule {
+    val parsedEnd = endAt?.let { CareWallClock.parse(it, zoneId) }
+    val rawTimes = try {
+        dailyTimes.map(LocalTime::parse)
+    } catch (_: Exception) {
+        throw IllegalArgumentException("care_schedule_daily_times_invalid")
+    }
+    require(rawTimes.size == rawTimes.distinct().size) { "care_schedule_daily_times_invalid" }
+    val parsedTimes = rawTimes.sorted()
+    return when (kind) {
+        ScheduleKind.ONE_TIME -> ScheduleRule.oneTime()
+        ScheduleKind.CALENDAR_INTERVAL -> ScheduleRule.calendar(
+            requireNotNull(calendarUnit) { "care_schedule_calendar_unit_required" },
+            requireNotNull(intervalCount) { "care_schedule_interval_required" },
+            repetitions,
+            parsedEnd,
+        )
+        ScheduleKind.FIXED_INTERVAL -> ScheduleRule.fixed(
+            Duration.ofMinutes(requireNotNull(fixedIntervalMinutes) { "care_schedule_fixed_interval_required" }),
+            repetitions,
+            parsedEnd,
+        )
+        ScheduleKind.DAILY_TIMES -> ScheduleRule.daily(parsedTimes, repetitions, parsedEnd)
     }
 }
 

@@ -16,6 +16,7 @@ import java.util.Currency
 data class CarePlan(
     val id: CarePlanId = CarePlanId(UUID.randomUUID()),
     val version: Long? = null,
+    val sourceDraftId: UUID? = null,
     val scheduleRevision: Int = 0,
     val householdId: HouseholdId,
     val tutorId: TutorId,

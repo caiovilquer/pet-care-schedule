@@ -91,6 +91,72 @@ class SmokeE2ETest : AbstractPostgresIntegrationTest() {
     }
 
     @Test
+    fun `assistant draft is reviewed and confirmed exactly once`() {
+        val suffix = UUID.randomUUID().toString().take(8)
+        val email = "bia.assistant.$suffix@example.com"
+        val signup = rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity(
+                """{"firstName":"Bia","lastName":"Souza","email":"$email","rawPassword":"s3cret-pwd"}""",
+                jsonHeaders(),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, signup.statusCode, "signup assistant: ${signup.body}")
+        val login = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"$email","password":"s3cret-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, login.statusCode, "login assistant: ${login.body}")
+        val token = login.body!!["token"].asText()
+        val pet = rest.postForEntity(
+            "/api/v1/pets",
+            HttpEntity(
+                """{"name":"Mel","species":"Dog","breed":"SRD","birthdate":"2021-01-01"}""",
+                jsonHeaders(token),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, pet.statusCode, "pet assistant: ${pet.body}")
+        val petId = pet.body!!["petId"].asLong()
+        val start = LocalDateTime.now(ZoneId.of("America/Sao_Paulo")).plusDays(1).withHour(8).withMinute(0).truncatedTo(ChronoUnit.MINUTES)
+        val requestId = UUID.randomUUID()
+        val generated = rest.postForEntity(
+            "/api/v1/assistant/care-drafts",
+            HttpEntity(
+                """{"requestId":"$requestId","instruction":"Vacina da Mel em ${start.toLocalDate()} às 08:00"}""",
+                jsonHeaders(token),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, generated.statusCode, "generate draft: ${generated.body}")
+        assertEquals("READY", generated.body!!["status"].asText(), "draft: ${generated.body}")
+        assertEquals(petId, generated.body!!["fields"]["petId"].asLong())
+        assertEquals("EXPLICIT", generated.body!!["provenance"]["PET"].asText())
+        val draftId = generated.body!!["id"].asText()
+        val draftVersion = generated.body!!["version"].asLong()
+        val confirmBody = """{"requestId":"${UUID.randomUUID()}","expectedVersion":$draftVersion}"""
+
+        val confirmed = rest.postForEntity(
+            "/api/v1/assistant/care-drafts/$draftId/confirm",
+            HttpEntity(confirmBody, jsonHeaders(token)),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, confirmed.statusCode, "confirm draft: ${confirmed.body}")
+        assertEquals("CONFIRMED", confirmed.body!!["draft"]["status"].asText())
+        val planId = confirmed.body!!["plan"]["id"].asText()
+
+        val replay = rest.postForEntity(
+            "/api/v1/assistant/care-drafts/$draftId/confirm",
+            HttpEntity(confirmBody, jsonHeaders(token)),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, replay.statusCode, "confirm replay: ${replay.body}")
+        assertEquals(planId, replay.body!!["plan"]["id"].asText())
+    }
+
+    @Test
     fun `full journey - signup, login, pet, care plan, safe completion, undo and delete`() {
         // --- signup ---
         val signup = rest.postForEntity(

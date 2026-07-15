@@ -39,6 +39,8 @@ springdoc:
       scopes: openid,profile,email
 
 app:
+  ai:
+    enabled: ${AI_ENABLED:true}
   seed:
     enabled: true
   mail:

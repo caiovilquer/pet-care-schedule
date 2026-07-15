@@ -82,7 +82,7 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
 
 ## Arquitetura
 
-Estrutura hexagonal (ports & adapters) em sete módulos. `core` e `application`
+Estrutura hexagonal (ports & adapters) em oito módulos. `core` e `application`
 são Kotlin puro — nenhuma dependência de Spring, Jakarta ou qualquer
 framework — e essa fronteira é verificada em tempo de teste (testes de
 arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
@@ -92,6 +92,7 @@ arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
 |-------------------------|---------------------------------------------------------------------------|
 | **core**                | Entidades (Tutor, Pet, Event) e Value Objects (Email, Phone, etc.). Zero dependências. |
 | **application**         | Ports de entrada/saída, comandos, resultados e os use cases (services). Kotlin puro — sem Spring. |
+| **adapter-ai**          | Extração estruturada atrás de ports por capacidade. O provider local de desenvolvimento é determinístico e não escreve no domínio. |
 | **adapter-rest**        | Controllers REST, DTOs, `ApiExceptionHandler`, Spring Security (JWT, CORS), emissão de token, hash de senha. |
 | **adapter-persistence** | Entidades JPA, repositórios Spring Data, mappers, adapters de persistência e migrações Flyway. Testes de integração sobem um Postgres real via Testcontainers (requer Docker). |
 | **adapter-messaging**   | Cliente HTTP (WebClient) e adapters de e-mail (MailerSend).              |
@@ -114,6 +115,8 @@ O modelo de autorização, os convites e a operação do Ciclo 4 estão em
 As garantias de privacidade, o modelo financeiro e a implantação do Ciclo 5
 estão em [`docs/cycle-5-veterinary-finance.md`](docs/cycle-5-veterinary-finance.md).
 As decisões duráveis da evolução de IA estão em [`docs/adr`](docs/adr/README.md).
+O fluxo de rascunhos, suas flags, privacidade e avaliação estão em
+[`docs/ai-care-drafts.md`](docs/ai-care-drafts.md).
 
 ## Requisitos
 
@@ -156,4 +159,9 @@ scripts/run-prod.sh
 ```
 # Timezones e contrato de datas
 
-O timezone canônico da agenda pertence ao household e usa um identificador IANA (por exemplo, `America/New_York`). Households legados sem valor persistido mantêm o fallback compatível `America/Sao_Paulo`; `APP_TIMEZONE` configura apenas o relógio padrão e crons globais, não substitui o fuso de uma família. `startAt`/`dueAt` de cuidados continuam como wall-clock `LocalDateTime`: inputs sem offset são interpretados no timezone do household, enquanto ISO 8601 com offset ou `Z` é tratado como instante e convertido para o wall-clock do household. As respostas de household e agenda incluem `timezone`. Saúde, despesas e conclusões permanecem `Instant`/UTC. A Opção A evita backfill destrutivo; uma futura migração para `Instant` por plano deve preservar também o `zoneId` original.
+Cada plano preserva um `zoneId` IANA e armazena `startAt`/`dueAt` como `Instant`
+canônico. Inputs sem offset são interpretados no fuso do plano; valores ISO
+8601 com offset ou `Z` mantêm o instante informado. A API devolve o instante,
+a representação local e o timezone. `FIXED_INTERVAL` mede duração transcorrida;
+regras de calendário e horários diários preservam o relógio local conforme o
+[ADR-002](docs/adr/0002-schedule-rule-v2.md).

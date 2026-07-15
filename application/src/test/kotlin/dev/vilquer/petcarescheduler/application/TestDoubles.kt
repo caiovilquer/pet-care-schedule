@@ -448,6 +448,8 @@ internal class InMemoryCarePlanRepo(
         store.values.filter { it.active }.sortedBy { it.updatedAt }.drop(page * size).take(size)
     override fun findByIdAndHousehold(id: CarePlanId, householdId: HouseholdId) = store[id]?.takeIf { it.householdId == householdId }
     override fun findByIdAndHouseholdForUpdate(id: CarePlanId, householdId: HouseholdId) = findByIdAndHousehold(id, householdId)
+    override fun findBySourceDraftId(sourceDraftId: UUID, householdId: HouseholdId) =
+        store.values.firstOrNull { it.sourceDraftId == sourceDraftId && it.householdId == householdId }
     override fun listByHousehold(householdId: HouseholdId, petId: PetId?, active: Boolean?, page: Int, size: Int) = store.values.filter {
         it.householdId == householdId && (petId == null || it.petId == petId) && (active == null || it.active == active)
     }.sortedBy { it.startAt }.drop(page * size).take(size)
