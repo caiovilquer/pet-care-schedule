@@ -81,6 +81,11 @@ class CareDraftAppService(
         val instruction = command.instruction.trim()
         require(instruction.isNotEmpty() && instruction.length <= settings.maxInputCharacters) { "care_draft_instruction_invalid" }
         val now = clock.now(access.zoneId).toInstant()
+        transaction.execute {
+            val replay = drafts.findActionByRequestId(command.requestId) ?: return@execute null
+            drafts.findByIdAndHousehold(replay.draftId, access.householdId)?.toResult()
+                ?: throw ConflictException("Identificador de requisição já utilizado")
+        }?.let { return it }
         if (!settings.enabled) {
             transaction.execute {
                 interactions.save(interaction(null, access, 0, AiInteractionOutcome.DISABLED, "AI_DISABLED", now))
@@ -95,7 +100,8 @@ class CareDraftAppService(
         val initial = CareDraft(
             householdId = access.householdId,
             actorTutorId = access.actorTutorId,
-            channel = CareDraftChannel.WEB,
+            channel = command.channel,
+            externalMessageId = command.externalMessageId,
             inputType = CareDraftInputType.TEXT,
             inputHash = sha256(instruction),
             fields = initialFields,

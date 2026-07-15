@@ -26,6 +26,8 @@ import dev.vilquer.petcarescheduler.application.service.KnowledgeIndexingService
 import dev.vilquer.petcarescheduler.application.service.PetHistoryAssistantService
 import dev.vilquer.petcarescheduler.application.service.PetHistoryAssistantSettings
 import dev.vilquer.petcarescheduler.application.service.StructuredPetHistoryCatalog
+import dev.vilquer.petcarescheduler.application.service.WhatsAppAppService
+import dev.vilquer.petcarescheduler.application.service.WhatsAppSettings
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceActionRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
@@ -72,6 +74,14 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.GroundedAnswerG
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.KnowledgeIndexOutboxPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.KnowledgeSourceRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.SemanticSearchPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.WhatsAppConversationRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.WhatsAppCryptoPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.WhatsAppGatewayPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.WhatsAppIdentityRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.WhatsAppInboxRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.WhatsAppLinkTokenRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.WhatsAppOutboxRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.CareDraftUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.FinanceOverviewUseCase
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.annotation.Bean
@@ -87,6 +97,38 @@ import java.time.Duration
  */
 @Configuration
 class UseCaseWiring {
+
+    @Bean
+    fun whatsappSettings(environment: Environment) = WhatsAppSettings(
+        enabled = environment.getProperty("app.whatsapp.enabled", Boolean::class.java, false),
+        businessPhoneNumberId = environment.getProperty("app.whatsapp.business-phone-number-id", ""),
+        businessPhoneNumber = environment.getProperty("app.whatsapp.business-phone-number", ""),
+        linkTtl = environment.getProperty("app.whatsapp.link-ttl", Duration::class.java, Duration.ofMinutes(10)),
+        conversationTtl = environment.getProperty("app.whatsapp.conversation-ttl", Duration::class.java, Duration.ofHours(24)),
+        inboxBatchSize = environment.getProperty("app.whatsapp.inbox-batch-size", Int::class.java, 20),
+        outboxBatchSize = environment.getProperty("app.whatsapp.outbox-batch-size", Int::class.java, 20),
+        maxAttempts = environment.getProperty("app.whatsapp.max-attempts", Int::class.java, 5),
+    )
+
+    @Bean
+    fun whatsappAppService(
+        linkTokens: WhatsAppLinkTokenRepositoryPort,
+        identities: WhatsAppIdentityRepositoryPort,
+        conversations: WhatsAppConversationRepositoryPort,
+        inbox: WhatsAppInboxRepositoryPort,
+        outbox: WhatsAppOutboxRepositoryPort,
+        crypto: WhatsAppCryptoPort,
+        gateway: WhatsAppGatewayPort,
+        careDrafts: CareDraftUseCase,
+        households: HouseholdRepositoryPort,
+        members: HouseholdMemberRepositoryPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+        settings: WhatsAppSettings,
+    ) = WhatsAppAppService(
+        linkTokens, identities, conversations, inbox, outbox, crypto, gateway, careDrafts,
+        households, members, transaction, clock, settings,
+    )
 
     @Bean
     fun petHistoryAssistantSettings(environment: Environment) = PetHistoryAssistantSettings(

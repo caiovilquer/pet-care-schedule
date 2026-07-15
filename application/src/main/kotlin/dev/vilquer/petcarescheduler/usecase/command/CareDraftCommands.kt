@@ -3,11 +3,14 @@ package dev.vilquer.petcarescheduler.usecase.command
 import dev.vilquer.petcarescheduler.core.domain.assistant.CareDraftField
 import dev.vilquer.petcarescheduler.core.domain.assistant.CareDraftFields
 import dev.vilquer.petcarescheduler.core.domain.assistant.CareDraftId
+import dev.vilquer.petcarescheduler.core.domain.assistant.CareDraftChannel
 import java.util.UUID
 
 data class GenerateCareDraftCommand(
     val instruction: String,
     val requestId: UUID,
+    val channel: CareDraftChannel = CareDraftChannel.WEB,
+    val externalMessageId: String? = null,
 )
 
 data class CorrectCareDraftCommand(

@@ -62,6 +62,12 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
   - Indexação assíncrona e repetível, com estado visível no documento e
     exclusão imediata do conjunto pesquisável quando a origem é removida.
 
+- **Criação segura por WhatsApp**
+  - Vínculo temporário de uso único, identidade e payloads sensíveis cifrados,
+    webhook assinado e processamento assíncrono por inbox/outbox.
+  - Mensagens de texto geram rascunhos com botões para confirmar, corrigir ou
+    cancelar; reentregas do webhook e cliques repetidos não duplicam o plano.
+
 - **Lembretes automáticos e confiáveis**
   - Um scheduler a cada 5 minutos estende o horizonte e detecta ocorrências no
     momento configurado, apenas
@@ -103,7 +109,7 @@ arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
 | **adapter-ai**          | Extração estruturada, embeddings, PDF e resposta fundamentada atrás de ports por capacidade. O provider local de desenvolvimento é determinístico e não escreve no domínio. |
 | **adapter-rest**        | Controllers REST, DTOs, `ApiExceptionHandler`, Spring Security (JWT, CORS), emissão de token, hash de senha. |
 | **adapter-persistence** | Entidades JPA, repositórios Spring Data, mappers, adapters de persistência e migrações Flyway. Testes de integração sobem um Postgres real via Testcontainers (requer Docker). |
-| **adapter-messaging**   | Cliente HTTP (WebClient) e adapters de e-mail (MailerSend).              |
+| **adapter-messaging**   | Adapters de e-mail e do canal WhatsApp (segurança, gateway fake e Cloud API da Meta). |
 | **adapter-storage**     | Adaptador S3 compatível com Railway Buckets e Cloudflare R2; URLs pré-assinadas curtas para leitura e escrita. |
 | **bootstrap**           | Ponto de entrada Spring Boot: wiring manual dos use cases (`UseCaseWiring`), schedulers, configuração de ambiente (`application*.yml`, SSL, JVM). |
 
@@ -127,6 +133,8 @@ O fluxo de rascunhos, suas flags, privacidade e avaliação estão em
 [`docs/ai-care-drafts.md`](docs/ai-care-drafts.md).
 As consultas estruturadas, o RAG, a indexação, as flags e os quality gates estão
 em [`docs/ai-pet-history.md`](docs/ai-pet-history.md).
+O vínculo, a configuração da Meta e a operação do canal de texto estão em
+[`docs/whatsapp-text-integration.md`](docs/whatsapp-text-integration.md).
 
 ## Requisitos
 

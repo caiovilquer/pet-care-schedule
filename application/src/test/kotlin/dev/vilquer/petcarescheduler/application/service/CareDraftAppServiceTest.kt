@@ -73,6 +73,22 @@ class CareDraftAppServiceTest {
         assertEquals(0, extractor.calls)
     }
 
+    @Test
+    fun `duplicate generation request reuses draft without invoking provider twice`() {
+        val drafts = InMemoryDraftRepo()
+        val extractor = FailingExtractor()
+        val service = service(drafts, InMemoryInteractionRepo(), extractor)
+        val requestId = UUID.randomUUID()
+
+        val first = service.generate(GenerateCareDraftCommand("Vacina da Luna amanhã às 08:00", requestId), ownerAccess)
+        val duplicate = service.generate(GenerateCareDraftCommand("Vacina da Luna amanhã às 08:00", requestId), ownerAccess)
+
+        assertEquals(first.id, duplicate.id)
+        assertEquals(first.status, duplicate.status)
+        assertEquals(1, extractor.calls)
+        assertEquals(1, drafts.countByHousehold(TEST_HOUSEHOLD_ID))
+    }
+
     private fun service(
         drafts: CareDraftRepositoryPort,
         interactions: AiInteractionRepositoryPort,
