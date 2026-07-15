@@ -20,6 +20,7 @@ dependencies {
     implementation(project(":application"))
     implementation("org.springframework:spring-context")
     implementation("io.micrometer:micrometer-core")
+    implementation("org.apache.pdfbox:pdfbox:3.0.8")
 
     testImplementation(libs.junit.jupiter.api)
     testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin")

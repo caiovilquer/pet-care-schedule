@@ -54,6 +54,14 @@ banhos, serviços etc.) e receber lembretes por e‑mail no dia correto.
   - Custos realizados separados de previsões dos planos, com acesso financeiro
     exclusivo do proprietário e destaques estritamente descritivos.
 
+- **Assistente com consultas estruturadas e fontes**
+  - Agenda, vacinas, medicamentos, medições, custos e responsáveis consultados
+    por ferramentas determinísticas, sem SQL gerado por modelo.
+  - Notas e PDFs pesquisados com FTS + pgvector, autorização antes do ranking,
+    citações verificadas e resposta segura quando a evidência é insuficiente.
+  - Indexação assíncrona e repetível, com estado visível no documento e
+    exclusão imediata do conjunto pesquisável quando a origem é removida.
+
 - **Lembretes automáticos e confiáveis**
   - Um scheduler a cada 5 minutos estende o horizonte e detecta ocorrências no
     momento configurado, apenas
@@ -92,7 +100,7 @@ arquitetura com [Konsist](https://docs.konsist.lemonappdev.com/), rodando via
 |-------------------------|---------------------------------------------------------------------------|
 | **core**                | Entidades (Tutor, Pet, Event) e Value Objects (Email, Phone, etc.). Zero dependências. |
 | **application**         | Ports de entrada/saída, comandos, resultados e os use cases (services). Kotlin puro — sem Spring. |
-| **adapter-ai**          | Extração estruturada atrás de ports por capacidade. O provider local de desenvolvimento é determinístico e não escreve no domínio. |
+| **adapter-ai**          | Extração estruturada, embeddings, PDF e resposta fundamentada atrás de ports por capacidade. O provider local de desenvolvimento é determinístico e não escreve no domínio. |
 | **adapter-rest**        | Controllers REST, DTOs, `ApiExceptionHandler`, Spring Security (JWT, CORS), emissão de token, hash de senha. |
 | **adapter-persistence** | Entidades JPA, repositórios Spring Data, mappers, adapters de persistência e migrações Flyway. Testes de integração sobem um Postgres real via Testcontainers (requer Docker). |
 | **adapter-messaging**   | Cliente HTTP (WebClient) e adapters de e-mail (MailerSend).              |
@@ -117,6 +125,8 @@ estão em [`docs/cycle-5-veterinary-finance.md`](docs/cycle-5-veterinary-finance
 As decisões duráveis da evolução de IA estão em [`docs/adr`](docs/adr/README.md).
 O fluxo de rascunhos, suas flags, privacidade e avaliação estão em
 [`docs/ai-care-drafts.md`](docs/ai-care-drafts.md).
+As consultas estruturadas, o RAG, a indexação, as flags e os quality gates estão
+em [`docs/ai-pet-history.md`](docs/ai-pet-history.md).
 
 ## Requisitos
 

@@ -6,6 +6,7 @@ import dev.vilquer.petcarescheduler.infra.adapter.output.persistence.jpa.reposit
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.DispatchPendingRemindersUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.SendDailyRemindersUseCase
 import dev.vilquer.petcarescheduler.usecase.contract.drivingports.RegisterEventUseCase
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.KnowledgeIndexUseCase
 import dev.vilquer.petcarescheduler.usecase.command.RegisterEventCommand
 import dev.vilquer.petcarescheduler.core.domain.entity.EventType
 import dev.vilquer.petcarescheduler.core.domain.entity.PetId
@@ -74,6 +75,9 @@ class SmokeE2ETest : AbstractPostgresIntegrationTest() {
 
     @Autowired
     lateinit var healthAttachments: HealthRecordAttachmentRepositoryPort
+
+    @Autowired
+    lateinit var knowledgeIndex: KnowledgeIndexUseCase
 
     private fun jsonHeaders(token: String? = null) = HttpHeaders().apply {
         contentType = MediaType.APPLICATION_JSON
@@ -154,6 +158,85 @@ class SmokeE2ETest : AbstractPostgresIntegrationTest() {
         )
         assertEquals(HttpStatus.OK, replay.statusCode, "confirm replay: ${replay.body}")
         assertEquals(planId, replay.body!!["plan"]["id"].asText())
+    }
+
+    @Test
+    fun `assistant answers structured and grounded questions without cross household evidence`() {
+        val suffix = UUID.randomUUID().toString().take(8)
+        val firstEmail = "history.$suffix@example.com"
+        val firstSignup = rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity("""{"firstName":"Lia","lastName":"Moraes","email":"$firstEmail","rawPassword":"s3cret-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, firstSignup.statusCode)
+        val firstLogin = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"$firstEmail","password":"s3cret-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val firstToken = firstLogin.body!!["token"].asText()
+        val firstPet = rest.postForEntity(
+            "/api/v1/pets",
+            HttpEntity("""{"name":"Luna","species":"Cat","breed":"SRD","birthdate":"2022-01-01"}""", jsonHeaders(firstToken)),
+            JsonNode::class.java,
+        )
+        val firstPetId = firstPet.body!!["petId"].asLong()
+        val record = rest.postForEntity(
+            "/api/v1/pets/$firstPetId/health-records",
+            HttpEntity(
+                """{"type":"VACCINE","occurredAt":"${Instant.now().minusSeconds(3600)}","title":"Vacina antirrábica","notes":"Após a vacina, Luna bebeu água normalmente durante todo o dia.","productName":"Produto registrado"}""",
+                jsonHeaders(firstToken),
+            ),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, record.statusCode, "health record: ${record.body}")
+        knowledgeIndex.processBatch()
+        val sources = rest.exchange(
+            "/api/v1/assistant/knowledge-sources?petId=$firstPetId",
+            HttpMethod.GET,
+            HttpEntity<Void>(jsonHeaders(firstToken)),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, sources.statusCode, "knowledge sources: ${sources.body}")
+        assertEquals("READY", sources.body!![0]["status"].asText(), "knowledge sources: ${sources.body}")
+
+        val structured = rest.postForEntity(
+            "/api/v1/assistant/questions",
+            HttpEntity("""{"petId":$firstPetId,"question":"Quando foi a última vacina?"}""", jsonHeaders(firstToken)),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, structured.statusCode, "structured answer: ${structured.body}")
+        assertEquals("STRUCTURED", structured.body!!["kind"].asText())
+        assertTrue(structured.body!!["citations"].size() > 0)
+
+        val grounded = rest.postForEntity(
+            "/api/v1/assistant/questions",
+            HttpEntity("""{"petId":$firstPetId,"question":"O que a nota registra sobre hidratação e água?"}""", jsonHeaders(firstToken)),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.OK, grounded.statusCode, "grounded answer: ${grounded.body}")
+        assertEquals("RAG", grounded.body!!["kind"].asText())
+        assertEquals(false, grounded.body!!["insufficientEvidence"].asBoolean(), "grounded answer: ${grounded.body}")
+        assertEquals(record.body!!["id"].asText(), grounded.body!!["citations"][0]["resourceId"].asText())
+
+        val secondEmail = "history.other.$suffix@example.com"
+        rest.postForEntity(
+            "/api/v1/public/signup",
+            HttpEntity("""{"firstName":"Nina","lastName":"Costa","email":"$secondEmail","rawPassword":"s3cret-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val secondLogin = rest.postForEntity(
+            "/api/v1/auth/login",
+            HttpEntity("""{"email":"$secondEmail","password":"s3cret-pwd"}""", jsonHeaders()),
+            JsonNode::class.java,
+        )
+        val crossTenant = rest.postForEntity(
+            "/api/v1/assistant/questions",
+            HttpEntity("""{"petId":$firstPetId,"question":"O que consta na nota?"}""", jsonHeaders(secondLogin.body!!["token"].asText())),
+            JsonNode::class.java,
+        )
+        assertEquals(HttpStatus.NOT_FOUND, crossTenant.statusCode)
     }
 
     @Test

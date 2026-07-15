@@ -41,6 +41,7 @@ springdoc:
 app:
   ai:
     enabled: ${AI_ENABLED:true}
+    rag-enabled: ${AI_RAG_ENABLED:true}
   seed:
     enabled: true
   mail:

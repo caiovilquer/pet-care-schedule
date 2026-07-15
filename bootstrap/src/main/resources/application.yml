@@ -24,8 +24,13 @@ logging:
 app:
   ai:
     enabled: ${AI_ENABLED:false}
+    rag-enabled: ${AI_RAG_ENABLED:false}
     draft-ttl: ${AI_DRAFT_TTL:PT24H}
     max-input-characters: ${AI_MAX_INPUT_CHARACTERS:4000}
+    max-question-characters: ${AI_MAX_QUESTION_CHARACTERS:1000}
+    retrieval-limit: ${AI_RETRIEVAL_LIMIT:5}
+    index-batch-size: ${AI_INDEX_BATCH_SIZE:10}
+    index-max-attempts: ${AI_INDEX_MAX_ATTEMPTS:5}
   storage:
     enabled: ${OBJECT_STORAGE_ENABLED:false}
     endpoint: ${OBJECT_STORAGE_ENDPOINT:${ENDPOINT:${BUCKET_ENDPOINT:${AWS_ENDPOINT_URL:}}}}

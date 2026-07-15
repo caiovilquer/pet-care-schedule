@@ -21,6 +21,11 @@ import dev.vilquer.petcarescheduler.application.service.SecurityMaintenanceServi
 import dev.vilquer.petcarescheduler.application.service.TutorAppService
 import dev.vilquer.petcarescheduler.application.service.FinanceAppService
 import dev.vilquer.petcarescheduler.application.service.VeterinaryReportAppService
+import dev.vilquer.petcarescheduler.application.service.KnowledgeIndexSettings
+import dev.vilquer.petcarescheduler.application.service.KnowledgeIndexingService
+import dev.vilquer.petcarescheduler.application.service.PetHistoryAssistantService
+import dev.vilquer.petcarescheduler.application.service.PetHistoryAssistantSettings
+import dev.vilquer.petcarescheduler.application.service.StructuredPetHistoryCatalog
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ClockPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceActionRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.CareOccurrenceRepositoryPort
@@ -60,6 +65,14 @@ import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TransactionPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.TutorRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.ExpenseRepositoryPort
 import dev.vilquer.petcarescheduler.usecase.contract.drivenports.VeterinaryShareRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.AssistantAnswerRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.DocumentTextExtractorPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.EmbeddingPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.GroundedAnswerGeneratorPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.KnowledgeIndexOutboxPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.KnowledgeSourceRepositoryPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivenports.SemanticSearchPort
+import dev.vilquer.petcarescheduler.usecase.contract.drivingports.FinanceOverviewUseCase
 import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -74,6 +87,58 @@ import java.time.Duration
  */
 @Configuration
 class UseCaseWiring {
+
+    @Bean
+    fun petHistoryAssistantSettings(environment: Environment) = PetHistoryAssistantSettings(
+        ragEnabled = environment.getProperty("app.ai.rag-enabled", Boolean::class.java, false),
+        maxQuestionCharacters = environment.getProperty("app.ai.max-question-characters", Int::class.java, 1_000),
+        retrievalLimit = environment.getProperty("app.ai.retrieval-limit", Int::class.java, 5),
+    )
+
+    @Bean
+    fun knowledgeIndexSettings(environment: Environment) = KnowledgeIndexSettings(
+        enabled = environment.getProperty("app.ai.rag-enabled", Boolean::class.java, false),
+        batchSize = environment.getProperty("app.ai.index-batch-size", Int::class.java, 10),
+        maxAttempts = environment.getProperty("app.ai.index-max-attempts", Int::class.java, 5),
+    )
+
+    @Bean
+    fun structuredPetHistoryCatalog(
+        records: HealthRecordRepositoryPort,
+        measurements: HealthMeasurementRepositoryPort,
+        occurrences: CareOccurrenceRepositoryPort,
+        finances: FinanceOverviewUseCase,
+        plans: CarePlanRepositoryPort,
+        members: HouseholdMemberRepositoryPort,
+    ) = StructuredPetHistoryCatalog(records, measurements, occurrences, finances, plans, members)
+
+    @Bean
+    fun petHistoryAssistantService(
+        catalog: StructuredPetHistoryCatalog,
+        pets: PetRepositoryPort,
+        embeddings: EmbeddingPort,
+        search: SemanticSearchPort,
+        generator: GroundedAnswerGeneratorPort,
+        answers: AssistantAnswerRepositoryPort,
+        interactions: AiInteractionRepositoryPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+        settings: PetHistoryAssistantSettings,
+    ) = PetHistoryAssistantService(catalog, pets, embeddings, search, generator, answers, interactions, transaction, clock, settings)
+
+    @Bean
+    fun knowledgeIndexingService(
+        sources: KnowledgeSourceRepositoryPort,
+        outbox: KnowledgeIndexOutboxPort,
+        records: HealthRecordRepositoryPort,
+        media: MediaAssetRepositoryPort,
+        storage: ObjectStoragePort,
+        extractor: DocumentTextExtractorPort,
+        embeddings: EmbeddingPort,
+        transaction: TransactionPort,
+        clock: ClockPort,
+        settings: KnowledgeIndexSettings,
+    ) = KnowledgeIndexingService(sources, outbox, records, media, storage, extractor, embeddings, transaction, clock, settings)
 
     @Bean
     fun careDraftSettings(environment: Environment) = CareDraftSettings(
@@ -208,7 +273,13 @@ class UseCaseWiring {
         healthRecords: HealthRecordRepositoryPort,
         healthAttachments: HealthRecordAttachmentRepositoryPort,
         transaction: TransactionPort,
-    ) = MediaAppService(media, storage, pets, tutors, healthRecords, healthAttachments, transaction)
+        knowledgeSources: KnowledgeSourceRepositoryPort,
+        knowledgeOutbox: KnowledgeIndexOutboxPort,
+    ) = MediaAppService(
+        media, storage, pets, tutors, healthRecords, healthAttachments, transaction,
+        knowledgeSources = knowledgeSources,
+        knowledgeOutbox = knowledgeOutbox,
+    )
 
     @Bean
     fun healthAppService(
@@ -220,7 +291,9 @@ class UseCaseWiring {
         transaction: TransactionPort,
         clock: ClockPort,
         activities: HouseholdActivityRepositoryPort,
-    ) = HealthAppService(records, measurements, attachments, media, pets, transaction, clock, activities)
+        knowledgeSources: KnowledgeSourceRepositoryPort,
+        knowledgeOutbox: KnowledgeIndexOutboxPort,
+    ) = HealthAppService(records, measurements, attachments, media, pets, transaction, clock, activities, knowledgeSources, knowledgeOutbox)
 
     @Bean
     fun reminderRelayService(

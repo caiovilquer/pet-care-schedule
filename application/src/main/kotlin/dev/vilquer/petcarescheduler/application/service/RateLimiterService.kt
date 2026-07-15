@@ -15,6 +15,7 @@ data class RateLimitProperties(
     val householdInvite: RateLimitConfig = RateLimitConfig(maxAttempts = 10, window = Duration.ofHours(1)),
     val veterinaryShareCreate: RateLimitConfig = RateLimitConfig(maxAttempts = 10, window = Duration.ofHours(1)),
     val veterinaryShareAccess: RateLimitConfig = RateLimitConfig(maxAttempts = 60, window = Duration.ofMinutes(15)),
+    val assistantQuestion: RateLimitConfig = RateLimitConfig(maxAttempts = 60, window = Duration.ofHours(1)),
 )
 
 data class RateLimitConfig(
@@ -24,7 +25,7 @@ data class RateLimitConfig(
 
 enum class RateLimitAction {
     LOGIN, PASSWORD_RESET, TOKEN_REFRESH, MEDIA_UPLOAD, HOUSEHOLD_INVITE,
-    VETERINARY_SHARE_CREATE, VETERINARY_SHARE_ACCESS,
+    VETERINARY_SHARE_CREATE, VETERINARY_SHARE_ACCESS, ASSISTANT_QUESTION,
 }
 
 class RateLimiterService(
@@ -41,6 +42,7 @@ class RateLimiterService(
             RateLimitAction.HOUSEHOLD_INVITE -> props.householdInvite
             RateLimitAction.VETERINARY_SHARE_CREATE -> props.veterinaryShareCreate
             RateLimitAction.VETERINARY_SHARE_ACCESS -> props.veterinaryShareAccess
+            RateLimitAction.ASSISTANT_QUESTION -> props.assistantQuestion
         }
         val id = "${action.name}:${key}"
         val count = store.registerAttempt(id, clock.instant(), limit.window)
@@ -57,6 +59,7 @@ class RateLimiterService(
         val maxWindow = maxOf(
             props.login.window, props.passwordReset.window, props.tokenRefresh.window, props.mediaUpload.window,
             props.householdInvite.window, props.veterinaryShareCreate.window, props.veterinaryShareAccess.window,
+            props.assistantQuestion.window,
         )
         store.deleteOlderThan(clock.instant().minus(maxWindow))
     }

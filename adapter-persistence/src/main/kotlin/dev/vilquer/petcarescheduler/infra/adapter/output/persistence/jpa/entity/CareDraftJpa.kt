@@ -86,7 +86,8 @@ class AiInteractionJpa {
 @Table(name = "assistant_feedback")
 class AssistantFeedbackJpa {
     @Id lateinit var id: UUID
-    @Column(name = "draft_id", nullable = false) lateinit var draftId: UUID
+    @Column(name = "draft_id") var draftId: UUID? = null
+    @Column(name = "answer_id") var answerId: UUID? = null
     @Column(name = "household_id", nullable = false) lateinit var householdId: UUID
     @Column(name = "actor_tutor_id", nullable = false) var actorTutorId: Long = 0
     @Column(nullable = false) var positive: Boolean = false
